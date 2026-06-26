@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "69ad8171-c9da-4861-89ad-f4b19c770315",
+  "path": "wos-export",
+  "path_key": "wos-export",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "git",
+    "ref": "https://github.com/cookjohn/wos-skills",
+    "subpath": "skills/wos-export",
+    "branch": null
+  }
+}

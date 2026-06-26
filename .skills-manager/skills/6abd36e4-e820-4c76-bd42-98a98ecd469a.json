@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "6abd36e4-e820-4c76-bd42-98a98ecd469a",
+  "path": "wos-search",
+  "path_key": "wos-search",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "git",
+    "ref": "https://github.com/cookjohn/wos-skills",
+    "subpath": "skills/wos-search",
+    "branch": null
+  }
+}

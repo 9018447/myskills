@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "c7bc2a47-93d3-4908-9081-b3d4782f76ef",
+  "path": "wos-download",
+  "path_key": "wos-download",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "git",
+    "ref": "https://github.com/cookjohn/wos-skills",
+    "subpath": "skills/wos-download",
+    "branch": null
+  }
+}

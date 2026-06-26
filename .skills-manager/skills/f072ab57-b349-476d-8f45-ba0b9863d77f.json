@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "f072ab57-b349-476d-8f45-ba0b9863d77f",
+  "path": "matlab-testing",
+  "path_key": "matlab-testing",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "matlab/matlab-agentic-toolkit/matlab-testing",
+    "subpath": "skills-catalog/matlab-core/matlab-testing",
+    "branch": null
+  }
+}

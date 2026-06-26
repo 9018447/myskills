@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "90540ae4-87b2-4171-b66b-b9a769f75ca5",
+  "path": "matlab",
+  "path_key": "matlab",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "k-dense-ai/claude-scientific-skills/matlab",
+    "subpath": "skills/matlab",
+    "branch": null
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "00454ab1-c8d7-4661-8610-cb3cedc77add",
+  "path": "matlab-performance-optimizer",
+  "path_key": "matlab-performance-optimizer",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "matlab/skills/matlab-performance-optimizer",
+    "subpath": "skills/matlab-performance-optimizer",
+    "branch": null
+  }
+}

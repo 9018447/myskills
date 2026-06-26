@@ -4,7 +4,9 @@
   "path": "matlab-create-live-script",
   "path_key": "matlab-create-live-script",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "matlab"
+  ],
   "source": {
     "type": "local",
     "ref": null,

@@ -4,7 +4,9 @@
   "path": "matlab-deploy-embedded-ai",
   "path_key": "matlab-deploy-embedded-ai",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "matlab"
+  ],
   "source": {
     "type": "local",
     "ref": null,

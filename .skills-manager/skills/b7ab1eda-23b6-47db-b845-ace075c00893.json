@@ -4,7 +4,9 @@
   "path": "matlab-review-code",
   "path_key": "matlab-review-code",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "matlab"
+  ],
   "source": {
     "type": "local",
     "ref": null,

@@ -4,7 +4,9 @@
   "path": "matlab-performance-optimizer",
   "path_key": "matlab-performance-optimizer",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "matlab"
+  ],
   "source": {
     "type": "skillssh",
     "ref": "matlab/skills/matlab-performance-optimizer",

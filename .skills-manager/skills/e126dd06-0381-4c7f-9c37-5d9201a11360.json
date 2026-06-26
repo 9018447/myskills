@@ -4,7 +4,9 @@
   "path": "matlab-debugging",
   "path_key": "matlab-debugging",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "matlab"
+  ],
   "source": {
     "type": "local",
     "ref": null,

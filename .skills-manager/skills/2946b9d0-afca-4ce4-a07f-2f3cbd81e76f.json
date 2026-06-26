@@ -4,7 +4,9 @@
   "path": "matlab-list-products",
   "path_key": "matlab-list-products",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "matlab"
+  ],
   "source": {
     "type": "local",
     "ref": null,

@@ -4,7 +4,9 @@
   "path": "matlab-train-network",
   "path_key": "matlab-train-network",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "matlab"
+  ],
   "source": {
     "type": "local",
     "ref": null,

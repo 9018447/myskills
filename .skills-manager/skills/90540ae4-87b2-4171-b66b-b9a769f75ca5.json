@@ -4,7 +4,9 @@
   "path": "matlab",
   "path_key": "matlab",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "matlab"
+  ],
   "source": {
     "type": "skillssh",
     "ref": "k-dense-ai/claude-scientific-skills/matlab",

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "2946b9d0-afca-4ce4-a07f-2f3cbd81e76f",
+  "path": "matlab-list-products",
+  "path_key": "matlab-list-products",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

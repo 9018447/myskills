@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "82760134-e2b0-47fd-8807-c6ed2a90c57b",
+  "path": "matlab-deploy-embedded-ai",
+  "path_key": "matlab-deploy-embedded-ai",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

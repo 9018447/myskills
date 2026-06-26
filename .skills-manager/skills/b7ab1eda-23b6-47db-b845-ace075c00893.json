@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "b7ab1eda-23b6-47db-b845-ace075c00893",
+  "path": "matlab-review-code",
+  "path_key": "matlab-review-code",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "c06ded06-ad15-461c-8bc7-ce80077ad07b",
+  "path": "matlab-train-network",
+  "path_key": "matlab-train-network",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

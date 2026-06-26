@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "e126dd06-0381-4c7f-9c37-5d9201a11360",
+  "path": "matlab-debugging",
+  "path_key": "matlab-debugging",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

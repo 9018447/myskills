@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "45cd9a1a-15d4-4c82-ba56-8722c7116701",
+  "path": "matlab-create-live-script",
+  "path_key": "matlab-create-live-script",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "cdd64416-75dc-4e27-8109-6c1f871b5b34",
+  "path": "matlab-install-products",
+  "path_key": "matlab-install-products",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

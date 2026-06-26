@@ -1,5 +1,0 @@
-#!/bin/bash
-# Agent Browser CLI wrapper for pi-cli-tools
-# Forwards all arguments to the system agent-browser command
-
-exec /home/smh/.nvm/versions/node/v26.1.0/bin/agent-browser "$@"

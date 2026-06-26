@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "6cbd683f-bdd2-4592-ab5e-01ee0183ef19",
+  "path": "dft-qe",
+  "path_key": "dft-qe",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

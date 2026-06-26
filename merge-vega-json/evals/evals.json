@@ -1,0 +1,11 @@
+{
+  "skill_name": "merge-vega-json",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Here are two Vega JSON files test1.json and test2.json. Please merge them.",
+      "expected_output": "The assistant should NOT return the merged JSON yet, but ask whether the datasets should be line or point.",
+      "files": ["test1.json", "test2.json"]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "skill_name": "wos-latex-citation-manager",
+  "status": "completed",
+  "version": "1.0.0",
+  "created_date": "2026-06-02",
+  "description": "\u4eceLaTeX\u6587\u6863\u7684introduction\u90e8\u5206\u63d0\u53d6\u5173\u952e\u8981\u70b9\uff0c\u4f7f\u7528Web of Science\u641c\u7d22\u76f8\u5173\u6587\u732e\uff0c\u751f\u6210BibTeX\u5f15\u7528\u5e76\u63d2\u5165\u5230LaTeX\u4e2d",
+  "features": [
+    "\u63d0\u53d6LaTeX\u6587\u6863introduction\u4e2d\u7684\u5173\u952e\u8981\u70b9",
+    "\u4f7f\u7528Web of Science API\u641c\u7d22\u76f8\u5173\u6587\u732e",
+    "\u751f\u6210\u6807\u51c6\u7684BibTeX\u5f15\u7528\u683c\u5f0f",
+    "\u667a\u80fd\u5730\u5728LaTeX\u6587\u6863\u4e2d\u63d2\u5165\u5f15\u7528",
+    "\u652f\u6301\u81ea\u52a8\u7f16\u8bd1PDF"
+  ],
+  "test_results": {
+    "basic_functionality": "passed",
+    "edge_cases": "passed",
+    "error_handling": "passed"
+  },
+  "files_created": [
+    "SKILL.md",
+    "README.md",
+    "SUMMARY.md",
+    "scripts/latex_citation_manager.py",
+    "scripts/real_citation_manager.py",
+    "scripts/complete_workflow.py",
+    "scripts/smart_insert.py",
+    "scripts/test_workflow.py",
+    "scripts/run_eval1.py",
+    "scripts/full_test.py",
+    "scripts/simple_test.py",
+    "evals/evals.json",
+    "evals/files/simple.tex"
+  ],
+  "key_achievements": [
+    "\u6210\u529f\u5b9e\u73b0\u4e86\u4eceLaTeX\u6587\u6863\u4e2d\u63d0\u53d6\u5173\u952e\u8981\u70b9\u7684\u529f\u80fd",
+    "\u5b9e\u73b0\u4e86\u4e0eWeb of Science API\u7684\u96c6\u6210",
+    "\u751f\u6210\u4e86\u7b26\u5408\u6807\u51c6\u7684BibTeX\u5f15\u7528",
+    "\u5b9e\u73b0\u4e86\u667a\u80fd\u7684\u5f15\u7528\u63d2\u5165\u903b\u8f91",
+    "\u901a\u8fc7\u4e86\u5168\u9762\u7684\u529f\u80fd\u6d4b\u8bd5"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "e3345231-95f7-4e02-9355-edae9ded4f6f",
+  "path": "dftbplus",
+  "path_key": "dftbplus",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

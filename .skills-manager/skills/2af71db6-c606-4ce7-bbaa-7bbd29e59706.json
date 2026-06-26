@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "2af71db6-c606-4ce7-bbaa-7bbd29e59706",
+  "path": "dft-gpaw",
+  "path_key": "dft-gpaw",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

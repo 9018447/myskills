@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "8145bde5-c33e-4092-abfd-530e351dfc6c",
+  "path": "ducksearch",
+  "path_key": "ducksearch",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "geometry_optimization", "label": "Geometry Optimization", "file_type": "document", "source_file": "examples/WaterOptimization.md"}], "edges": [{"source": "geometry_optimization", "target": "parallel_job_execution", "relation": "uses_method", "confidence": "INFERRED", "confidence_score": 0.7, "source_file": "examples/WaterOptimization.md"}], "hyperedges": []}

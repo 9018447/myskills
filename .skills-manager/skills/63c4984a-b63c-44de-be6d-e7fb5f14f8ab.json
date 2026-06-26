@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "63c4984a-b63c-44de-be6d-e7fb5f14f8ab",
+  "path": "scientific-writing",
+  "path_key": "scientific-writing",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

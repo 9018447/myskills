@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "43502745-2bfb-4909-af22-2471b10f007a",
+  "path": "rdkit-chemistry",
+  "path_key": "rdkit-chemistry",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

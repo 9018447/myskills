@@ -1,0 +1,8 @@
+# Copyright 2026 The MathWorks, Inc.
+description: >
+  Parallel Computing Toolbox and MATLAB Parallel Server.
+keywords:
+  - matlab
+  - parallel-computing
+  - parfor
+  - gpu

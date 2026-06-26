@@ -1,0 +1,47 @@
+{
+  "skill_name": "python-aspen",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我需要用 Python 自动化 Aspen Plus，批量运行不同温度下的反应器模拟，找出最优反应温度使产物收率最大。反应器名称是 R1，产物在流股 OUT 中，组分是 DMS。温度范围 200-400°C。",
+      "expected_output": "提供完整的 Python 代码，包括：1) Aspen 连接和初始化，2) 温度循环设置，3) 模拟运行，4) 结果提取，5) 最优值记录。使用 Run2() 而非已废弃的 Run()，正确使用 Quit() 关闭。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "帮我在 Aspen 中添加三个组分：水、甲醇和乙醇。然后用 Python 设置物性方法为 UNIQUAC。",
+      "expected_output": "正确使用 InsertRow + SetLabel 方式添加组分（不能使用 Add），设置抑制对话框 SuppressDialogs=1，使用 Run2() 激活二元交互参数。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "我的 Aspen 模拟压力单位是 bar，但实验数据是 kPa。用 Python 写个函数把压力值从 kPa 转换为 bar 并设置到流股 FEED 中。",
+      "expected_output": "提供单位换算函数，明确说明 Aspen 默认使用 bar，给出完整的节点路径和赋值代码，包含单位集设置建议。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "我想用遗传算法优化反应器设计参数：温度(200-400°C)、长度(1-3m)、直径(0.5-2m)、压力(100-300kPa)。目标函数是 DMS 产量最大。",
+      "expected_output": "提供简化遗传算法框架代码，包括参数边界定义、适应度函数（调用 Aspen）、选择、交叉、变异操作，注意单位换算（压力需从 kPa 转为 bar）。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Python 连接 Aspen 时报错找不到节点。我用的路径是 \\Data\\Streams\\S1\\Input\\TEMP\\MIXED，应该怎么调试？",
+      "expected_output": "提供调试步骤：1) 使用原始字符串 r''，2) 在 Aspen 变量浏览器中确认路径，3) 用 Elements 逐层访问排查，4) 使用 dir() 探索对象结构。",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "读取一个 Aspen 文件中所有流股的温度、压力和总流量，导出到 CSV 文件。",
+      "expected_output": "遍历所有流股，提取温度、压力、流量数据，使用 pandas 或 csv 模块导出。注意处理可能的异常（节点不存在）。",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "我有一个精馏塔 T1，想知道每块板的温度分布，用 Python 提取数据并画图。",
+      "expected_output": "提取塔板温度数据（路径包含板号如 \\Data\\Blocks\\T1\\Output\\B_TEMP\\1, \\Data\\Blocks\\T1\\Output\\B_TEMP\\2...），使用 matplotlib 绘制温度分布曲线。",
+      "files": []
+    }
+  ]
+}

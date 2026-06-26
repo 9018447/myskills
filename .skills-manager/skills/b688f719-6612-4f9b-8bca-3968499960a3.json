@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "b688f719-6612-4f9b-8bca-3968499960a3",
+  "path": "openfoam-agent",
+  "path_key": "openfoam-agent",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

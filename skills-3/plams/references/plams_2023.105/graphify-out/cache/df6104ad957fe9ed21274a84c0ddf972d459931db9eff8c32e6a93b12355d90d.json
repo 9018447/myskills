@@ -1,0 +1,1 @@
+{"nodes": [{"id": "adfcosmorscompound", "label": "ADFCOSMORSCompound", "file_type": "document", "source_file": "examples/ADFCOSMORSCompound.md"}], "edges": [{"source": "adfcosmorscompound", "target": "crs_interface", "relation": "generates_input_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "examples/ADFCOSMORSCompound.md"}], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "packmol_interface", "label": "Packmol Interface", "file_type": "document", "source_file": "interfaces/interfaces.md"}, {"id": "ase_interface", "label": "ASE Interface", "file_type": "document", "source_file": "interfaces/interfaces.md"}], "edges": [], "hyperedges": []}

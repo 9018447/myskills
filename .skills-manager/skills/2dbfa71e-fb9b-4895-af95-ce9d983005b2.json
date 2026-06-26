@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "2dbfa71e-fb9b-4895-af95-ce9d983005b2",
+  "path": "dft-cp2k",
+  "path_key": "dft-cp2k",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

@@ -1,0 +1,53 @@
+; vle_nvt.mdp - VLE NVT production run
+; 10ns simulation for gas-liquid equilibration data collection
+
+title                   = VLE NVT production
+
+; Run parameters
+integrator              = md            ; leap-frog integrator
+nsteps                  = 5000000       ; 5000000 * 0.002 ps = 10000 ps = 10 ns
+dt                      = 0.002         ; 2 fs
+
+; Output control
+nstxout                 = 5000          ; save coordinates every 10 ps
+nstvout                 = 5000          ; save velocities every 10 ps
+nstenergy               = 5000          ; save energies every 10 ps
+nstlog                  = 5000          ; update log file every 10 ps
+
+; Bond parameters
+continuation            = yes           ; Restarting after NPT
+constraint_algorithm    = lincs
+constraints             = h-bonds
+lincs_iter              = 1
+lincs_order             = 4
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+ns_type                 = grid
+nstlist                 = 20
+rlist                   = 1.2
+rcoulomb                = 1.2
+rvdw                    = 1.2
+
+; Electrostatics
+coulombtype             = PME
+pme_order               = 4
+fourierspacing          = 0.16
+
+; Temperature coupling is on
+tcoupl                  = V-rescale
+tc-grps                 = system
+tau_t                   = 0.1
+ref_t                   = 300
+
+; Pressure coupling is off (NVT ensemble)
+pcoupl                  = no            ; no pressure coupling
+
+; Periodic boundary conditions
+pbc                     = xyz
+
+; Dispersion correction
+DispCorr                = EnerPres
+
+; Velocity generation
+gen_vel                 = no            ; Velocity generation is off

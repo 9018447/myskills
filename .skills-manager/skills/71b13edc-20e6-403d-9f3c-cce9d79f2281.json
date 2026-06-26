@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "71b13edc-20e6-403d-9f3c-cce9d79f2281",
+  "path": "chemical-yaml-definition",
+  "path_key": "chemical-yaml-definition",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

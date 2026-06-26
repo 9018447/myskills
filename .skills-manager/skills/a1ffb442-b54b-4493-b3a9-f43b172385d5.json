@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "a1ffb442-b54b-4493-b3a9-f43b172385d5",
+  "path": "pycrs-cosmors",
+  "path_key": "pycrs-cosmors",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

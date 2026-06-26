@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "9b47705c-78c4-422e-8f74-bfa4de6df4da",
+  "path": "session-reflection",
+  "path_key": "session-reflection",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

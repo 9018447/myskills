@@ -1,0 +1,1166 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d7" for="edge" attr.name="_tgt" attr.type="string"/>
+<key id="d6" for="edge" attr.name="_src" attr.type="string"/>
+<key id="d5" for="edge" attr.name="weight" attr.type="double"/>
+<key id="d4" for="edge" attr.name="confidence" attr.type="string"/>
+<key id="d3" for="edge" attr.name="relation" attr.type="string"/>
+<key id="d2" for="node" attr.name="community" attr.type="long"/>
+<key id="d1" for="node" attr.name="source_file" attr.type="string"/>
+<key id="d0" for="node" attr.name="label" attr.type="string"/>
+<graph edgedefault="undirected"><node id="Output.md">
+  <data key="d0"># Output</data>
+  <data key="d1">Output.md</data>
+  <data key="d2">1</data>
+</node>
+<node id="Input.md">
+  <data key="d0"># Input</data>
+  <data key="d1">Input.md</data>
+  <data key="d2">1</data>
+</node>
+<node id="Documentation_9.md">
+  <data key="d0"># Sigma Moments</data>
+  <data key="d1">Documentation 9.md</data>
+  <data key="d2">0</data>
+</node>
+<node id="Documentation_10.md">
+  <data key="d0"># Eutectic systems</data>
+  <data key="d1">Documentation 10.md</data>
+  <data key="d2">0</data>
+</node>
+<node id="CRSManager.md">
+  <data key="d0"># CRSManager</data>
+  <data key="d1">CRSManager.md</data>
+  <data key="d2">1</data>
+</node>
+<node id="Documentation_13.md">
+  <data key="d0"># Automated pKa calculation</data>
+  <data key="d1">Documentation 13.md</data>
+  <data key="d2">0</data>
+</node>
+<node id="Python_scripting_for_COSMO-RS_with_PLAMS.md">
+  <data key="d0"># Python scripting for COSMO-RS with PLAMS</data>
+  <data key="d1">Python scripting for COSMO-RS with PLAMS.md</data>
+  <data key="d2">0</data>
+</node>
+<node id="Database_API.md">
+  <data key="d0"># Database</data>
+  <data key="d1">Database API.md</data>
+  <data key="d2">1</data>
+</node>
+<node id="Documentation_7.md">
+  <data key="d0"># Automated screening of ionic liquids</data>
+  <data key="d1">Documentation 7.md</data>
+  <data key="d2">2</data>
+</node>
+<node id="Documentation_8.md">
+  <data key="d0"># Calculating and estimating sigma profiles</data>
+  <data key="d1">Documentation 8.md</data>
+  <data key="d2">0</data>
+</node>
+<node id="PropPred.md">
+  <data key="d0"># PropPred</data>
+  <data key="d1">PropPred.md</data>
+  <data key="d2">1</data>
+</node>
+<node id="Documentation_12.md">
+  <data key="d0"># Distribution of species in multispecies calculations</data>
+  <data key="d1">Documentation 12.md</data>
+  <data key="d2">0</data>
+</node>
+<node id="Documentation_11.md">
+  <data key="d0"># Binodal and Spinodal Curves</data>
+  <data key="d1">Documentation 11.md</data>
+  <data key="d2">0</data>
+</node>
+<node id="Documentation_14.md">
+  <data key="d0"># General Information</data>
+  <data key="d1">Documentation 14.md</data>
+  <data key="d2">2</data>
+</node>
+<node id="Documentation_3.md">
+  <data key="d0"># Changing the default parameters or re-parameterizing the COSMO-RS/-SAC methods</data>
+  <data key="d1">Documentation 3.md</data>
+  <data key="d2">0</data>
+</node>
+<node id="Documentation_1.md">
+  <data key="d0"># pyCRS: Basic usage for PropPred and FastSigma</data>
+  <data key="d1">Documentation 1.md</data>
+  <data key="d2">1</data>
+</node>
+<node id="Documentation_6.md">
+  <data key="d0"># Regression of NRTL parameters</data>
+  <data key="d1">Documentation 6.md</data>
+  <data key="d2">2</data>
+</node>
+<node id="Documentation.md">
+  <data key="d0"># pyCRS: Conformer usage for Database and CRSManager</data>
+  <data key="d1">Documentation.md</data>
+  <data key="d2">2</data>
+</node>
+<node id="FaseSigma.md">
+  <data key="d0"># FastSigma</data>
+  <data key="d1">FaseSigma.md</data>
+  <data key="d2">1</data>
+</node>
+<node id="Documentation_4.md">
+  <data key="d0"># Solubility screening for solid solute</data>
+  <data key="d1">Documentation 4.md</data>
+  <data key="d2">2</data>
+</node>
+<node id="pyCRS_Basic_Usage.md">
+  <data key="d0"># pyCRS: Basic usage for Database and CRSManager</data>
+  <data key="d1">pyCRS Basic Usage.md</data>
+  <data key="d2">2</data>
+</node>
+<node id="Documentation_5.md">
+  <data key="d0"># Screening for cocrystals</data>
+  <data key="d1">Documentation 5.md</data>
+  <data key="d2">2</data>
+</node>
+<node id="Documentation_2.md">
+  <data key="d0"># Examples using PLAMS</data>
+  <data key="d1">Documentation 2.md</data>
+  <data key="d2">0</data>
+</node>
+<node id="Molecule.md">
+  <data key="d0"># Molecule</data>
+  <data key="d1">Molecule.md</data>
+  <data key="d2">1</data>
+</node>
+<edge source="Output.md" target="Input.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.773</data>
+  <data key="d6">Output.md</data>
+  <data key="d7">Input.md</data>
+</edge>
+<edge source="Output.md" target="CRSManager.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.379</data>
+  <data key="d6">Output.md</data>
+  <data key="d7">CRSManager.md</data>
+</edge>
+<edge source="Output.md" target="Python_scripting_for_COSMO-RS_with_PLAMS.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.146</data>
+  <data key="d6">Output.md</data>
+  <data key="d7">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+</edge>
+<edge source="Output.md" target="Database_API.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.419</data>
+  <data key="d6">Output.md</data>
+  <data key="d7">Database_API.md</data>
+</edge>
+<edge source="Output.md" target="PropPred.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.545</data>
+  <data key="d6">Output.md</data>
+  <data key="d7">PropPred.md</data>
+</edge>
+<edge source="Output.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.177</data>
+  <data key="d6">Output.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Output.md" target="Documentation_1.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.224</data>
+  <data key="d6">Output.md</data>
+  <data key="d7">Documentation_1.md</data>
+</edge>
+<edge source="Output.md" target="FaseSigma.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.67</data>
+  <data key="d6">Output.md</data>
+  <data key="d7">FaseSigma.md</data>
+</edge>
+<edge source="Output.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.577</data>
+  <data key="d6">Output.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Input.md" target="CRSManager.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.348</data>
+  <data key="d6">Input.md</data>
+  <data key="d7">CRSManager.md</data>
+</edge>
+<edge source="Input.md" target="Python_scripting_for_COSMO-RS_with_PLAMS.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.138</data>
+  <data key="d6">Input.md</data>
+  <data key="d7">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+</edge>
+<edge source="Input.md" target="Database_API.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.38</data>
+  <data key="d6">Input.md</data>
+  <data key="d7">Database_API.md</data>
+</edge>
+<edge source="Input.md" target="PropPred.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.563</data>
+  <data key="d6">Input.md</data>
+  <data key="d7">PropPred.md</data>
+</edge>
+<edge source="Input.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.192</data>
+  <data key="d6">Input.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Input.md" target="Documentation_3.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.14</data>
+  <data key="d6">Input.md</data>
+  <data key="d7">Documentation_3.md</data>
+</edge>
+<edge source="Input.md" target="Documentation_1.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.257</data>
+  <data key="d6">Input.md</data>
+  <data key="d7">Documentation_1.md</data>
+</edge>
+<edge source="Input.md" target="FaseSigma.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.65</data>
+  <data key="d6">Input.md</data>
+  <data key="d7">FaseSigma.md</data>
+</edge>
+<edge source="Input.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.597</data>
+  <data key="d6">Input.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Documentation_10.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.245</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Documentation_10.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Documentation_13.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.532</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Documentation_13.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Python_scripting_for_COSMO-RS_with_PLAMS.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.172</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Documentation_7.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.17</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Documentation_7.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Documentation_8.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.361</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Documentation_8.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Documentation_12.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.154</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Documentation_12.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.122</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Documentation_1.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.147</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Documentation_1.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.135</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.156</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="Documentation_9.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.133</data>
+  <data key="d6">Documentation_9.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Documentation_13.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.353</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Documentation_13.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Python_scripting_for_COSMO-RS_with_PLAMS.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.218</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Documentation_8.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.196</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Documentation_8.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Documentation_12.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.194</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Documentation_12.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Documentation_11.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.217</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Documentation_11.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.144</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Documentation_3.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.121</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Documentation_3.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.161</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.147</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_10.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.226</data>
+  <data key="d6">Documentation_10.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="CRSManager.md" target="Python_scripting_for_COSMO-RS_with_PLAMS.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.218</data>
+  <data key="d6">CRSManager.md</data>
+  <data key="d7">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+</edge>
+<edge source="CRSManager.md" target="Database_API.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.733</data>
+  <data key="d6">CRSManager.md</data>
+  <data key="d7">Database_API.md</data>
+</edge>
+<edge source="CRSManager.md" target="PropPred.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.465</data>
+  <data key="d6">CRSManager.md</data>
+  <data key="d7">PropPred.md</data>
+</edge>
+<edge source="CRSManager.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.306</data>
+  <data key="d6">CRSManager.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="CRSManager.md" target="FaseSigma.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.538</data>
+  <data key="d6">CRSManager.md</data>
+  <data key="d7">FaseSigma.md</data>
+</edge>
+<edge source="CRSManager.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.159</data>
+  <data key="d6">CRSManager.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="CRSManager.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.189</data>
+  <data key="d6">CRSManager.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="CRSManager.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.533</data>
+  <data key="d6">CRSManager.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Documentation_13.md" target="Python_scripting_for_COSMO-RS_with_PLAMS.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.164</data>
+  <data key="d6">Documentation_13.md</data>
+  <data key="d7">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+</edge>
+<edge source="Documentation_13.md" target="Documentation_8.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.316</data>
+  <data key="d6">Documentation_13.md</data>
+  <data key="d7">Documentation_8.md</data>
+</edge>
+<edge source="Documentation_13.md" target="Documentation_12.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.182</data>
+  <data key="d6">Documentation_13.md</data>
+  <data key="d7">Documentation_12.md</data>
+</edge>
+<edge source="Documentation_13.md" target="Documentation_11.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.153</data>
+  <data key="d6">Documentation_13.md</data>
+  <data key="d7">Documentation_11.md</data>
+</edge>
+<edge source="Documentation_13.md" target="Documentation_3.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.164</data>
+  <data key="d6">Documentation_13.md</data>
+  <data key="d7">Documentation_3.md</data>
+</edge>
+<edge source="Documentation_13.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.213</data>
+  <data key="d6">Documentation_13.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Database_API.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.153</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Database_API.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_7.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.279</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_7.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_8.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.291</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_8.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="PropPred.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.148</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">PropPred.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_12.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.507</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_12.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_11.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.293</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_11.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.502</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_3.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.339</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_3.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_1.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.171</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_1.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_6.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.134</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_6.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.185</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="FaseSigma.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.168</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">FaseSigma.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.369</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.253</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.3</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.63</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="Python_scripting_for_COSMO-RS_with_PLAMS.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.198</data>
+  <data key="d6">Python_scripting_for_COSMO-RS_with_PLAMS.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Database_API.md" target="PropPred.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.536</data>
+  <data key="d6">Database_API.md</data>
+  <data key="d7">PropPred.md</data>
+</edge>
+<edge source="Database_API.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.247</data>
+  <data key="d6">Database_API.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Database_API.md" target="FaseSigma.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.579</data>
+  <data key="d6">Database_API.md</data>
+  <data key="d7">FaseSigma.md</data>
+</edge>
+<edge source="Database_API.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.194</data>
+  <data key="d6">Database_API.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="Database_API.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.614</data>
+  <data key="d6">Database_API.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation_8.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.175</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation_8.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation_12.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.321</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation_12.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation_11.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.16</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation_11.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.203</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation_3.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.128</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation_3.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation_6.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.136</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation_6.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.139</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.352</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation_7.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.152</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.382</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_7.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.228</data>
+  <data key="d6">Documentation_7.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="Documentation_8.md" target="Documentation_12.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.299</data>
+  <data key="d6">Documentation_8.md</data>
+  <data key="d7">Documentation_12.md</data>
+</edge>
+<edge source="Documentation_8.md" target="Documentation_11.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.213</data>
+  <data key="d6">Documentation_8.md</data>
+  <data key="d7">Documentation_11.md</data>
+</edge>
+<edge source="Documentation_8.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.182</data>
+  <data key="d6">Documentation_8.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Documentation_8.md" target="Documentation_3.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.19</data>
+  <data key="d6">Documentation_8.md</data>
+  <data key="d7">Documentation_3.md</data>
+</edge>
+<edge source="Documentation_8.md" target="Documentation_1.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.221</data>
+  <data key="d6">Documentation_8.md</data>
+  <data key="d7">Documentation_1.md</data>
+</edge>
+<edge source="Documentation_8.md" target="Documentation.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.138</data>
+  <data key="d6">Documentation_8.md</data>
+  <data key="d7">Documentation.md</data>
+</edge>
+<edge source="Documentation_8.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.18</data>
+  <data key="d6">Documentation_8.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation_8.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.214</data>
+  <data key="d6">Documentation_8.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_8.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.29</data>
+  <data key="d6">Documentation_8.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="PropPred.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.21</data>
+  <data key="d6">PropPred.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="PropPred.md" target="Documentation_1.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.533</data>
+  <data key="d6">PropPred.md</data>
+  <data key="d7">Documentation_1.md</data>
+</edge>
+<edge source="PropPred.md" target="FaseSigma.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.593</data>
+  <data key="d6">PropPred.md</data>
+  <data key="d7">FaseSigma.md</data>
+</edge>
+<edge source="PropPred.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.128</data>
+  <data key="d6">PropPred.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="PropPred.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.651</data>
+  <data key="d6">PropPred.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Documentation_12.md" target="Documentation_11.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.272</data>
+  <data key="d6">Documentation_12.md</data>
+  <data key="d7">Documentation_11.md</data>
+</edge>
+<edge source="Documentation_12.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.321</data>
+  <data key="d6">Documentation_12.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Documentation_12.md" target="Documentation_3.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.319</data>
+  <data key="d6">Documentation_12.md</data>
+  <data key="d7">Documentation_3.md</data>
+</edge>
+<edge source="Documentation_12.md" target="Documentation_1.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.149</data>
+  <data key="d6">Documentation_12.md</data>
+  <data key="d7">Documentation_1.md</data>
+</edge>
+<edge source="Documentation_12.md" target="Documentation.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.313</data>
+  <data key="d6">Documentation_12.md</data>
+  <data key="d7">Documentation.md</data>
+</edge>
+<edge source="Documentation_12.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.309</data>
+  <data key="d6">Documentation_12.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation_12.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.176</data>
+  <data key="d6">Documentation_12.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="Documentation_12.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.371</data>
+  <data key="d6">Documentation_12.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_12.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.524</data>
+  <data key="d6">Documentation_12.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="Documentation_11.md" target="Documentation_14.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.153</data>
+  <data key="d6">Documentation_11.md</data>
+  <data key="d7">Documentation_14.md</data>
+</edge>
+<edge source="Documentation_11.md" target="Documentation_3.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.24</data>
+  <data key="d6">Documentation_11.md</data>
+  <data key="d7">Documentation_3.md</data>
+</edge>
+<edge source="Documentation_11.md" target="Documentation_6.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.131</data>
+  <data key="d6">Documentation_11.md</data>
+  <data key="d7">Documentation_6.md</data>
+</edge>
+<edge source="Documentation_11.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.171</data>
+  <data key="d6">Documentation_11.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation_11.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.192</data>
+  <data key="d6">Documentation_11.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_11.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.305</data>
+  <data key="d6">Documentation_11.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="Documentation_14.md" target="Documentation_3.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.159</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">Documentation_3.md</data>
+</edge>
+<edge source="Documentation_14.md" target="Documentation_1.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.227</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">Documentation_1.md</data>
+</edge>
+<edge source="Documentation_14.md" target="Documentation_6.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.142</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">Documentation_6.md</data>
+</edge>
+<edge source="Documentation_14.md" target="Documentation.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.307</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">Documentation.md</data>
+</edge>
+<edge source="Documentation_14.md" target="FaseSigma.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.202</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">FaseSigma.md</data>
+</edge>
+<edge source="Documentation_14.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.395</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation_14.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.618</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="Documentation_14.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.287</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_14.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.35</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="Documentation_14.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.176</data>
+  <data key="d6">Documentation_14.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Documentation_3.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.145</data>
+  <data key="d6">Documentation_3.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation_3.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.15</data>
+  <data key="d6">Documentation_3.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_3.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.399</data>
+  <data key="d6">Documentation_3.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="Documentation_1.md" target="Documentation.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.151</data>
+  <data key="d6">Documentation_1.md</data>
+  <data key="d7">Documentation.md</data>
+</edge>
+<edge source="Documentation_1.md" target="FaseSigma.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.281</data>
+  <data key="d6">Documentation_1.md</data>
+  <data key="d7">FaseSigma.md</data>
+</edge>
+<edge source="Documentation_1.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.203</data>
+  <data key="d6">Documentation_1.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation_1.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.205</data>
+  <data key="d6">Documentation_1.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="Documentation_1.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.207</data>
+  <data key="d6">Documentation_1.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_1.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.341</data>
+  <data key="d6">Documentation_1.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Documentation_6.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.201</data>
+  <data key="d6">Documentation_6.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation_6.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.136</data>
+  <data key="d6">Documentation_6.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="Documentation_6.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.167</data>
+  <data key="d6">Documentation_6.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation.md" target="Documentation_4.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.27</data>
+  <data key="d6">Documentation.md</data>
+  <data key="d7">Documentation_4.md</data>
+</edge>
+<edge source="Documentation.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.344</data>
+  <data key="d6">Documentation.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="Documentation.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.241</data>
+  <data key="d6">Documentation.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.143</data>
+  <data key="d6">Documentation.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="FaseSigma.md" target="Molecule.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.711</data>
+  <data key="d6">FaseSigma.md</data>
+  <data key="d7">Molecule.md</data>
+</edge>
+<edge source="Documentation_4.md" target="pyCRS_Basic_Usage.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.396</data>
+  <data key="d6">Documentation_4.md</data>
+  <data key="d7">pyCRS_Basic_Usage.md</data>
+</edge>
+<edge source="Documentation_4.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.48</data>
+  <data key="d6">Documentation_4.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="Documentation_4.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.295</data>
+  <data key="d6">Documentation_4.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="pyCRS_Basic_Usage.md" target="Documentation_5.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.279</data>
+  <data key="d6">pyCRS_Basic_Usage.md</data>
+  <data key="d7">Documentation_5.md</data>
+</edge>
+<edge source="pyCRS_Basic_Usage.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.319</data>
+  <data key="d6">pyCRS_Basic_Usage.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+<edge source="Documentation_5.md" target="Documentation_2.md">
+  <data key="d3">semantically_similar_to</data>
+  <data key="d4">INFERRED</data>
+  <data key="d5">0.257</data>
+  <data key="d6">Documentation_5.md</data>
+  <data key="d7">Documentation_2.md</data>
+</edge>
+</graph></graphml>

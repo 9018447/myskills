@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "27180f27-45bd-4921-a1d2-f6b860d9073a",
+  "path": "xtb-cluster-md",
+  "path_key": "xtb-cluster-md",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

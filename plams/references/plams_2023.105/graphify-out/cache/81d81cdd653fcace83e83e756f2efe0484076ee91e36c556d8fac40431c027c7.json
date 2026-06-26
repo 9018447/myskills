@@ -1,0 +1,1 @@
+{"nodes": [{"id": "molecules_table", "label": "MoleculesTable Analysis", "file_type": "document", "source_file": "examples/MoleculesTable.md"}], "edges": [{"source": "molecules_table", "target": "molecular_dynamics_jobs", "relation": "analyzes", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "examples/MoleculesTable.md"}], "hyperedges": []}

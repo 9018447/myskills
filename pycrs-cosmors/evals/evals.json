@@ -1,0 +1,23 @@
+{
+  "skill_name": "pycrs-cosmors",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a few .coskf files and want a minimal pyCRS example that creates a COSKFDatabase, adds ethanol and water, and computes activity coefficients for the mixture. Use the repo's documented patterns.",
+      "expected_output": "A runnable pyCRS example using the database and CRSManager workflow, with an explicit database path placeholder and result extraction.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Which document in this repo should I start with if I need sigma profiles and sigma moments, and can you summarize the difference in approach?",
+      "expected_output": "A source-file recommendation pointing to the sigma-related docs, plus a concise explanation of sigma profiles vs sigma moments and when to use each source file.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Please adapt the documented workflow for a partition coefficient calculation in PLAMS and explain what settings or phase definitions I would need to edit for a different binary system.",
+      "expected_output": "A workflow-oriented answer based on the PLAMS partition-coefficient example, highlighting which settings, compounds, and phases should be changed.",
+      "files": []
+    }
+  ]
+}

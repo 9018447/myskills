@@ -1,0 +1,1 @@
+{"nodes": [{"id": "mopac_interface", "label": "MOPAC Interface", "file_type": "document", "source_file": "interfaces/mopac.md"}], "edges": [{"source": "mopac_interface", "target": "ams_driver", "relation": "superseded_by", "confidence": "INFERRED", "confidence_score": 0.9, "source_file": "interfaces/mopac.md"}], "hyperedges": []}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "edd4a216-72ef-4617-b6ad-4a4e3e1f0ccc",
+  "path": "webhook-subscriptions",
+  "path_key": "webhook-subscriptions",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

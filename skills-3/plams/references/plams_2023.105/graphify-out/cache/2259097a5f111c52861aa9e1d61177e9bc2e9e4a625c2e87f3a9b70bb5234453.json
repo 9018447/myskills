@@ -1,0 +1,1 @@
+{"nodes": [{"id": "trajectory_component", "label": "Trajectory Component", "file_type": "document", "source_file": "components/trajectory.md"}], "edges": [{"source": "trajectory_component", "target": "molecule_component", "relation": "contains", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "components/trajectory.md"}], "hyperedges": []}

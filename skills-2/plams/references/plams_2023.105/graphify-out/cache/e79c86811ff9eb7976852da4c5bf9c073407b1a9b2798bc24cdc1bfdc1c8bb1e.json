@@ -1,0 +1,1 @@
+{"nodes": [{"id": "amscalculator_interface", "label": "AMSCalculator Interface", "file_type": "document", "source_file": "interfaces/amscalculator.md"}], "edges": [{"source": "amscalculator_interface", "target": "ams_driver", "relation": "wraps", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "interfaces/amscalculator.md"}], "hyperedges": []}

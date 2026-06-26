@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "2d6071cc-d83c-41cb-ab62-9c16c06bd619",
+  "path": "pi-dev",
+  "path_key": "pi-dev",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

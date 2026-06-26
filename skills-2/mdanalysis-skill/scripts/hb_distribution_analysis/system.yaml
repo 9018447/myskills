@@ -1,0 +1,89 @@
+# =============================================================================
+# Hydrogen Bond Analysis — System Configuration File
+# =============================================================================
+#
+# 此文件定义了氢键分析所需的体系参数。
+# 复制此文件并修改 groups 部分即可适配任意分子体系，无需修改 Python 代码。
+#
+# 使用方式：
+#   python -m scripts.hb_distribution_analysis -t md.tpr -r md.xtc -c /path/to/your_system.yaml
+# =============================================================================
+
+system_name: "ChCl:EG Eutectic Solvent (1:2 molar ratio)"
+
+# -----------------------------------------------------------------------------
+# 分子组定义（groups）
+# 每个 group 对应体系中一类分子或离子
+# -----------------------------------------------------------------------------
+groups:
+
+  - name: "Choline"               # 显示名称，出现在 interaction type 标签中
+    resname: "Cho"                # MDAnalysis resname；多个可写列表: ["Cho", "Cho2"]
+    can_donate: true              # 是否有 O-H / N-H 供体
+    donor_heavy_sel: "name O*"   # 供体重原子选择（在本组 resname 范围内）
+    can_accept: true              # 是否可作为受体
+    acceptor_sel: "name O*"      # 受体原子选择（在本组 resname 范围内）
+
+  - name: "Chloride"
+    resname: "Chl"
+    can_donate: false             # 氯离子不提供 N/O-H 供体
+    can_accept: true
+    acceptor_sel: "name CL*"     # Cl 作为受体（常见写法：CL、Cl、Cl-）
+
+  - name: "EthyleneGlycol"
+    resname: "Eth"
+    can_donate: true
+    donor_heavy_sel: "name O*"
+    can_accept: true
+    acceptor_sel: "name O*"
+
+# -----------------------------------------------------------------------------
+# 氢原子全局选择（用于 MDAnalysis HydrogenBondAnalysis）
+# 通常保持 "name H*" 即可；若体系使用特殊原子名可在此修改
+# -----------------------------------------------------------------------------
+hydrogens_sel: "name H*"
+
+# -----------------------------------------------------------------------------
+# 几何截断参数（可被命令行 -d / -a 参数覆盖）
+# -----------------------------------------------------------------------------
+distance_cutoff: 3.5    # D-A 最大距离（Å）
+angle_cutoff: 120       # D-H-A 最小角度（°）
+
+# -----------------------------------------------------------------------------
+# 输出参数
+# -----------------------------------------------------------------------------
+output_dir: "hb_analysis_output"
+n_bins: 100             # 2D 密度图格点数
+dpi: 300                # 图片分辨率
+
+# =============================================================================
+# 适配其他体系的示例（注释供参考）
+# =============================================================================
+#
+# 示例 1：咪唑离子液体 [BMIM][BF4]
+# groups:
+#   - name: "BMIM"
+#     resname: "BMIM"
+#     can_donate: true
+#     donor_heavy_sel: "name N*"    # 咪唑环 N-H 供体
+#     can_accept: false
+#   - name: "BF4"
+#     resname: "BF4"
+#     can_donate: false
+#     can_accept: true
+#     acceptor_sel: "name F*"
+#
+# 示例 2：水溶液中的氨基酸
+# groups:
+#   - name: "Water"
+#     resname: "SOL"
+#     can_donate: true
+#     donor_heavy_sel: "name OW"
+#     can_accept: true
+#     acceptor_sel: "name OW"
+#   - name: "Protein"
+#     resname: ["LYS", "SER", "THR", "TYR"]   # 多个残基
+#     can_donate: true
+#     donor_heavy_sel: "name N* O*"
+#     can_accept: true
+#     acceptor_sel: "name N* O*"

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "71675bc8-5384-4d89-95ab-37de606968c5",
+  "path": "research-paper-writing",
+  "path_key": "research-paper-writing",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "57ff72bc-3077-42ec-a4d1-bcdd42015c84",
+  "path": "dft-siesta",
+  "path_key": "dft-siesta",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

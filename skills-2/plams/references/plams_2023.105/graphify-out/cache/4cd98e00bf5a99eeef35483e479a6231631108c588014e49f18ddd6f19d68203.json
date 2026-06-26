@@ -1,0 +1,1 @@
+{"nodes": [{"id": "xyz_component", "label": "XYZ Trajectory", "file_type": "document", "source_file": "components/xyz.md"}, {"id": "xyzhistoryfile", "label": "XYZHistoryFile", "file_type": "document", "source_file": "components/xyz.md"}], "edges": [], "hyperedges": []}

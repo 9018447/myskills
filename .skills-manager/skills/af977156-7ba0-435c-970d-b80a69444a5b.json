@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "af977156-7ba0-435c-970d-b80a69444a5b",
+  "path": "openalex-api",
+  "path_key": "openalex-api",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "e830501c-9894-44a6-9895-78043f2c55a8",
+  "path": "dft-vasp",
+  "path_key": "dft-vasp",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

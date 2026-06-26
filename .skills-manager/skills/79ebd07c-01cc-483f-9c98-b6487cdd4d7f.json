@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "79ebd07c-01cc-483f-9c98-b6487cdd4d7f",
+  "path": "dft-abinit",
+  "path_key": "dft-abinit",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

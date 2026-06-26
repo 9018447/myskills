@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "69cc9f74-5545-4e4b-94e0-acf2e747bfae",
+  "path": "xyzrender",
+  "path_key": "xyzrender",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

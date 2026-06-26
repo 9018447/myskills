@@ -1,0 +1,64 @@
+{
+  "skill_name": "wos-latex-citation-manager",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "为main_manuscript.tex的introduction部分添加引用，提取5个关键要点，每个要点选择2篇高引用文献",
+      "expected_output": "更新后的main_manuscript.tex文件包含引用，references.bib文件",
+      "files": ["../../main_manuscript.tex"],
+      "expectations": [
+        "成功提取introduction中的关键要点",
+        "每个要点都有对应的文献引用",
+        "BibTeX文件格式正确",
+        "LaTeX文档能够成功编译",
+        "引用位置合理，不破坏文档结构"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "分析main_manuscript.tex的introduction，提取3个关于CO₂捕获技术的关键要点，每个要点选择2篇最新文献（按年份排序）",
+      "expected_output": "针对特定主题的文献引用，按年份排序",
+      "files": ["../../main_manuscript.tex"],
+      "expectations": [
+        "提取的要点专注于CO₂捕获技术",
+        "文献按年份排序（最新优先）",
+        "每个要点恰好2篇文献",
+        "引用格式正确"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "为main_manuscript.tex的introduction添加引用，使用所有数据库（ALLDB）搜索，提取8个要点，每个要点5篇文献，不编译PDF",
+      "expected_output": "使用ALLDB数据库的广泛文献搜索结果",
+      "files": ["../../main_manuscript.tex"],
+      "expectations": [
+        "使用ALLDB数据库进行搜索",
+        "提取8个关键要点",
+        "每个要点5篇文献",
+        "不生成PDF文件"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "测试错误处理：尝试为一个不存在的文件添加引用",
+      "expected_output": "适当的错误信息，指出文件不存在",
+      "files": [],
+      "expectations": [
+        "返回清晰的错误信息",
+        "不会因文件不存在而崩溃",
+        "建议用户检查文件路径"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "测试边界情况：为一个只有标题和作者的简单LaTeX文件添加引用",
+      "expected_output": "即使introduction部分很短，也能提取要点并添加引用",
+      "files": ["evals/files/simple.tex"],
+      "expectations": [
+        "能够处理简单的LaTeX文件",
+        "即使introduction很短也能提取要点",
+        "生成的引用适合简短文档"
+      ]
+    }
+  ]
+}

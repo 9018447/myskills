@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "224d22e9-33bd-4854-a53e-3681fa7b5d6e",
+  "path": "wos-researcher",
+  "path_key": "wos-researcher",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

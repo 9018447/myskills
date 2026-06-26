@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "ffc6febd-3169-48a7-8327-a4ea9614dc8c",
+  "path": "freecad",
+  "path_key": "freecad",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

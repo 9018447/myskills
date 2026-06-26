@@ -1,0 +1,1 @@
+{"nodes": [{"id": "adf_interface", "label": "ADF Interface", "file_type": "document", "source_file": "interfaces/adf.md"}], "edges": [{"source": "adf_interface", "target": "ams_driver", "relation": "superseded_by", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "interfaces/adf.md"}], "hyperedges": []}

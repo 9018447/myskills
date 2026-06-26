@@ -1,0 +1,14 @@
+# Copyright 2026 The MathWorks, Inc.
+description: Automated Driving Toolbox, RoadRunner, and RoadRunner Scene Builder.
+keywords:
+  - matlab
+  - automotive
+  - automated-driving
+  - roadrunner
+  - roadrunner-scene-builder
+  - rrhd
+  - hd-map
+  - lanelet2
+  - scene-import
+  - asset-mapping
+  - vehicle-dynamics

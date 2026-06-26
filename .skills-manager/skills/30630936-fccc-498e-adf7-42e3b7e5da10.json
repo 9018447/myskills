@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "30630936-fccc-498e-adf7-42e3b7e5da10",
+  "path": "pyscf",
+  "path_key": "pyscf",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

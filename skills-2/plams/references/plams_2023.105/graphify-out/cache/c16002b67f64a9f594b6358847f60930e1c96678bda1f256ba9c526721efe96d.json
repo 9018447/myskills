@@ -1,0 +1,1 @@
+{"nodes": [{"id": "conformers_interface", "label": "Conformers Interface", "file_type": "document", "source_file": "interfaces/conformers.md"}], "edges": [{"source": "conformers_interface", "target": "ams_driver", "relation": "extends", "confidence": "INFERRED", "confidence_score": 0.9, "source_file": "interfaces/conformers.md"}], "hyperedges": []}

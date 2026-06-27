@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "scenario": "Happy path: 用户有 .tex 手稿，需要扩充 Introduction 参考文献",
+    "prompt": "帮我给我这篇 paper 的 introduction 部分加参考文献，至少 50 篇。tex 文件是 manuscript.tex，我研究的是 CO2 capture using deep eutectic solvents。",
+    "expected": "skill 应展示所有硬 gate 检查结果 → 读 .tex 提取关键词 → 对每个 keyword 用 wos-search 检索 → 选 5+ 篇/keyword → 生成 .bib + 插入 \\\\cite{} → 输出摘要表"
+  },
+  {
+    "id": 2,
+    "scenario": "Happy path: 用户给定了明确的关键词和数量",
+    "prompt": "只用 ionic liquids 和 gas dehydration 这两个 keyword 搜文献，给 30 篇 reference 就够了。bib 文件叫 refs.bib。",
+    "expected": "跳过关键词确认（用户已指定）→ 只搜 2 个 keyword → 各选 15 篇 → 生成 refs.bib → 验证至少 30 篇唯一引用"
+  },
+  {
+    "id": 3,
+    "scenario": "边界场景: 缺少 .mcp.json 配置",
+    "prompt": "扩充我的 introduction 参考文献，到 60 篇。tex 在 intro.tex。",
+    "expected": "skill 应先跑硬 gate Check 1 → 发现缺少 .mcp.json → 明确 STOP 并告知用户需要配置 → 不应尝试搜索或生成假引用"
+  }
+]

@@ -4,7 +4,9 @@
   "path": "wos-search",
   "path_key": "wos-search",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "参考文献管理"
+  ],
   "source": {
     "type": "git",
     "ref": "https://github.com/cookjohn/wos-skills",

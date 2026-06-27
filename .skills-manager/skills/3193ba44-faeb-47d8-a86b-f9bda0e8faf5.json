@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "3193ba44-faeb-47d8-a86b-f9bda0e8faf5",
+  "path": "decision-mapping",
+  "path_key": "decision-mapping",
+  "enabled": true,
+  "tags": [
+    "mattpocock skills"
+  ],
+  "source": {
+    "type": "git",
+    "ref": "https://github.com/mattpocock/skills",
+    "subpath": "skills/in-progress/decision-mapping",
+    "branch": null
+  }
+}

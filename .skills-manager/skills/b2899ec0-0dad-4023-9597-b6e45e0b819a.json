@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "b2899ec0-0dad-4023-9597-b6e45e0b819a",
+  "path": "qa",
+  "path_key": "qa",
+  "enabled": true,
+  "tags": [
+    "mattpocock skills"
+  ],
+  "source": {
+    "type": "git",
+    "ref": "https://github.com/mattpocock/skills",
+    "subpath": "skills/deprecated/qa",
+    "branch": null
+  }
+}

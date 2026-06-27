@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Darwin Skill - 进化报告</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #f5f0e8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+}
+
+.card {
+  width: 800px;
+  background: #fdfcfa;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.10), 0 8px 20px rgba(0,0,0,0.06);
+  padding: 40px;
+  position: relative;
+  border: 1px solid rgba(200,180,160,0.3);
+}
+
+/* Brand bar */
+.brand-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e8ddd0;
+}
+.brand-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #4a3520;
+  letter-spacing: -0.5px;
+}
+.brand-name .dot { color: #c94f24; }
+.brand-date {
+  font-size: 14px;
+  color: #a09080;
+  font-weight: 500;
+}
+
+/* Hero section */
+.hero-section {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #faf6f0 0%, #f5ede4 100%);
+  border-radius: 16px;
+}
+.ring-container { position: relative; flex-shrink: 0; }
+svg { display: block; }
+.ring-bg {
+  fill: none;
+  stroke: #e0d5c8;
+  stroke-width: 12;
+}
+.ring-progress {
+  fill: none;
+  stroke: url(#orangeGradient);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 534;
+  stroke-dashoffset: 534;
+  transform: rotate(-90deg);
+  transform-origin: 100px 100px;
+  animation: fillRing 1.5s ease-out forwards;
+}
+@keyframes fillRing {
+  to { stroke-dashoffset: 534 * (1 - 79/100); }
+}
+.ring-center {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ring-score { font-size: 48px; font-weight: 900; color: #4a3520; }
+.ring-max { font-size: 16px; color: #a09080; font-weight: 600; }
+.ring-label { font-size: 13px; color: #907e6e; margin-top: 2px; }
+
+.hero-text { flex: 1; }
+.hero-title { font-size: 24px; font-weight: 700; color: #4a3520; margin-bottom: 8px; line-height: 1.3; }
+.hero-skill-name { color: #c94f24; }
+.hero-journey { font-size: 16px; color: #6a5a4a; margin-bottom: 8px; }
+.delta-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #c94f24;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 20px;
+  font-weight: 700;
+}
+.delta-badge-label { font-size: 14px; font-weight: 500; margin-left: 4px; }
+
+/* Breakthrough section */
+.breakthrough-section {
+  margin-bottom: 28px;
+  padding: 20px;
+  background: #f0ebe4;
+  border-radius: 12px;
+  border-left: 4px solid #c94f24;
+}
+.breakthrough-title { font-size: 14px; font-weight: 600; color: #c94f24; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.breakthrough-desc { font-size: 15px; color: #4a3520; line-height: 1.6; }
+
+/* Dimensions grid - 9 cells in 3x3 */
+.dims-section { margin-bottom: 28px; }
+.dims-header { font-size: 14px; font-weight: 600; color: #907e6e; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.dims-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.dim-cell {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #ede5da;
+}
+.dim-cell.hot { background: #fef6f0; border-color: #f0d5c0; }
+.dim-cell.warm { background: #faf6f0; border-color: #e8ddd0; }
+.dim-name { font-size: 12px; font-weight: 600; color: #6a5a4a; margin-bottom: 6px; }
+.dim-score-row { display: flex; align-items: center; gap: 6px; }
+.dim-old-score { font-size: 14px; color: #b0a090; text-decoration: line-through; }
+.dim-score { font-size: 20px; font-weight: 800; color: #4a3520; }
+.dim-arrow { font-size: 12px; font-weight: 700; margin-left: auto; }
+.up-big { color: #c94f24; }
+.up-mid { color: #d0784a; }
+.up-small { color: #d0a080; }
+
+/* Summary */
+.summary-section { margin-bottom: 28px; }
+.summary-header { font-size: 14px; font-weight: 600; color: #907e6e; margin-bottom: 12px; }
+.summary-items { display: flex; flex-direction: column; gap: 8px; }
+.summary-item {
+  padding: 10px 14px;
+  background: #f5f0e8;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #4a3520;
+  line-height: 1.5;
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #ede5da;
+  font-size: 12px;
+  color: #a09080;
+}
+.footer-motto { font-weight: 500; color: #6a5a4a; }
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- 1. Brand bar -->
+  <div class="brand-bar">
+    <div class="brand-name">Darwin<span class="dot">.</span>skill</div>
+    <div class="brand-date">2026.06.26</div>
+  </div>
+
+  <!-- 2. Hero -->
+  <div class="hero-section">
+    <div class="ring-container">
+      <svg viewBox="0 0 200 200" width="200" height="200">
+        <defs>
+          <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#E8590C"/>
+            <stop offset="100%" stop-color="#FF8A4C"/>
+          </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="85" class="ring-bg"/>
+        <circle cx="100" cy="100" r="85" class="ring-progress"/>
+      </svg>
+      <div class="ring-center">
+        <div><span class="ring-score">79</span><span class="ring-max">/100</span></div>
+        <div class="ring-label">质量总分</div>
+      </div>
+    </div>
+    <div class="hero-text">
+      <div class="hero-title">
+        Skill 进化报告<br>
+        <span class="hero-skill-name">latex-introduction-bibliography</span>
+      </div>
+      <div class="hero-journey">
+        从 <strong>63</strong> 分进化到 <strong>79</strong> 分
+      </div>
+      <div class="delta-badge">
+        <span>+16</span>
+        <span class="delta-badge-label">分</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Breakthrough -->
+  <div class="breakthrough-section">
+    <div class="breakthrough-title">🏆 最大突破</div>
+    <div class="breakthrough-desc">
+      新增 <strong>🛟 三段式故障表</strong>（3 表 × 14 条 fallback 路径）覆盖 gate/search/execution 三层失败场景，
+      使 dim3 从 5/10 → 9/10，连带 dim2/7/8 均有提升。
+    </div>
+  </div>
+
+  <!-- 4. 9-dimension grid -->
+  <div class="dims-section">
+    <div class="dims-header">九维度全景</div>
+    <div class="dims-grid">
+
+      <div class="dim-cell">
+        <div class="dim-name">① 元数据</div>
+        <div class="dim-score-row">
+          <span class="dim-old-score">8</span>
+          <span class="dim-score">8</span>
+        </div>
+        <span class="dim-arrow up-small">±0</span>
+      </div>
+
+      <div class="dim-cell warm">
+        <div class="dim-name">② 工作流</div>
+        <div class="dim-score-row">
+          <span class="dim-old-score">8</span>
+          <span class="dim-score">9</span>
+        </div>
+        <span class="dim-arrow up-mid">+1</span>
+      </div>
+
+      <div class="dim-cell hot">
+        <div class="dim-name">③ 失败模式</div>
+        <div class="dim-score-row">
+          <span class="dim-old-score">5</span>
+          <span class="dim-score">9</span>
+        </div>
+        <span class="dim-arrow up-big">+4</span>
+      </div>
+
+      <div class="dim-cell warm">
+        <div class="dim-name">④ 检查点</div>
+        <div class="dim-score-row">
+          <span class="dim-old-score">6</span>
+          <span class="dim-score">7</span>
+        </div>
+        <span class="dim-arrow up-mid">+1</span>
+      </div>
+
+      <div class="dim-cell">
+        <div class="dim-name">⑤ 指令精度</div>
+        <div class="dim-score-row">
+          <span class="dim-old-score">7</span>
+          <span class="dim-score">7</span>
+        </div>
+        <span class="dim-arrow up-small">±0</span>
+      </div>
+
+      <div class="dim-cell warm">
+        <div class="dim-name">⑥ 资源整合</div>
+        <div class="dim-score-row">
+          <span class="dim-old-score">6</span>
+          <span class="dim-score">7</span>
+        </div>
+        <span class="dim-arrow up-mid">+1</span>
+      </div>
+
+      <div class="dim-cell warm">
+        <div class="dim-name">⑦ 整体架构</div>
+        <div class="dim-score-row">
+          <span class="dim-old-score">8</span>
+          <span class="dim-score">9</span>
+        </div>
+        <span class="dim-arrow up-mid">+1</span>
+      </div>
+
+      <div class="dim-cell hot">
+        <div class="dim-name">⑧ 实测表现</div>
+        <div class="dim-score-row">
+          <span class="dim-old-score">5</span>
+          <span class="dim-score">8</span>
+        </div>
+        <span class="dim-arrow up-big">+3</span>
+      </div>
+
+      <div class="dim-cell hot">
+        <div class="dim-name">⑨ 反例黑名单</div>
+        <div class="dim-score-row">
+          <span class="dim-old-score">5</span>
+          <span class="dim-score">9</span>
+        </div>
+        <span class="dim-arrow up-big">+4</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 5. Summary -->
+  <div class="summary-section">
+    <div class="summary-header">关键改进</div>
+    <div class="summary-items">
+      <div class="summary-item">
+        <strong>🛟 三段式故障表</strong> — 新增 3 表 14 条 if-then-else fallback（gate/search/execution），
+        失败模式编码从 5/10 跃升至 9/10
+      </div>
+      <div class="summary-item">
+        <strong>🚫 反例黑名单</strong> — 9 行独立章节覆盖 fabrication、overwrite、关键词约束冲突等高频错误，
+        反例维度从 5/10 → 9/10
+      </div>
+      <div class="summary-item">
+        <strong>dim8 实测 +3</strong> — 独立 judge 确认故障表显著提升 skill 对异常场景的稳健性，
+        尤其是 BibTeX-only 请求和 \section 变体不兼容问题
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Footer -->
+  <div class="footer">
+    <div class="footer-left">.omp/skills/latex-introduction-bibliography/SKILL.md</div>
+    <div class="footer-motto">Train your Skills like you train your models</div>
+  </div>
+
+</div>
+
+</body>
+</html>

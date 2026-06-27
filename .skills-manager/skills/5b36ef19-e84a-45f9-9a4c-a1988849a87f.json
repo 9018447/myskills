@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "5b36ef19-e84a-45f9-9a4c-a1988849a87f",
+  "path": "to-issues",
+  "path_key": "to-issues",
+  "enabled": true,
+  "tags": [
+    "mattpocock skills"
+  ],
+  "source": {
+    "type": "git",
+    "ref": "https://github.com/mattpocock/skills",
+    "subpath": "skills/engineering/to-issues",
+    "branch": null
+  }
+}

@@ -3,5 +3,11 @@
   "scenario_id": "397ca147-92ad-4544-8417-1330e9a4bd9c",
   "skill_id": "ba615427-7512-44c6-a01a-d9a6c4d655f4",
   "sort_order": 21,
-  "tools": {}
+  "tools": {
+    "claude_code": true,
+    "cline": false,
+    "kimi": true,
+    "omp_agent": true,
+    "pi": false
+  }
 }

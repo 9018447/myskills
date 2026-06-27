@@ -5,8 +5,9 @@
   "sort_order": 0,
   "tools": {
     "claude_code": true,
-    "cline": true,
+    "cline": false,
+    "kimi": true,
     "omp_agent": true,
-    "pi": true
+    "pi": false
   }
 }

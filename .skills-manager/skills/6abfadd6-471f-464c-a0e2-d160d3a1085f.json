@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "skill_id": "d3c7886a-e45b-4ea0-a047-dacb74553c4c",
-  "path": "compound-to-sigma",
-  "path_key": "compound-to-sigma",
+  "skill_id": "6abfadd6-471f-464c-a0e2-d160d3a1085f",
+  "path": "heat-capacity-ann",
+  "path_key": "heat-capacity-ann",
   "enabled": true,
   "tags": [
     "自用"

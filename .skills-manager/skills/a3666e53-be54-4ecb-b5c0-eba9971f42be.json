@@ -4,7 +4,9 @@
   "path": "biosteam-cosmosac",
   "path_key": "biosteam-cosmosac",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "自用"
+  ],
   "source": {
     "type": "local",
     "ref": null,

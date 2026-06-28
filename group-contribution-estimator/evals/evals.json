@@ -48,6 +48,19 @@
         "Properties include Tb, Tc, Pc, Vc and acentric_factor",
         "No unmatched atoms are reported"
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "Estimate the DES critical properties for a 1:2 Choline/urea mixture using the Lee-Kesler mixing rules. Use the critical properties from DES_properties.xlsx and return the JSON output.",
+      "expected_output": "A JSON report showing DES pseudo-critical properties matching the Excel sheet: Tc≈644.44 K, Vc≈254.37 cm3/mol, Pc≈49.54 bar, omega≈0.6509.",
+      "files": [],
+      "expectations": [
+        "Output is valid JSON",
+        "Properties include molecular_weight_g_mol, normal_boiling_point_K, critical_temperature_K, critical_volume_cm3_mol, critical_pressure_bar, acentric_factor, critical_compressibility_factor",
+        "Critical temperature is approximately 644.44 K",
+        "Critical pressure is approximately 49.54 bar",
+        "Acentric factor is approximately 0.6509"
+      ]
     }
   ]
 }

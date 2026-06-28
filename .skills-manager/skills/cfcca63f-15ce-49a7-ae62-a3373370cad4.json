@@ -4,7 +4,9 @@
   "path": "plams",
   "path_key": "plams",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "AMS_SKILLS"
+  ],
   "source": {
     "type": "local",
     "ref": null,

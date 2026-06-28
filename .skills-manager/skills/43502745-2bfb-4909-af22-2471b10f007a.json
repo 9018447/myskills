@@ -4,7 +4,9 @@
   "path": "rdkit-chemistry",
   "path_key": "rdkit-chemistry",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "DFT"
+  ],
   "source": {
     "type": "local",
     "ref": null,

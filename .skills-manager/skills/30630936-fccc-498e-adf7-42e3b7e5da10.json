@@ -4,7 +4,9 @@
   "path": "pyscf",
   "path_key": "pyscf",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "AMS_SKILLS"
+  ],
   "source": {
     "type": "local",
     "ref": null,

@@ -4,7 +4,9 @@
   "path": "dft-skills",
   "path_key": "dft-skills",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "DFT"
+  ],
   "source": {
     "type": "local",
     "ref": null,

@@ -4,7 +4,9 @@
   "path": "pycrs-cosmors",
   "path_key": "pycrs-cosmors",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "AMS_SKILLS"
+  ],
   "source": {
     "type": "local",
     "ref": null,

@@ -4,7 +4,9 @@
   "path": "dftbplus",
   "path_key": "dftbplus",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "DFT"
+  ],
   "source": {
     "type": "local",
     "ref": null,

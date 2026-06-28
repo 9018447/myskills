@@ -4,7 +4,9 @@
   "path": "dft-abinit",
   "path_key": "dft-abinit",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "DFT"
+  ],
   "source": {
     "type": "local",
     "ref": null,

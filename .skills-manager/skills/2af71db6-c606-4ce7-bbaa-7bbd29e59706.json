@@ -4,7 +4,9 @@
   "path": "dft-gpaw",
   "path_key": "dft-gpaw",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "DFT"
+  ],
   "source": {
     "type": "local",
     "ref": null,

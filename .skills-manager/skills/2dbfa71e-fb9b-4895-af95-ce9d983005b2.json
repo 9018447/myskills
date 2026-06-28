@@ -4,7 +4,9 @@
   "path": "dft-cp2k",
   "path_key": "dft-cp2k",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "DFT"
+  ],
   "source": {
     "type": "local",
     "ref": null,

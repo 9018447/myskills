@@ -4,7 +4,9 @@
   "path": "dft-vasp",
   "path_key": "dft-vasp",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "DFT"
+  ],
   "source": {
     "type": "local",
     "ref": null,

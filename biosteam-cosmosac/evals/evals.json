@@ -1,0 +1,20 @@
+{
+  "skill_name": "biosteam-cosmosac",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我想在 biosteam 里定义一个胆碱阳离子（choline cation），并生成它的 COSMOSAC sigma profile，然后接到 Clapeyron 后端验证活度系数。",
+      "expected_output": "生成 examples/choline_cation_cosmosac.yml 和对应的 coskf/sigma profile，写出加载与验证代码或测试，并说明离子缺少临界性质时的 fallback 行为。"
+    },
+    {
+      "id": 2,
+      "prompt": "帮我给乙醇和水生成 COSMO-SAC profile，写成 thermosteam YAML，并验证在乙醇-水混合物中活度系数随稀释的变化趋势。",
+      "expected_output": "生成 examples/ethanol_water_cosmosac.yml，提供 pytest 测试或脚本验证 gamma > 0、稀溶液中乙醇 gamma 升高等。"
+    },
+    {
+      "id": 3,
+      "prompt": "氯离子和胆碱阳离子组成的二元体系，怎么用 biosteam + Clapeyron.jl 计算活度系数？请把完整步骤做成可复用的脚本。",
+      "expected_output": "创建生成脚本与验证脚本，生成 choline_chloride_cosmosac.yml，加载到 thermosteam 后调用 activity_coefficient，并验证结果为有限正数。"
+    }
+  ]
+}

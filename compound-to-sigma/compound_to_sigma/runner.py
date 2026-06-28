@@ -75,6 +75,8 @@ def _run_adf_cosmo(
     input_xyz: Path,
     output_dir: Path,
     compound_name: str,
+    charge: int,
+    multiplicity: int,
     logger: Logger,
 ) -> Path:
     """Run ADF COSMO single point using the ADFCOSMORSCompound recipe.
@@ -82,17 +84,31 @@ def _run_adf_cosmo(
     Uses the official SCM recipe settings (BP86/TZP + COSMO) and returns
     the generated coskf path.
     """
-    from scm.plams import Molecule, config, init, finish
+    from scm.plams import Molecule, Settings, config, init, finish
     from scm.plams.recipes.adfcosmorscompound import ADFCOSMORSCompoundJob
 
     init()
     config.log.stdout = 0 if logger.verbose < 2 else 1
 
     mol = Molecule(str(input_xyz.resolve()))
+    settings = Settings()
+    is_ion = charge != 0
+    if is_ion:
+        settings.input.ams.System.Charge = charge
+    spinpol = multiplicity - 1
+    if spinpol > 0:
+        settings.input.adf.SpinPolarization = spinpol
+        settings.input.adf.Unrestricted = "Yes"
+
+    # For ions, skip the ADF geometry optimization and use a single-point
+    # COSMO calculation on the (already optimized) input geometry. This avoids
+    # a "No atoms found in System" conflict between LoadSystem and an explicit
+    # System%Charge block in the solvation job.
     job = ADFCOSMORSCompoundJob(
         molecule=mol,
         name=compound_name,
-        singlepoint=False,  # perform geometry optimization + COSMO single point
+        singlepoint=is_ion,
+        settings=settings,
     )
     out = job.run()
 
@@ -281,8 +297,15 @@ def _run_single_compound(
             output_dir=compound_dir,
             logger=logger,
         )
-        logger.info(f"{base_name}: running ADF COSMO")
-        coskf_path = _run_adf_cosmo(opt_xyz, compound_dir, base_name, logger)
+        logger.info(f"{base_name}: running ADF COSMO (charge={compound['charge']}, multiplicity={compound['multiplicity']})")
+        coskf_path = _run_adf_cosmo(
+            opt_xyz,
+            compound_dir,
+            base_name,
+            charge=compound["charge"],
+            multiplicity=compound["multiplicity"],
+            logger=logger,
+        )
 
     logger.info(f"{base_name}: extracting sigma profile")
     df = _extract_sigma_profile(coskf_path, method, logger)
@@ -329,6 +352,43 @@ def from_name(
         method,
         verbose,
     )
+
+
+def from_smiles(
+    smiles: str,
+    charge: int,
+    multiplicity: int,
+    name: str | None = None,
+    output_dir: str | Path = "./compound-to-sigma-outputs",
+    database_path: str | Path | None = None,
+    method: str = "COSMO-RS",
+    verbose: int = 1,
+) -> dict:
+    """Compute sigma profile for a single compound from an explicit SMILES string."""
+    _check_environment(Logger(verbose))
+    compound = {
+        "smiles": smiles,
+        "charge": charge,
+        "multiplicity": multiplicity,
+    }
+    validate_compound(compound, 0)
+    logger = Logger(verbose)
+    if database_path is None:
+        database_path = os.environ.get("SCM_PKG_ADFCRSDIR", "")
+        if database_path and not database_path.endswith("ADFCRS-2018"):
+            candidate = os.path.join(database_path, "ADFCRS-2018")
+            if os.path.isdir(candidate):
+                database_path = candidate
+    result = _run_single_compound(
+        compound,
+        Path(output_dir),
+        database_path,
+        method,
+        verbose,
+    )
+    if name:
+        result["name"] = name
+    return result
 
 
 def from_coskf(

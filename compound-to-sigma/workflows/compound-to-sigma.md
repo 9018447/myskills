@@ -16,7 +16,7 @@ The workflow is the source of truth for the `compound-to-sigma` Kimi skill and f
 
 Event-driven: a user supplies one or more compounds and asks for their sigma profiles.
 
-- Single compound: `from_name(name, charge, multiplicity)`
+- Single compound: `from_name(name, charge, multiplicity)` or `from_smiles(smiles, charge, multiplicity, name=...)`
 - Batch: `from_names(compounds, n_jobs=N)`
 - CLI: `cosmo-skill run config.yaml`
 
@@ -81,10 +81,11 @@ If any are missing, fail fast with a clear message telling the user to source `a
 
 ### 6. xtb-optimized xyz → coskf (skipped if a database match was found)
 
-- Run the ADF COSMO-RS compound workflow using the SCM `ADFCOSMORSCompoundJob` PLAMS recipe with `singlepoint=False`.
-- This performs a **geometry optimization** in the gas phase (BP86/TZP) followed by a **single-point calculation with implicit solvation** (COSMO).
+- Run the ADF COSMO-RS compound workflow using the SCM `ADFCOSMORSCompoundJob` PLAMS recipe.
+- For **neutral compounds** use `singlepoint=False`: this performs a **geometry optimization** in the gas phase (BP86/TZP) followed by a **single-point calculation with implicit solvation** (COSMO).
+- For **ionic compounds** (`charge != 0`) use `singlepoint=True` on the xtb-optimized geometry. This avoids a "No atoms found in System" conflict between `LoadSystem` and an explicit `System%Charge` block in the solvation job.
 - The recipe applies the standard COSMO-RS compound settings (Delley surface, CRS solvent, Klamt/Allinger radii) and directly produces a `.coskf` file.
-- These settings are fixed; no user override is allowed.
+- Charge and multiplicity are forwarded to ADF (`System.Charge`, `ADF.SpinPolarization`, `ADF.Unrestricted` when needed).
 - Copy the resulting coskf to `output_dir/<compound_name>/<compound_name>.coskf`.
 
 ### 7. coskf → sigma profile
@@ -146,7 +147,7 @@ Batch runs use a tolerant strategy:
 ## Python API
 
 ```python
-from compound_to_sigma import from_name, from_names
+from compound_to_sigma import from_name, from_smiles, from_names
 
 # single compound
 result = from_name(
@@ -161,11 +162,23 @@ result = from_name(
 # result is a dict-like object with:
 #   name, smiles, coskf_path, csv_path, source ("database" | "calculated"), sigma_profile (DataFrame)
 
+# single compound from explicit SMILES (e.g. ions)
+result = from_smiles(
+    smiles="C[N+](C)(C)CCO",
+    charge=1,
+    multiplicity=1,
+    name="choline_cation",
+    output_dir="./out",
+    method="COSMOSAC2013",
+    verbose=1,
+)
+
 # batch
 results = from_names(
     compounds=[
         {"name": "ethanol", "charge": 0, "multiplicity": 1},
         {"smiles": "CCO", "charge": 0, "multiplicity": 1},
+        {"smiles": "C[N+](C)(C)CCO", "charge": 1, "multiplicity": 1, "name": "choline_cation"},
         {"xyz_path": "/path/to/benzene.xyz", "charge": 0, "multiplicity": 1},
         {"coskf_path": "/path/to/water.coskf"},
     ],
@@ -204,6 +217,11 @@ compounds:
 
   - smiles: CCO
     charge: 0
+    multiplicity: 1
+
+  - smiles: C[N+](C)(C)CCO
+    name: choline_cation
+    charge: 1
     multiplicity: 1
 
   - xyz_path: /path/to/benzene.xyz

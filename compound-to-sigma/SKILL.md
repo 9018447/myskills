@@ -15,7 +15,7 @@ The pipeline is **database-first**: if ADFCRS-2018 already contains a matching c
 
 ## Branches
 
-- **Compute** — run the pipeline for one compound (`from_name`) or a batch (`from_names` / `cosmo-skill run config.yaml`).
+- **Compute** — run the pipeline for one compound (`from_name` / `from_smiles`) or a batch (`from_names` / `cosmo-skill run config.yaml`).
   - Completion: every compound has a `*_sigma_profile.csv`, successes are returned, and failures are listed (not silent).
 - **Explain** — summarize how the pipeline works or what a step does.
   - Completion: the user has an accurate summary drawn from `workflows/compound-to-sigma.md`.
@@ -39,9 +39,10 @@ The pipeline is **database-first**: if ADFCRS-2018 already contains a matching c
 **Python API**
 
 ```python
-from compound_to_sigma import from_name, from_names, from_coskf
+from compound_to_sigma import from_name, from_smiles, from_names, from_coskf
 
 from_name(name="ethanol", charge=0, multiplicity=1, output_dir="./out")
+from_smiles(smiles="C[N+](C)(C)CCO", charge=1, multiplicity=1, name="choline_cation", output_dir="./out")
 from_names(compounds=[...], output_dir="./out", n_jobs=2)
 from_coskf(coskf_path="/path/to/water.coskf", output_dir="./out")
 ```

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "a3666e53-be54-4ecb-b5c0-eba9971f42be",
+  "path": "biosteam-cosmosac",
+  "path_key": "biosteam-cosmosac",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

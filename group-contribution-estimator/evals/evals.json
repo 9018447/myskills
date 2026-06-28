@@ -1,0 +1,53 @@
+{
+  "skill_name": "group-contribution-estimator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Estimate the critical properties of ethanol from its SMILES string CCO using the group contribution method. Return a JSON report with the matched groups and the estimated Tb, Tc, Pc, Vc.",
+      "expected_output": "A JSON report containing properties (Tb around 337 K, Tc around 500 K, etc.) and three matched groups: -OH(alcohol), -CH2-, -CH3. No unmatched atoms.",
+      "files": [],
+      "expectations": [
+        "Output is valid JSON",
+        "Properties include Tb, Tc, Pc, Vc and acentric_factor",
+        "Groups include -OH(alcohol), -CH2-, and -CH3",
+        "No unmatched atoms are reported"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Use group contribution to estimate critical properties for cyclohexane (SMILES: C1CCCCC1). Give me the JSON report.",
+      "expected_output": "A JSON report showing six -CH2-(ring) groups and estimated properties. No unmatched atoms.",
+      "files": [],
+      "expectations": [
+        "Output is valid JSON",
+        "Exactly six -CH2-(ring) groups are matched",
+        "Properties include Tb, Tc, Pc, Vc and acentric_factor",
+        "No unmatched atoms are reported"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Calculate critical properties for zinc chloride from SMILES [Zn](Cl)Cl with the group contribution method and show the JSON output.",
+      "expected_output": "A JSON report matching the worked example in DES_properties.xlsx: Tb=501.6 K, Tc≈970 K, Vc=281.26 cm3/mol, groups -Zn and -Cl (count 2).",
+      "files": [],
+      "expectations": [
+        "Output is valid JSON",
+        "Groups include -Zn (count 1) and -Cl (count 2)",
+        "Normal boiling point is exactly or very close to 501.6 K",
+        "Critical volume is 281.26 cm3/mol and acentric factor is about 1.0134"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Estimate critical properties for benzene (SMILES: c1ccccc1) using group contribution. Return a JSON report with the matched groups and estimated properties.",
+      "expected_output": "The model should match six aromatic CH groups (using the =CH-(ring) fallback) and estimate Tb, Tc, Pc, Vc. No unmatched atoms.",
+      "files": [],
+      "expectations": [
+        "Output is valid JSON",
+        "Exactly six aromatic CH -> =CH-(ring) groups are matched",
+        "Properties include Tb, Tc, Pc, Vc and acentric_factor",
+        "No unmatched atoms are reported"
+      ]
+    }
+  ]
+}

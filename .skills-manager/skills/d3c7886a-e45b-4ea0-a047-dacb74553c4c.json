@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "d3c7886a-e45b-4ea0-a047-dacb74553c4c",
+  "path": "compound-to-sigma",
+  "path_key": "compound-to-sigma",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

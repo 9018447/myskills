@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "209a043e-cf31-428f-bb6c-7eceadd13173",
+  "path": "serving-llms-vllm",
+  "path_key": "serving-llms-vllm",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

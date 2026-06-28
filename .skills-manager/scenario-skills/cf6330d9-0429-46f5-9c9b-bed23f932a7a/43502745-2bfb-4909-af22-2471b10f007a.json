@@ -4,10 +4,10 @@
   "skill_id": "43502745-2bfb-4909-af22-2471b10f007a",
   "sort_order": 4,
   "tools": {
-    "claude_code": true,
-    "cline": true,
-    "kimi": true,
-    "omp_agent": true,
-    "pi": true
+    "claude_code": false,
+    "cline": false,
+    "kimi": false,
+    "omp_agent": false,
+    "pi": false
   }
 }

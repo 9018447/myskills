@@ -1,0 +1,53 @@
+{
+  "skill_name": "compound-to-sigma",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Compute the COSMO-RS sigma profile for ethanol using the compound-to-sigma pipeline. Use charge 0 and multiplicity 1, and save outputs to ./sigma_out.",
+      "expected_output": "The agent checks the environment, attempts a database-first lookup in ADFCRS-2018, then either uses the database coskf or runs the full pipeline, and produces a sigma profile CSV or explains what is missing.",
+      "files": [],
+      "expectations": [
+        "The agent verifies that $AMSBIN/amspython, xtb, and obabel are available before running.",
+        "The agent supplies explicit charge=0 and multiplicity=1 for ethanol.",
+        "The agent mentions checking ADFCRS-2018 for an existing coskf before running xtb/ADF.",
+        "The agent describes or creates output_dir/ethanol/ethanol_sigma_profile.csv."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Generate a YAML config file for the cosmo-skill CLI that computes sigma profiles for ethanol and benzene in parallel. Save it as batch_config.yaml.",
+      "expected_output": "A syntactically valid YAML config with output_dir, database_path, method, n_jobs, verbose, and a compounds list where each compound has charge and multiplicity.",
+      "files": [],
+      "expectations": [
+        "The YAML includes output_dir, database_path, method, n_jobs, verbose, and compounds keys.",
+        "Each compound has exactly one of name/smiles/xyz_path/coskf_path plus charge and multiplicity.",
+        "The YAML is valid and can be parsed.",
+        "The file is saved as batch_config.yaml (or the specified path)."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Explain how the compound-to-sigma pipeline decides whether to run xtb and ADF COSMO for a compound.",
+      "expected_output": "A clear explanation of the database-first lookup, resume behavior, and the fallback to xtb + ADF COSMO when no existing coskf is found.",
+      "files": [],
+      "expectations": [
+        "The explanation mentions the ADFCRS-2018 database lookup as the first check.",
+        "The explanation mentions resume behavior (skip if output_dir/<name>/<name>.coskf already exists).",
+        "The explanation describes the fallback chain: 3D xyz → xtb optimization → ADF COSMO → coskf.",
+        "The explanation is drawn from workflows/compound-to-sigma.md."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "My compound-to-sigma run failed at the ADF step for benzene. Help me debug it.",
+      "expected_output": "A structured debugging response that checks the environment, license, charge/multiplicity, and suggests inspecting ADF output files.",
+      "files": [],
+      "expectations": [
+        "The agent asks whether charge and multiplicity were supplied explicitly.",
+        "The agent suggests checking $AMSBIN, the AMS license, and whether amsbashrc.sh was sourced.",
+        "The agent points to output_dir/benzene/adf.rkf and the AMS log.",
+        "The agent does not recommend guessing charge or multiplicity."
+      ]
+    }
+  ]
+}

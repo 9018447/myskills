@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "5218a7ad-15e5-49b1-a299-07e9b76dc39f",
+  "path": "ulw",
+  "path_key": "ulw",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

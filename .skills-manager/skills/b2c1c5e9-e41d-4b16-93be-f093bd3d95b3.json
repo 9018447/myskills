@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "b2c1c5e9-e41d-4b16-93be-f093bd3d95b3",
+  "path": "llm-wiki-2",
+  "path_key": "llm-wiki-2",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "ar9av/obsidian-wiki/llm-wiki",
+    "subpath": ".agents/skills/llm-wiki",
+    "branch": null
+  }
+}

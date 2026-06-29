@@ -31,9 +31,10 @@ Follow `workflows/biosteam-process-builder.md` as the source of truth.
 Extract a structured spec with at least:
 
 - `des`: `{hba, hbd, ratio}`
-- `gas_feed`: `{components, T, P, flow_basis}`
+- `gas_feed`: `{CO2, Water, inert: {ID, flow} | None, T, P, flow_basis}`
+  - V1 supports CO₂ + Water plus one optional inert gas (e.g., N₂). The inert is absorbed physically via Henry's law / activity coefficients; chemical absorption is out of scope. Other absorbable components are out of scope.
 - `absorbent`: `{flow_rate, T, P}`
-- `column`: `{N_stages, top_pressure, top_temperature}`
+- `column`: `{N_stages, P}`
 - `target`: `{product, max_water_molefrac}` or equivalent
 - `base_template`: `"des_dehydration"` in V1
 
@@ -48,7 +49,7 @@ The brief must include:
 - DES formulation and ratio
 - Gas feed composition and conditions
 - DES absorbent flow rate and conditions
-- Column conditions (N_stages, T, P)
+- Column conditions (N_stages, P)
 - Target dry-gas water content
 - Selected base template
 
@@ -63,6 +64,7 @@ For each component in the approved spec:
   - Invoke `compound-to-sigma` for sigma profile + COSMO `A`/`V`.
   - Invoke `group-contribution-estimator` for `Tb`, `Tc`, `Pc`, `Vc`, `omega`.
   - Invoke `heat-capacity-ann` for `Cp(T)` over 298–400 K.
+  - **Do not register HBA/HBD as separate simulation chemicals**; only the DES pseudo-component and feed components are registered.
 - For the DES pseudo-component:
   - Compute mole-fraction-weighted sigma profile, `A`, and `V` from HBA/HBD.
   - Invoke `group-contribution-estimator` Lee–Kesler DES mixing rules for pseudo-critical properties.
@@ -72,9 +74,15 @@ For each component in the approved spec:
 
 ### 4. Generate the BioSTEAM script
 
-Produce a single runnable Python script that:
+Produce a single runnable Python script that starts from:
 
-- Loads the `des_dehydration` base template
+```
+workflows/biosteam-process-builder/templates/des_dehydration.py
+```
+
+It should:
+
+- Load `../inputs/des_dehydration_data.yml` (created by `prepare_des_dehydration_data.py`)
 - Registers feed components and the DES pseudo-component
 - Sets COSMOSAC2013 via the Clapeyron backend
 - Creates the gas feed stream (bottom stage `-1`) and DES absorbent stream (top stage `0`)
@@ -95,6 +103,15 @@ Execute the script and capture stdout/stderr to:
 ```
 workflows/biosteam-process-builder/outputs/<run_id>/log.txt
 ```
+
+Run from the repository root with the local ThermoSTEAM package on `PYTHONPATH`:
+
+```bash
+PYTHONPATH=/home/smh/biosteam/thermosteam \
+    python workflows/biosteam-process-builder/templates/des_dehydration.py
+```
+
+Data preparation (`prepare_des_dehydration_data.py`) must be run with `amspython` because it imports `scm.plams` / `CRSJob`.
 
 ### 6. Deliver the brief
 
@@ -118,7 +135,7 @@ Return a tight summary to the user, not the raw script or log. Include:
 
 - Parsing failure: ask the user for clarification.
 - Missing component + `compound-to-sigma` failure: stop and report.
-- Simulation failure: capture error in `brief.md` and `log.txt`, then stop.
+- Simulation failure: capture error in `log.txt`, then stop. `brief.md` is only written on success.
 - User rejects spec: edit and re-present.
 - User asks for unsupported V1 scope (new unit connections, non-DES templates): explain the limitation and offer to record it.
 

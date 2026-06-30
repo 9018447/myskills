@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "290eebe9-2dff-4f02-9b97-a680f761d188",
+  "path": "n8n-expression-syntax",
+  "path_key": "n8n-expression-syntax",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "czlonkowski/n8n-skills/n8n-expression-syntax",
+    "subpath": "skills/n8n-expression-syntax",
+    "branch": null
+  }
+}

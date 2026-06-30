@@ -84,7 +84,8 @@ It should:
 
 - Load `../inputs/des_dehydration_data.yml` (created by `prepare_des_dehydration_data.py`)
 - Registers feed components and the DES pseudo-component
-- Sets COSMOSAC2013 via the Clapeyron backend
+- Uses **fast mode** by default: native ThermoSTEAM backend with precomputed constant partition coefficients from the YAML (runs in <10 s per case)
+- Optionally uses **rigorous mode**: COSMOSAC2013 via the Clapeyron backend (slower, more general; set `OPTIMIZATION["rigorous"] = True`)
 - Creates the gas feed stream (bottom stage `-1`) and DES absorbent stream (top stage `0`)
 - Instantiates a `MultiStageEquilibrium` absorber with `phases=('g', 'l')` and `algorithms=("sequential modular",)`
 - Defines and simulates the `System`
@@ -129,6 +130,7 @@ Return a tight summary to the user, not the raw script or log. Include:
 - What was built
 - Where `process.py` and `brief.md` are located
 - Top-line results
+- Speed/accuracy mode used (fast constant-K vs rigorous COSMOSAC)
 - Next step or caveat
 
 ## Error handling
@@ -141,7 +143,8 @@ Return a tight summary to the user, not the raw script or log. Include:
 
 ## Thermodynamics
 
-- Default model: **COSMOSAC2013** via ThermoSTEAM Clapeyron backend.
+- **Fast mode (default)**: native ThermoSTEAM backend with constant gas/liquid partition coefficients extracted from a rigorous COSMOSAC run at the default operating point. Runs in <10 s per case.
+- **Rigorous mode (optional)**: **COSMOSAC2013** via ThermoSTEAM Clapeyron backend. Runs in ~30–90 s per case. Toggle with `OPTIMIZATION["rigorous"]` in the generated script.
 - DES is modeled as a **pseudo-component** derived from HBA + HBD at the requested mole ratio.
 - Only the DES pseudo-component and feed components are registered in the flowsheet. HBA/HBD properties are generated and stored, but they are not separate simulation chemicals because mixed composition lengths break the Clapeyron subset VLE backend.
 - Property generation:

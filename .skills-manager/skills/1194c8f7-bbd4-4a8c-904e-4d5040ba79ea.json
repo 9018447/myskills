@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "1194c8f7-bbd4-4a8c-904e-4d5040ba79ea",
+  "path": "n8n-code-python",
+  "path_key": "n8n-code-python",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "czlonkowski/n8n-skills/n8n-code-python",
+    "subpath": "skills/n8n-code-python",
+    "branch": null
+  }
+}

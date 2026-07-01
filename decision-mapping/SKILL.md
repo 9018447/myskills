@@ -4,7 +4,7 @@ description: Turn a loose idea into a sequenced map of investigation tickets, th
 disable-model-invocation: true
 ---
 
-This skill is invoked when a loose idea requires more than one agent session to turn into a plan. It creates a stateful decision map in a markdown file, and drives the user through a sequence of tickets to resolve the open questions - which may require either prototyping, research or grilling.
+This skill is invoked when a loose idea requires more than one agent session to turn into a plan. It creates a stateful decision map in a markdown file, and drives the user through a sequence of tickets to resolve the open questions - which may require either prototyping, research or grilling. The map is domain-agnostic: it plans engineering work, course content, or anything else that fits the same shape.
 
 ## The Decision Map
 
@@ -14,14 +14,16 @@ Assets created during tickets should be linked to from the map, not duplicated w
 
 ### Structure
 
-Numbered entries ("tickets"), each its own section keyed by its number:
+Entries ("tickets"), each its own section keyed by a short dash-case slug that
+reads as a mini-title (e.g. `relational-db`, `auth-strategy`, `cache-layer`) —
+terse enough to stay token-efficient, and unique within the map.
 
 ```markdown
-## #1: Relational Or Non-Relational Database?
+## relational-db: Relational Or Non-Relational Database?
 
-Blocked by: #<ticket-number>, #<ticket-number>
+Blocked by: <slug>, <slug>
 Status: open | in-progress | resolved
-Type: Research | Prototype | Grilling
+Type: Research | Prototype | Grilling | Task
 
 ### Question
 
@@ -32,17 +34,22 @@ Type: Research | Prototype | Grilling
 <answer-here>
 ```
 
-A ticket is **unblocked** when every ticket in its `Blocked by` list is `resolved`. A session **claims** its ticket by setting `Status: in-progress` and saving the map before any work, so concurrent sessions skip it.
+The slug is the canonical id, used in every `Blocked by` edge and prose
+reference; the title after the colon is optional. A ticket
+is **unblocked** when every ticket in its `Blocked by` list is `resolved`. A
+session **claims** its ticket by setting `Status: in-progress` and saving the map
+before any work, so concurrent sessions skip it.
 
 Each ticket must be sized to one 100K token agent session.
 
 ## Ticket Types
 
-There are three types of tickets:
+There are four types of tickets:
 
 - **Research**: Reading documentation, third-party API's, or local resources like knowledge bases. Creates a markdown summary as an asset. Use this when knowledge outside the current working directory is required.
-- **Prototype**: Writing UI or logic code to test a hypothesis, or to explore a design space. Uses the /prototype skill. Creates a prototype as an asset. Use this when "how should it look" or "how should it behave" is the key question.
+- **Prototype**: Raise the fidelity of the discussion by making a cheap, rough, concrete artifact to react to — an outline, a rough take, a stub, or UI/logic code via the /prototype skill. Creates the prototype as an asset. Use this when "how should it look" or "how should it behave" is the key question.
 - **Grilling**: Conversation with the agent. Uses the /grilling and /domain-modeling skills. Asks one question at a time. The default case.
+- **Task**: Literal manual work that must be done before the discussion can move forward — nothing to decide, prototype, or research. Moving data from one place to another, signing up for a third-party service, provisioning access. The agent automates it where it can; otherwise it hands the human a precise checklist to do by hand. Resolved when the work is done; the answer records what was done and any resulting facts (credentials location, new URLs, row counts) later tickets depend on.
 
 ## Fog of war
 
@@ -62,11 +69,11 @@ User invokes with a loose idea.
 
 ### Work through the map
 
-User invokes with a path to an existing map. A ticket number is **optional** — without one, you pick the next decision, not the user.
+User invokes with a path to an existing map. A ticket slug is **optional** — without one, you pick the next decision, not the user.
 
 1. Load the **whole map** as context.
-2. Choose the ticket. If the user named one, use it. Otherwise pick the lowest-numbered `open` ticket that is [unblocked](#structure). [Claim it](#structure): set `Status: in-progress` and save before any work.
-3. Resolve it, invoking skills as needed. If in doubt, use `/grilling` and `/domain-modeling`.
+2. Choose the ticket. If the user named one, use it. Otherwise pick the first `open` ticket in document order that is [unblocked](#structure). [Claim it](#structure): set `Status: in-progress` and save before any work.
+3. Resolve it, invoking skills as needed — including any the `## Notes` block names. If in doubt, use `/grilling` and `/domain-modeling`.
 4. Record the answer in the ticket's body and set `Status: resolved`.
 5. Add newly-discovered tickets with correct `Blocked by` edges. If the decisions made invalidate other parts of the map, update or delete those nodes.
 6. Handoff.
@@ -79,7 +86,7 @@ End every session by clearing the context and opening one or more fresh sessions
 
 **Open tickets remain.** List the currently-unblocked tickets, then give two copy-paste options: a bare command for one session (you pick the next ticket), and one pinned command per unblocked ticket for running them in parallel. Paste one line per fresh window — opening one, some, or all of them.
 
-> **Next steps** — 3 tickets unblocked: #4, #5, #6.
+> **Next steps** — 3 tickets unblocked: `auth-strategy`, `cache-layer`, `rate-limits`.
 > Clear the context, then open fresh sessions.
 >
 > **One session** — resolves the next unblocked ticket:
@@ -89,9 +96,13 @@ End every session by clearing the context and opening one or more fresh sessions
 >
 > **Parallel** — paste one line per window, up to all 3:
 > ```
-> Invoke /decision-mapping with the map at <path>, ticket #4.
-> Invoke /decision-mapping with the map at <path>, ticket #5.
-> Invoke /decision-mapping with the map at <path>, ticket #6.
+> Invoke /decision-mapping with the map at <path>, ticket auth-strategy.
+> Invoke /decision-mapping with the map at <path>, ticket cache-layer.
+> Invoke /decision-mapping with the map at <path>, ticket rate-limits.
 > ```
 
 **No open tickets remain.** The fog is pushed back far enough that the path to the finish line is clear — the map is done. (The initial grilling may also surface no fog at all, in which case there was never a map to build.) Recommend implementing directly, or using `/to-prd` to schedule a multi-session implementation.
+
+## Notes
+
+An optional block declaring the **domain**, any skills every session should `consult`, and freeform standing preferences the planning surfaces.

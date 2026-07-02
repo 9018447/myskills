@@ -1,0 +1,15 @@
+{
+  "scores": {
+    "dim1_frontmatter": {"score": 9, "justification": "Name is valid, description covers what the skill does, when to use it, and includes concrete trigger phrases; length is well under 1024 characters and there is no hollow trailing phrase."},
+    "dim2_workflow_clarity": {"score": 9, "justification": "Seven numbered steps are sequenced logically, each with a clear purpose, inputs, and outputs; sections for output format and dependencies make the flow easy to follow."},
+    "dim3_failure_modes": {"score": 8, "justification": "A dedicated 'Failure handling' table encodes several if-then branches and fallback actions (manual index fix, re-grilling, stopping), though it could cover more edge cases such as unavailable sub-skills."},
+    "dim4_checkpoints": {"score": 4, "justification": "There are natural decision points (e.g., ask whether to extend/replace/stop when an existing PRD exists), but none are explicitly marked with 🔴/STOP/CHECKPOINT indicators as required."},
+    "dim5_actionable_specificity": {"score": 9, "justification": "File paths, PRD/issue templates, tool invocations, and script paths are all concrete; no softening phrases like 'suggest' or 'consider' appear."},
+    "dim6_resource_integration": {"score": 8, "justification": "Referenced documents and the bundled script path are correct and reachable; references are consistent with the repository layout."},
+    "dim7_architecture": {"score": 9, "justification": "Sections are well-layered (frontmatter, activation, goal, rules, workflow, output, failure handling, dependencies) with no redundant or AI-flavored filler paragraphs."},
+    "dim9_anti_examples": {"score": 5, "justification": "A few 'do not' clauses are embedded (e.g., don't activate for one-line fixes), but there is no standalone anti-examples/blacklist chapter for red-flag actions and anti-patterns."}
+  },
+  "total_structural_score": 61.4,
+  "weakest_dimension": "dim4_checkpoints",
+  "key_issue": "Checkpoints exist only implicitly and lack explicit 🔴/STOP/CHECKPOINT markers; additionally, anti-patterns are not collected in a dedicated blacklist section."
+}

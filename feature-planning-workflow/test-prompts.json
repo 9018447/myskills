@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "prompt": "I want to add a sensitivity analysis report to the biosteam-process-builder V2 DES dehydration workflow. The report should sweep column pressure and flash temperature and tell the user which variable most affects water removal. Help me plan this feature: grill me on the requirements, write a PRD, break it into issues, and update AGENTS.md.",
+    "expected": "A new .scratch/<feature-slug>/PRD.md with Status: needs-triage, numbered issues, and an updated AGENTS.md index."
+  },
+  {
+    "id": 2,
+    "prompt": "We need to support a second DES formulation (choline chloride + urea, 1:2 mole ratio) in biosteam-process-builder V2. The user wants the same end-to-end workflow but selectable HBA/HBD pair. Grill me, write the PRD, split it into issues, and make sure AGENTS.md stays up to date.",
+    "expected": "A PRD and issues for supporting an alternative DES formulation, with domain-modeling considerations and updated AGENTS.md index."
+  },
+  {
+    "id": 3,
+    "prompt": "The standalone DES water flash module needs better error handling and CLI output when Clapeyron/Julia is missing. Plan this improvement with me, create the PRD and issues, and update the local tracker index.",
+    "expected": "A focused PRD and small set of issues for improving error handling, plus updated AGENTS.md."
+  }
+]

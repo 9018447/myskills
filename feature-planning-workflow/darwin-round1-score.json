@@ -1,0 +1,15 @@
+{
+  "scores": {
+    "dim1_frontmatter": {"score": 9, "justification": "name规范；description同时包含做什么（生成PRD与编号issue包）、何时用（从模糊想法到可实施计划）和触发词（plan/write PRD/break into issues/grill requirement）；description仅351字符，≤1024；无结尾空话尾巴。"},
+    "dim2_workflow_clarity": {"score": 8, "justification": "7个有序步骤，输入与输出大体可识别（如读取文件、扫描.scratch、生成PRD等），但部分步骤的输入/输出未显式标注，需要读者自行推断。"},
+    "dim3_failure_modes": {"score": 8, "justification": "显式'Failure handling'表格编码6种if-then失败场景及动作，包含脚本失败时的手动修复fallback；但未覆盖工具失败、用户长时间无响应等额外失败模式。"},
+    "dim4_checkpoints": {"score": 9, "justification": "3处关键检查点均使用🔴/🛑显性标记（Step 2选择已有PRD、Step 3 grilling后、Step 4 PRD定稿前），强制等待用户确认后再继续。"},
+    "dim5_actionable_specificity": {"score": 9, "justification": "给出具体路径模板（.scratch/<feature-slug>/PRD.md、issues/<NN>-<slug>.md）、PRD章节、状态标签、脚本调用方式与工具名；全文未发现≥3处'建议/可以考虑/视情况而定'等软化措辞。"},
+    "dim6_resource_integration": {"score": 9, "justification": "引用的scripts/update_agents_index.py在技能目录下真实存在；依赖的/grilling、/domain-modeling及CONTEXT.md等路径明确可达。"},
+    "dim7_architecture": {"score": 9, "justification": "结构层次清晰（Frontmatter/When to use/Goal/Code rules/Workflow/Output/Failure/Dependencies），无冗余AI腔废话段落，与仓库AGENTS.md生态一致。"},
+    "dim9_anti_examples": {"score": 6, "justification": "存在多处'Do not...'反例（不激活场景、不继续 grilling、不生成PRD、不强制ADR等），但未按要求设立独立的'反例/黑名单/反模式'章节，反例分散在正文中。"}
+  },
+  "total_structural_score": 64.2,
+  "weakest_dimension": "dim9_anti_examples",
+  "key_issue": "虽然正文有多处'Do not'反例，但缺少独立的'反例/黑名单/反模式'章节，未满足rubric'红灯/危险动作/反模式应单独章节列出'的要求。"
+}

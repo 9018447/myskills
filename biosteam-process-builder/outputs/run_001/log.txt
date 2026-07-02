@@ -12,36 +12,65 @@ Detected IPython. Loading juliacall extension. See https://juliapy.github.io/Pyt
 ============================================================
 Baseline results
 ============================================================
-Dry CO2 flow: 953.09 kmol/hr
-Dry CO2 water mole fraction: 0.003391
-Water removed: 46.77 kmol/hr (93.54%)
-CO2 loss to DES: 0.14 kmol/hr (0.02%)
-Regenerated DES flow: 923.11 kmol/hr
-Regenerated DES water mole fraction: 0.457030
-Recycle DES flow: 876.96 kmol/hr
-Recycle DES water mole fraction: 0.457030
-Flash water recovery: 5.74%
+Dry CO2 flow: 953.25 kmol/hr
+Dry CO2 water mole fraction: 0.003546
+Water removed: 46.62 kmol/hr (93.24%)
+CO2 loss to DES: 0.13 kmol/hr (0.01%)
+Regenerated DES flow: 544.52 kmol/hr
+Regenerated DES water mole fraction: 0.081536
+Recycle DES flow: 517.29 kmol/hr
+Recycle DES water mole fraction: 0.081536
+Flash water recovery: 50.00%
 Recycle convergence iterations: 0
 
 Dry CO2 stream:
 Stream: dry_CO2_1 from <MultiStageEquilibrium: absorber_1>
-phase: 'g', T: 299.35 K, P: 1e+06 Pa
+phase: 'g', T: 300.11 K, P: 1e+06 Pa
 flow (kmol/hr): CO2    950
-                Water  3.23
+                Water  3.38
 
 Regenerated DES stream:
-Stream: flash_liquid_1 from <ClapeyronFlash: flash_1> to <Splitter: splitter_1>
+Stream: flash_liquid_1 from <Flash: flash_1> to <Splitter: splitter_1>
 phase: 'l', T: 373.15 K, P: 50000 Pa
-flow (kmol/hr): CO2                            1.22
-                Water                          422
+flow (kmol/hr): CO2                            0.121
+                Water                          44.4
                 DES_choline_chloride_glycerol  500
 
 Recycle stream:
 Stream: recycle_1 from <Splitter: splitter_1> to <ConditionedMixer: mixer_1>
 phase: 'l', T: 373.15 K, P: 50000 Pa
-flow (kmol/hr): CO2                            1.16
-                Water                          401
+flow (kmol/hr): CO2                            0.115
+                Water                          42.2
                 DES_choline_chloride_glycerol  475
+
+Regeneration target-seeking: trying flash P = 0.40 bar...
+/home/smh/biosteam/biosteam/units/design_tools/pressure_vessel.py:115: DesignWarning: vacuum pressure vessel ASME codes not implemented yet; wall thickness may be inaccurate and stiffening rings may be required
+  warn('vacuum pressure vessel ASME codes not implemented yet; '
+  regenerated DES water mole fraction = 0.081536
+
+Regeneration target-seeking: trying flash P = 0.30 bar...
+  regenerated DES water mole fraction = 0.081536
+
+Regeneration target-seeking: trying flash P = 0.20 bar...
+  regenerated DES water mole fraction = 0.081536
+
+Regeneration target-seeking: trying flash P = 0.10 bar...
+  regenerated DES water mole fraction = 0.081536
+
+Regeneration target-seeking: trying flash T = 110.0 C...
+  regenerated DES water mole fraction = 0.081536
+
+Regeneration target-seeking: trying flash T = 120.0 C...
+  regenerated DES water mole fraction = 0.081536
+
+Regeneration target-seeking: trying flash T = 130.0 C...
+  regenerated DES water mole fraction = 0.081536
+
+Regeneration target-seeking: trying flash T = 140.0 C...
+  regenerated DES water mole fraction = 0.081536
+
+Regeneration target-seeking: trying flash T = 150.0 C...
+  regenerated DES water mole fraction = 0.081536
 
 Wrote brief to /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/run_001/brief.md
 Wrote process script to /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/run_001/process.py

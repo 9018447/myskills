@@ -32,7 +32,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import yaml
 
@@ -93,124 +92,18 @@ class ConditionedMixer(bst.units.Mixer):
             out.T = self.outlet_T
 
 warnings.filterwarnings("ignore", message=".*CO2 has no defined Dortmund groups.*")
-import time
-
-
-class ClapeyronFlash(bst.units.Flash):
-    """Rigorous flash that bypasses ThermoSTEAM's heavy/light classification.
-
-    The standard ``bst.units.Flash`` routes VLE through ``thermosteam.separations.vle``,
-    which strips out the non-volatile DES pseudo-component and solves a CO2/Water
-    subset.  For that subset the Clapeyron/COSMOSAC flash often returns a single
-    phase and the fallback split is a pressure-independent 50/50 partition.  This
-    unit calls the Clapeyron backend directly on the full CO2/Water/DES mixture,
-    so flash pressure and temperature actually change the regenerated DES
-    composition.
-
-    A simple class-level cache avoids repeatedly solving the same flash during the
-    recycle convergence loop; the first evaluation for a unique (T, P, feed) is
-    still rigorous.
-    """
-
-    _cache: dict[tuple[float, float, bytes], tuple[np.ndarray, np.ndarray]] = {}
-    _calls = 0
-    _time = 0.0
-
-    def _run(self):
-        feed = self.ins[0]
-        backend = getattr(tmo.settings.get_thermo(), "_clapeyron_backend", None)
-        if backend is None:
-            # Not in rigorous Clapeyron mode; fall back to the base implementation.
-            super()._run()
-            return
-
-        mol = np.asarray(feed.mol, dtype=float)
-        key = (
-            round(float(self.T), 6),
-            round(float(self.P), 6),
-            np.round(mol, 9).tobytes(),
-        )
-        cached = self._cache.get(key)
-        if cached is not None:
-            self.outs[0].mol[:] = cached[0]
-            self.outs[1].mol[:] = cached[1]
-            for out in self.outs:
-                out.T = self.T
-                out.P = self.P
-            self.outs[0].phase = "g"
-            self.outs[1].phase = "l"
-            return
-
-        t0 = time.time()
-        z = mol / mol.sum() if mol.sum() > 0.0 else mol
-        x_comp, n_per_phase, G = backend.tp_flash(self.P, self.T, z)
-        n_per_phase = [np.asarray(p, dtype=float) for p in n_per_phase]
-
-        if (
-            len(n_per_phase) >= 2
-            and n_per_phase[0].sum() > 1e-12
-            and n_per_phase[1].sum() > 1e-12
-        ):
-            # Identify the liquid row as the phase that retains the heavy DES.
-            des_indices = [
-                i for i, c in enumerate(feed.chemicals)
-                if getattr(c, "locked_state", None) in ("l", "s")
-            ]
-            if des_indices:
-                d = des_indices[0]
-                fracs = [
-                    p[d] / p.sum() if p.sum() > 0.0 else -1.0
-                    for p in n_per_phase[:2]
-                ]
-                liq_idx = int(np.argmax(fracs))
-            else:
-                liq_idx = 0
-            vap_idx = 1 - liq_idx
-            n_liq = n_per_phase[liq_idx]
-            n_vap = n_per_phase[vap_idx]
-            total = n_liq.sum() + n_vap.sum()
-            scale = feed.F_mol / total if total > 0.0 else 0.0
-            vap_out = n_vap * scale
-            liq_out = n_liq * scale
-        else:
-            # Single-phase result: use bubble pressure to decide all-liquid or
-            # all-vapor.  If bubble pressure fails, keep everything liquid as the
-            # conservative fallback.
-            try:
-                P_bub, *_ = backend.bubble_pressure(self.T, z)
-            except Exception:
-                P_bub = float("inf")
-            if self.P >= P_bub:
-                vap_out = np.zeros_like(mol)
-                liq_out = mol.copy()
-            else:
-                vap_out = mol.copy()
-                liq_out = np.zeros_like(mol)
-
-        self.outs[0].mol[:] = vap_out
-        self.outs[1].mol[:] = liq_out
-        for out in self.outs:
-            out.T = self.T
-            out.P = self.P
-        self.outs[0].phase = "g"
-        self.outs[1].phase = "l"
-
-        self._cache[key] = (vap_out.copy(), liq_out.copy())
-        self._calls += 1
-        self._time += time.time() - t0
-
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 DATA_PATH = SKILL_DIR / "inputs" / "des_dehydration_data.yml"
 OUTPUT_DIR = SKILL_DIR / "outputs"
-RUN_ID = "run_001_optimized"
+RUN_ID = "run_001"
 
 # Process specification (V2: editable directly in this script)
 GAS_FEED = {
     "T": 40.0 + 273.15,      # K
-    "P": 40.0 * 1e5,         # Pa  (raised to drive dry-CO2 water below 0.1 mol%)
+    "P": 10.0 * 1e5,         # Pa
     "flow": 1000.0,          # kmol/hr
     "CO2": 0.95,             # mole fraction
     "Water": 0.05,           # mole fraction
@@ -219,8 +112,8 @@ GAS_FEED = {
 # Total DES flow entering the mixer (fresh makeup + regenerated recycle).
 ABSORBENT = {
     "T": 25.0 + 273.15,      # K
-    "P": 40.0 * 1e5,         # Pa
-    "flow": 1000.0,          # kmol/hr total DES pseudo-component
+    "P": 10.0 * 1e5,         # Pa
+    "flow": 500.0,           # kmol/hr total DES pseudo-component
 }
 
 # Fraction of total DES flow that is fresh makeup.  The remainder is supplied
@@ -234,24 +127,24 @@ INERT = {
 }
 
 COLUMN = {
-    "N_stages": 7,
+    "N_stages": 3,
 }
 
 FLASH = {
-    "T": 200.0 + 273.15,     # K
-    "P": 0.02 * 1e5,         # Pa  (deep vacuum flash for <0.1 mol% water in DES)
+    "T": 100.0 + 273.15,     # K
+    "P": 0.5 * 1e5,          # Pa
 }
 
 # Regeneration target: maximum water mole fraction in the regenerated DES
 # liquid leaving the flash.  If the baseline run does not meet the target, the
 # script performs a bounded search on flash pressure and then flash temperature.
 REGENERATION_TARGET = {
-    "max_water_molefrac": 0.001,
+    "max_water_molefrac": 0.02,
     "adjust_flash_P": True,
-    "P_min_bar": 0.01,
-    "P_step_bar": 0.005,
+    "P_min_bar": 0.05,
+    "P_step_bar": 0.1,
     "adjust_flash_T": True,
-    "T_max_C": 220.0,
+    "T_max_C": 150.0,
     "T_step_C": 10.0,
 }
 
@@ -259,7 +152,7 @@ REGENERATION_TARGET = {
 # target, the script automatically increases N_stages and/or total DES flow
 # within the limits below.  Set to None to disable target-seeking.
 TARGET = {
-    "max_water_molefrac": 0.001,   # 0.1 mol% water in dry CO2
+    "max_water_molefrac": None,   # e.g. 0.001 for 0.1 mol% water
     "adjust_N_stages": True,
     "max_N_stages": 15,
     "adjust_DES_flow": True,
@@ -556,7 +449,7 @@ class ProcessState:
         self.absorber.tolerance = OPTIMIZATION.get("tolerance", 1e-2)
         self.absorber.relative_tolerance = OPTIMIZATION.get("relative_tolerance", 1e-2)
 
-        self.flash = ClapeyronFlash(
+        self.flash = bst.units.Flash(
             f"flash_{n}",
             ins=rich_des_product,
             outs=[f"flash_vapor_{n}", f"flash_liquid_{n}"],
@@ -826,10 +719,8 @@ def _write_brief(
         f.write("- A splitter divides the regenerated flash liquid into a recycle stream and a purge\n")
         f.write("  stream equal to the fresh DES makeup, closing the solvent mass balance.\n")
         f.write("- Critical properties for the DES pseudo-component are estimates.\n")
-        f.write("- DES is treated as non-volatile by supplying a constant, extremely low\n")
-        f.write("  saturation pressure via the DIPPR101Sat pure-component model in Clapeyron;\n")
-        f.write("  this enforces negligible DES volatility inside the flash equilibrium\n")
-        f.write("  calculation rather than by post-processing the flash result.\n")
+        f.write("- Clapeyron falls back to BasicIdeal for the DES pure model because the\n")
+        f.write("  estimated critical properties are outside the Peng-Robinson correlation range.\n")
         f.write("- CO2 liquid heat capacity is patched to use the gas Cp above the normal\n")
         f.write("  liquid range so the supercritical CO2 enthalpy model does not fail.\n")
         f.write("- Sequential modular convergence is used; other algorithms may not converge\n")

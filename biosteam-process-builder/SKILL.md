@@ -236,7 +236,7 @@ Using the approved spec and resolved components, generate a single runnable Pyth
 - Instantiates a `Flash` that receives the absorber bottom liquid.
 - Adds a `Splitter` that recycles `(1 − makeup_fraction)` of the regenerated flash liquid and purges the rest.
 - Defines the `System`, sets the tear stream (splitter recycle outlet) and initial guess, and simulates it.
-- If regeneration target-seeking is enabled and the regenerated DES water mole fraction exceeds `regeneration_target.max_water_molefrac`, performs a bounded search:
+- If the regenerated DES water mole fraction exceeds `regeneration_target.max_water_molefrac`, performs a bounded search:
   1. Decrease flash pressure from the default in steps of 0.1 bar down to 0.05 bar.
   2. If still not met, increase flash temperature from the default in steps of 10 °C up to 150 °C.
   3. Stop as soon as the target is met or all bounds are exhausted.
@@ -386,7 +386,7 @@ V2 ships with two reusable template scripts under `.claude/skills/biosteam-proce
 
 - Sensitivity analysis is supported in V2 via a custom OAT loop, but it is disabled by default.
 - A simple target-seeking loop may increase `N_stages` and/or total DES flow to meet a dry-CO₂ water-mole-fraction target. It is disabled by default.
-- A bounded search may adjust flash T/P to meet a regenerated-DES water-mole-fraction target. It is disabled by default because each rigorous flash evaluation is expensive; enable it by setting `adjust_flash_P` / `adjust_flash_T` to `True`.
+- A bounded search may adjust flash T/P to meet a regenerated-DES water-mole-fraction target. It is enabled by default but does not optimize beyond the stated bounds.
 - Do not generate PFD / diagram images in V2.
 - Do not support non-DES base templates in V2.
 - Do not model pumps, heat exchangers, compressors, valves, or other auxiliary equipment in V2.

@@ -8,23 +8,23 @@
 
 **Column**: 3 equilibrium stages (rigorous COSMOSAC)
 
-**Flash**: 100.0 C, 0.50 bar
+**Flash**: 150.0 C, 0.50 bar
 
 ## Key metrics
 
-- Dry CO2 flow: 953.09 kmol/hr
-- Dry CO2 water mole fraction: 0.003391
-- Water removed: 46.77 kmol/hr (93.54%)
-- CO2 loss to DES: 0.14 kmol/hr (0.02%)
-- Rich DES flow: 948.87 kmol/hr
-- Regenerated DES flow: 923.11 kmol/hr
-- Regenerated DES water mole fraction: 0.457030
-- Recycle DES flow: 876.96 kmol/hr
-- Recycle DES water mole fraction: 0.457030
-- Flash water recovery: 5.74%
+- Dry CO2 flow: 953.25 kmol/hr
+- Dry CO2 water mole fraction: 0.003546
+- Water removed: 46.62 kmol/hr (93.24%)
+- CO2 loss to DES: 0.13 kmol/hr (0.01%)
+- Rich DES flow: 589.04 kmol/hr
+- Regenerated DES flow: 544.52 kmol/hr
+- Regenerated DES water mole fraction: 0.081536
+- Recycle DES flow: 517.29 kmol/hr
+- Recycle DES water mole fraction: 0.081536
+- Flash water recovery: 50.00%
 - Recycle convergence iterations: 0
 - Dry-CO2 target: No target specified.
-- Regeneration target: Target not met (0.457030 > 0.020000); no adjustment enabled.
+- Regeneration target: Target not met (0.081536 > 0.020000) within adjustment limits.
 - Generated script: /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/run_001/process.py
 
 ## Stream summary
@@ -32,43 +32,43 @@
 ### Dry CO2
 
 ```
-[949.856   3.232   0.   ]
+[949.872   3.38    0.   ]
 ```
 
 ### Mixer outlet (to absorber)
 
 ```
-[  1.163 400.791 500.   ]
+[1.145e-01 4.218e+01 5.000e+02]
 ```
 
 ### Rich DES (to flash)
 
 ```
-[  1.307 447.559 500.   ]
+[2.422e-01 8.880e+01 5.000e+02]
 ```
 
 ### Flash vapor
 
 ```
-[8.488e-02 2.567e+01 2.905e-16]
+[ 0.121 44.398  0.   ]
 ```
 
 ### Regenerated DES (before split)
 
 ```
-[  1.222 421.89  500.   ]
+[1.211e-01 4.440e+01 5.000e+02]
 ```
 
 ### Recycle DES (to mixer)
 
 ```
-[  1.161 400.796 475.   ]
+[1.150e-01 4.218e+01 4.750e+02]
 ```
 
 ### Purge DES (product)
 
 ```
-[ 0.061 21.095 25.   ]
+[6.054e-03 2.220e+00 2.500e+01]
 ```
 
 ## Caveats

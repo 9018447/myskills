@@ -352,7 +352,7 @@ des_dehydration_data:
           l:
             constant: 237.27641064506088
         Psat:
-          constant: 1.0e-12
+          constant: 1.0e-06
         Hvap:
           constant: 50000.0
       cosmo:

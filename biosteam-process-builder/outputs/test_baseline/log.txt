@@ -6,8 +6,6 @@ Chemicals: ('CO2', 'Water', 'DES_choline_chloride_glycerol')
 V2: using rigorous Clapeyron/COSMOSAC backend for absorber and flash.
 Creating streams and building flowsheet...
 Detected IPython. Loading juliacall extension. See https://juliapy.github.io/PythonCall.jl/stable/compat/#IPython
-/home/smh/biosteam/biosteam/units/design_tools/pressure_vessel.py:115: DesignWarning: vacuum pressure vessel ASME codes not implemented yet; wall thickness may be inaccurate and stiffening rings may be required
-  warn('vacuum pressure vessel ASME codes not implemented yet; '
 
 ============================================================
 Baseline results
@@ -43,5 +41,5 @@ flow (kmol/hr): CO2                            0.659
                 Water                          0.911
                 DES_choline_chloride_glycerol  950
 
-Wrote brief to /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/run_001_optimized/brief.md
-Wrote process script to /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/run_001_optimized/process.py
+Wrote brief to /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/test_baseline/brief.md
+Wrote process script to /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/test_baseline/process.py

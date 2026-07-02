@@ -205,12 +205,12 @@ class ClapeyronFlash(bst.units.Flash):
 # ---------------------------------------------------------------------------
 DATA_PATH = SKILL_DIR / "inputs" / "des_dehydration_data.yml"
 OUTPUT_DIR = SKILL_DIR / "outputs"
-RUN_ID = "run_001"
+RUN_ID = "run_001_optimized"
 
 # Process specification (V2: editable directly in this script)
 GAS_FEED = {
     "T": 40.0 + 273.15,      # K
-    "P": 10.0 * 1e5,         # Pa
+    "P": 40.0 * 1e5,         # Pa  (raised to drive dry-CO2 water below 0.1 mol%)
     "flow": 1000.0,          # kmol/hr
     "CO2": 0.95,             # mole fraction
     "Water": 0.05,           # mole fraction
@@ -219,8 +219,8 @@ GAS_FEED = {
 # Total DES flow entering the mixer (fresh makeup + regenerated recycle).
 ABSORBENT = {
     "T": 25.0 + 273.15,      # K
-    "P": 10.0 * 1e5,         # Pa
-    "flow": 500.0,           # kmol/hr total DES pseudo-component
+    "P": 40.0 * 1e5,         # Pa
+    "flow": 1000.0,          # kmol/hr total DES pseudo-component
 }
 
 # Fraction of total DES flow that is fresh makeup.  The remainder is supplied
@@ -234,24 +234,24 @@ INERT = {
 }
 
 COLUMN = {
-    "N_stages": 3,
+    "N_stages": 7,
 }
 
 FLASH = {
-    "T": 100.0 + 273.15,     # K
-    "P": 0.5 * 1e5,          # Pa
+    "T": 200.0 + 273.15,     # K
+    "P": 0.02 * 1e5,         # Pa  (deep vacuum flash for <0.1 mol% water in DES)
 }
 
 # Regeneration target: maximum water mole fraction in the regenerated DES
 # liquid leaving the flash.  If the baseline run does not meet the target, the
 # script performs a bounded search on flash pressure and then flash temperature.
 REGENERATION_TARGET = {
-    "max_water_molefrac": 0.02,
-    "adjust_flash_P": False,
-    "P_min_bar": 0.05,
-    "P_step_bar": 0.1,
-    "adjust_flash_T": False,
-    "T_max_C": 150.0,
+    "max_water_molefrac": 0.001,
+    "adjust_flash_P": True,
+    "P_min_bar": 0.01,
+    "P_step_bar": 0.005,
+    "adjust_flash_T": True,
+    "T_max_C": 220.0,
     "T_step_C": 10.0,
 }
 
@@ -259,7 +259,7 @@ REGENERATION_TARGET = {
 # target, the script automatically increases N_stages and/or total DES flow
 # within the limits below.  Set to None to disable target-seeking.
 TARGET = {
-    "max_water_molefrac": None,   # e.g. 0.001 for 0.1 mol% water
+    "max_water_molefrac": 0.001,   # 0.1 mol% water in dry CO2
     "adjust_N_stages": True,
     "max_N_stages": 15,
     "adjust_DES_flow": True,
@@ -826,8 +826,10 @@ def _write_brief(
         f.write("- A splitter divides the regenerated flash liquid into a recycle stream and a purge\n")
         f.write("  stream equal to the fresh DES makeup, closing the solvent mass balance.\n")
         f.write("- Critical properties for the DES pseudo-component are estimates.\n")
-        f.write("- Clapeyron falls back to BasicIdeal for the DES pure model because the\n")
-        f.write("  estimated critical properties are outside the Peng-Robinson correlation range.\n")
+        f.write("- DES is treated as non-volatile by supplying a constant, extremely low\n")
+        f.write("  saturation pressure via the DIPPR101Sat pure-component model in Clapeyron;\n")
+        f.write("  this enforces negligible DES volatility inside the flash equilibrium\n")
+        f.write("  calculation rather than by post-processing the flash result.\n")
         f.write("- CO2 liquid heat capacity is patched to use the gas Cp above the normal\n")
         f.write("  liquid range so the supercritical CO2 enthalpy model does not fail.\n")
         f.write("- Sequential modular convergence is used; other algorithms may not converge\n")

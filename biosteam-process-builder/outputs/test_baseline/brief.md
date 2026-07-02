@@ -23,9 +23,9 @@
 - Recycle DES water mole fraction: 0.000957
 - Flash water recovery: 98.09%
 - Recycle convergence iterations: 0
-- Dry-CO2 target: Target met (<= 0.001000).
-- Regeneration target: Target met (<= 0.001000).
-- Generated script: /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/run_001_optimized/process.py
+- Dry-CO2 target: No target specified.
+- Regeneration target: Target met (<= 1.000000).
+- Generated script: /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/test_baseline/process.py
 
 ## Stream summary
 

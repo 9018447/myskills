@@ -12,19 +12,19 @@
 
 ## Key metrics
 
-- Dry CO2 flow: 953.10 kmol/hr
-- Dry CO2 water mole fraction: 0.003401
-- Water removed: 46.76 kmol/hr (93.52%)
+- Dry CO2 flow: 953.09 kmol/hr
+- Dry CO2 water mole fraction: 0.003391
+- Water removed: 46.77 kmol/hr (93.54%)
 - CO2 loss to DES: 0.14 kmol/hr (0.02%)
-- Rich DES flow: 956.08 kmol/hr
-- Regenerated DES flow: 931.82 kmol/hr
-- Regenerated DES water mole fraction: 0.479686
-- Recycle DES flow: 885.23 kmol/hr
-- Recycle DES water mole fraction: 0.479686
-- Flash water recovery: 5.07%
+- Rich DES flow: 948.87 kmol/hr
+- Regenerated DES flow: 923.11 kmol/hr
+- Regenerated DES water mole fraction: 0.457030
+- Recycle DES flow: 876.96 kmol/hr
+- Recycle DES water mole fraction: 0.457030
+- Flash water recovery: 5.74%
 - Recycle convergence iterations: 0
 - Dry-CO2 target: No target specified.
-- Regeneration target: Target not met (0.479686 > 0.020000); no adjustment enabled.
+- Regeneration target: Target not met (0.457030 > 0.020000); no adjustment enabled.
 - Generated script: /home/smh/biosteam/.claude/skills/biosteam-process-builder/outputs/run_001/process.py
 
 ## Stream summary
@@ -32,43 +32,43 @@
 ### Dry CO2
 
 ```
-[949.856   3.242   0.   ]
+[949.856   3.232   0.   ]
 ```
 
 ### Mixer outlet (to absorber)
 
 ```
-[  1.224 424.116 483.842]
+[  1.163 400.791 500.   ]
 ```
 
 ### Rich DES (to flash)
 
 ```
-[  1.369 470.874 483.842]
+[  1.307 447.559 500.   ]
 ```
 
 ### Flash vapor
 
 ```
-[ 0.086 23.894  0.286]
+[8.488e-02 2.567e+01 2.905e-16]
 ```
 
 ### Regenerated DES (before split)
 
 ```
-[  1.283 446.98  483.556]
+[  1.222 421.89  500.   ]
 ```
 
 ### Recycle DES (to mixer)
 
 ```
-[  1.218 424.631 459.379]
+[  1.161 400.796 475.   ]
 ```
 
 ### Purge DES (product)
 
 ```
-[ 0.064 22.349 24.178]
+[ 0.061 21.095 25.   ]
 ```
 
 ## Caveats

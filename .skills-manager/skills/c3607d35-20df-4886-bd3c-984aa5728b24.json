@@ -4,7 +4,9 @@
   "path": "darwin-skill",
   "path_key": "darwin-skill",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "mattacpockskills"
+  ],
   "source": {
     "type": "skillssh",
     "ref": "alchaincyf/darwin-skill/darwin-skill",

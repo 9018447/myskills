@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "357427bf-2493-4285-bd57-729d8b5d208a",
+  "path": "design-an-interface",
+  "path_key": "design-an-interface",
+  "enabled": true,
+  "tags": [
+    "mattacpockskills"
+  ],
+  "source": {
+    "type": "skillssh",
+    "ref": "mattpocock/skills/design-an-interface",
+    "subpath": "skills/deprecated/design-an-interface",
+    "branch": null
+  }
+}

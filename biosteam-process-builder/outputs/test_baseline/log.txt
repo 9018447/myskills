@@ -5,7 +5,6 @@ Loading thermodynamic data from /home/smh/biosteam/.claude/skills/biosteam-proce
 Chemicals: ('CO2', 'Water', 'DES_choline_chloride_glycerol')
 V2: using rigorous Clapeyron/COSMOSAC backend for absorber and flash.
 Creating streams and building flowsheet...
-Detected IPython. Loading juliacall extension. See https://juliapy.github.io/PythonCall.jl/stable/compat/#IPython
 
 ============================================================
 Baseline results

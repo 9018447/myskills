@@ -5,6 +5,7 @@
   "path_key": "heat-capacity-ann",
   "enabled": true,
   "tags": [
+    "biosteam",
     "自用"
   ],
   "source": {

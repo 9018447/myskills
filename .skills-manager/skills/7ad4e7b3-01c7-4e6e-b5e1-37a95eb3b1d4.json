@@ -5,6 +5,7 @@
   "path_key": "group-contribution-estimator",
   "enabled": true,
   "tags": [
+    "biosteam",
     "自用"
   ],
   "source": {

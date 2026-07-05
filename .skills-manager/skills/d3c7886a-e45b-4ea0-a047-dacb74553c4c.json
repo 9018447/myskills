@@ -5,6 +5,7 @@
   "path_key": "compound-to-sigma",
   "enabled": true,
   "tags": [
+    "biosteam",
     "自用"
   ],
   "source": {

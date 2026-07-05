@@ -5,6 +5,7 @@
   "path_key": "biosteam-process-builder",
   "enabled": true,
   "tags": [
+    "biosteam",
     "自用"
   ],
   "source": {

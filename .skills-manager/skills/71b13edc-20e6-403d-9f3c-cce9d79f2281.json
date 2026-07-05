@@ -5,6 +5,7 @@
   "path_key": "chemical-yaml-definition",
   "enabled": true,
   "tags": [
+    "biosteam",
     "自用"
   ],
   "source": {

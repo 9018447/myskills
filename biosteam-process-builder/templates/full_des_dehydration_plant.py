@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """DES dehydration-regeneration full plant template (V2).
 
-This template closes the DES loop with a realistic regeneration train:
-absorber bottom rich DES is flashed after pressure let-down and heat recovery,
-the flash vapor is condensed to separate water from CO2, and the regenerated
-lean DES is pumped, cooled, and recycled to the absorber with a small purge /
-fresh makeup split.
+This template closes the DES loop with a stripping column regeneration train:
+absorber bottom rich DES is pre-heated by hot regenerated DES, brought to
+stripper feed temperature, and fed to the top of a stripping column. The
+stripper has only a stripping section (reflux = 0) and a reboiler at fixed
+temperature. Water stripped from the DES leaves with the CO2-rich top vapor;
+the regenerated lean DES is cooled and recycled to the absorber with a small
+purge / fresh makeup split.
+
+Because the absorber and stripper operate at the same pressure (1 bar), no
+valve or pump is required between them.
 
 The template is rigorous-mode only (Clapeyron/COSMOSAC2013).  If Clapeyron is
 not available it fails early with setup guidance.
@@ -91,6 +96,97 @@ class ConditionedMixer(bst.units.Mixer):
 
 warnings.filterwarnings("ignore", message=".*CO2 has no defined Dortmund groups.*")
 
+
+class StripperColumn(bst.Unit):
+    """Approximate stripping column as a cascade of isothermal VLE flashes.
+
+    The rigorous ``MESHDistillation`` / ``RigorousDistillation`` class fails
+    with the DES pseudo-component under the Clapeyron/COSMOSAC backend (NaN/Inf
+    in the hot-start matrix).  This unit replaces it with ``N_stages`` flashes
+    at the same temperature and pressure.  Each flash removes a fraction of the
+    remaining water; the vapors are combined into the top product and the final
+    liquid is the regenerated DES bottoms product.
+
+    Parameters
+    ----------
+    N_stages : int
+        Number of equilibrium stages.
+    T : float
+        Stage temperature [K].
+    P : float
+        Stage pressure [Pa].
+    LHK : tuple[str, str] | None
+        Light/heavy keys (kept for API compatibility, not used internally).
+
+    Notes
+    -----
+    The duty reported is the total heat required to keep all stages isothermal;
+    it is an upper bound on the reboiler duty of a true counter-current stripper.
+    """
+
+    _N_ins = 1
+    _N_outs = 2
+
+    def __init__(
+        self,
+        ID: str,
+        ins,
+        outs,
+        N_stages: int,
+        T: float,
+        P: float,
+        LHK: tuple[str, str] | None = None,
+        **kwargs,
+    ):
+        self.N_stages = int(N_stages)
+        self.T = float(T)
+        self.P = float(P)
+        self.LHK = LHK
+        self.duty = 0.0
+        super().__init__(ID, ins, outs, **kwargs)
+
+    def _run(self):
+        feed = self.ins[0]
+        liquid_mol = feed.mol.copy()
+        total_vapor_mol = feed.mol.copy()
+        total_vapor_mol[:] = 0.0
+        total_duty = 0.0
+
+        for i in range(self.N_stages):
+            stage_in = bst.Stream(f"{self.ID}_stage_in_{i}", units="kmol/hr")
+            stage_in.mol = liquid_mol
+            stage_in.T = self.T
+            stage_in.P = self.P
+            stage_in.phase = "l"
+            H_in = stage_in.H
+            stage_in.vle(T=self.T, P=self.P)
+
+            vapor = stage_in["g"]
+            liquid = stage_in["l"]
+
+            total_vapor_mol += vapor.mol
+            liquid_mol = liquid.mol.copy()
+            # Isothermal flash duty: enthalpy increase to reach equilibrium
+            # at fixed T/P (i.e., latent heat of vaporization).
+            total_duty += stage_in.H - H_in
+
+        self.duty = total_duty
+
+        top = self.outs[0]
+        top.empty()
+        top.mol[:] = total_vapor_mol
+        top.T = self.T
+        top.P = self.P
+        top.phase = "g"
+
+        bottom = self.outs[1]
+        bottom.empty()
+        bottom.mol[:] = liquid_mol
+        bottom.T = self.T
+        bottom.P = self.P
+        bottom.phase = "l"
+
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -123,9 +219,13 @@ COLUMN = {
     "N_stages": 3,
 }
 
-FLASH = {
-    "T": 200.0 + 273.15,
-    "P": 0.05 * 1e5,
+STRIPPER = {
+    "T": 150.0 + 273.15,
+    "P": 1.0 * 1e5,
+    "N_stages": 5,
+    "feed_stage": 0,
+    "reflux": 0.0,
+    "LHK": ("Water", "DES_choline_chloride_glycerol"),
 }
 
 HX = {
@@ -134,17 +234,8 @@ HX = {
     "use_process_hx": True,
 }
 
-CONDENSER = {
-    "cooling_water_T": 25.0 + 273.15,
-    "outlet_T": 30.0 + 273.15,
-    "P_drop": 0.0,
-}
-
-PUMP_VALVE = {
-    # BioSTEAM's Pump calculates its own efficiency heuristically; this value
-    # is kept as a design assumption for future manual costing overrides.
-    "pump_efficiency": 0.7,
-    "valve_vle": True,
+COOLER = {
+    "outlet_T": 25.0 + 273.15,
 }
 
 RECYCLE = {
@@ -234,13 +325,14 @@ def load_and_configure_thermo(data: dict[str, Any], inert_id: str | None) -> tmo
 
 
 def validate_property_ranges(state: "ProcessState") -> None:
-    """Ensure required chemical property ranges cover flash T (473 K).
+    """Ensure required chemical property ranges cover stripper T (423 K).
 
-    For heat-capacity polynomials, the range is extended to 473 K when the
+    For heat-capacity polynomials, the range is extended to 423 K when the
     underlying coefficients are available.  When extension is not possible,
     a warning is appended to ``state.extrapolation_warnings`` and reported in
     the brief; it does not raise an exception.
     """
+    target_T = state.stripper_T
     ids = [state.des_id, "Water", "CO2"]
     if state.inert_id:
         ids.append(state.inert_id)
@@ -259,20 +351,20 @@ def validate_property_ranges(state: "ProcessState") -> None:
             tmax = getattr(sub, "Tmax", None)
             if tmax is None:
                 continue
-            if tmax < 473.0:
+            if tmax < target_T:
                 extended = False
                 if prop_name == "Cn":
                     coeffs = _CP_POLYNOMIALS.get(cid)
                     if coeffs:
-                        _apply_cp_polynomial(chem, coeffs, 298.15, 473.0)
+                        _apply_cp_polynomial(chem, coeffs, 298.15, target_T)
                         extended = True
                         state.extrapolation_warnings.append(
                             f"{cid}.{prop_name}.l range extended from "
-                            f"{tmax:.1f} K to 473.0 K using the fitted polynomial."
+                            f"{tmax:.1f} K to {target_T:.1f} K using the fitted polynomial."
                         )
                 if not extended:
                     state.extrapolation_warnings.append(
-                        f"{cid}.{prop_name}.l.Tmax = {tmax:.1f} K (< 473 K); "
+                        f"{cid}.{prop_name}.l.Tmax = {tmax:.1f} K (< {target_T:.1f} K); "
                         f"properties may be extrapolated above fitted range."
                     )
 
@@ -285,13 +377,10 @@ def compute_metrics(state: "ProcessState") -> dict[str, float]:
     gas_feed = state.gas_feed
     dry_co2 = state.absorber.outs[0]
     rich_des = state.absorber.outs[1]
-    valve_out = state.valve.outs[0]
-    flash = state.flash
-    flash_vapor = flash.outs[0]
-    regenerated_des = flash.outs[1]
-    # BioSTEAM Flash convention: outs[0] = vapor, outs[1] = liquid.
-    co2_vent = state.condenser.outs[0]
-    water_product = state.condenser.outs[1]
+    stripper = state.stripper
+    stripper_vapor = stripper.outs[0]
+    regenerated_des = stripper.outs[1]
+    co2_vent = stripper.outs[0]
     recycle = state.recycle
     purge = state.splitter.outs[1]
 
@@ -320,8 +409,9 @@ def compute_metrics(state: "ProcessState") -> dict[str, float]:
     )
 
     water_in_rich_des = rich_des.imol["Water"]
+    water_stripped = max(0.0, water_in_rich_des - regenerated_des.imol["Water"])
     water_recovery = (
-        flash_vapor.imol["Water"] / water_in_rich_des if water_in_rich_des > 0 else 0.0
+        water_stripped / water_in_rich_des if water_in_rich_des > 0 else 0.0
     )
 
     # Energy metrics
@@ -330,10 +420,10 @@ def compute_metrics(state: "ProcessState") -> dict[str, float]:
     else:
         # Fallback: compute from cold-stream enthalpy rise across the HX block.
         if state._hx_fallback:
-            cold_in = state.valve.outs[0]
+            cold_in = state.absorber.outs[1]
             cold_out = state.hx_cold.outs[0]
         else:
-            cold_in = state.valve.outs[0]
+            cold_in = state.absorber.outs[1]
             cold_out = state.hx.outs[0]
         hx_duty = max(0.0, cold_out.H - cold_in.H)
 
@@ -345,36 +435,19 @@ def compute_metrics(state: "ProcessState") -> dict[str, float]:
     cooler_out = state.cooler.outs[0]
     cooler_duty = cooler_out.H - cooler_in.H
 
-    condenser_in = state.condenser.ins[0]
-    condenser_out_H = sum(o.H for o in state.condenser.outs)
-    condenser_duty = condenser_out_H - condenser_in.H
+    # Reboiler duty from the stripper (isothermal flash cascade approximation).
+    reboiler_duty = stripper.duty
 
-    pump_power = 0.0
-    if state.pump.power_utility is not None:
-        pump_power = float(state.pump.power_utility.rate)
-    if pump_power == 0.0 and hasattr(state.pump, "results"):
-        # Some versions populate power only after a results() call.
-        try:
-            state.pump.results()
-            pump_power = float(state.pump.power_utility.rate)
-        except Exception:
-            pass
-
-    # No-HX baseline: sensible heating of the valve-out stream to flash T.
-    # Consumed by the heat-recovery sanity test (heater_duty < duty_without_hx)
-    # and reported for reference. Distinct from heat_recovery_fraction below,
-    # which is the self-consistent HX share of actual total heating.
-    cp_molar = valve_out.Cn  # kJ/kmol/K
-    duty_without_hx = valve_out.F_mol * cp_molar * (state.flash_T - valve_out.T)
+    # No-HX baseline: sensible heating of the absorber-bottom rich DES to stripper T.
+    cp_molar = rich_des.Cn  # kJ/kmol/K
+    duty_without_hx = rich_des.F_mol * cp_molar * (state.stripper_T - rich_des.T)
     # Self-consistent heat-recovery definition: HX share of total heating.
     total_heating = hx_duty + heater_duty
     heat_recovery_fraction = hx_duty / total_heating if total_heating > 0 else 0.0
 
-    condensate_flow = water_product.F_mol
-    condensate_water_molefrac = (
-        water_product.imol["Water"] / condensate_flow if condensate_flow > 0 else 0.0
-    )
-    co2_vent_flow = co2_vent.F_mol
+    vent_flow = co2_vent.F_mol
+    vent_water_flow = co2_vent.imol["Water"]
+    vent_CO2_flow = co2_vent.imol["CO2"]
 
     return {
         # Mass metrics
@@ -390,23 +463,22 @@ def compute_metrics(state: "ProcessState") -> dict[str, float]:
         "recycle_des_flow": recycle_des_flow,
         "recycle_water_molefrac": recycle_water_molefrac,
         "water_recovery": water_recovery,
-        "flash_T": state.flash.T,
-        "flash_P": state.flash.P,
-        # ponytail: BioSTEAM exposes no public recycle-iteration accessor, so
-        # read the private System._iter slot via getattr; a future rename
-        # degrades this metric to 0 instead of crashing. Recheck on upgrades.
-        "recycle_iterations": getattr(state.system, "_iter", 0) if state.system is not None else 0,
+        "stripper_T": state.stripper_T,
+        "stripper_P": state.stripper_P,
+        "stripper_stages": state.stripper_stages,
+        # BioSTEAM exposes no public recycle-iteration accessor; read the
+        # private System._iter slot that is populated after simulate().
+        "recycle_iterations": state.system._iter if state.system is not None else 0,
         # Energy metrics
         "hx_duty": hx_duty,
         "heater_duty": heater_duty,
         "cooler_duty": cooler_duty,
-        "condenser_duty": condenser_duty,
-        "pump_power": pump_power,
+        "reboiler_duty": reboiler_duty,
         "heat_recovery_fraction": heat_recovery_fraction,
         "duty_without_hx": duty_without_hx,
-        "condensate_flow": condensate_flow,
-        "condensate_water_molefrac": condensate_water_molefrac,
-        "co2_vent_flow": co2_vent_flow,
+        "vent_flow": vent_flow,
+        "vent_water_flow": vent_water_flow,
+        "vent_CO2_flow": vent_CO2_flow,
     }
 
 
@@ -427,7 +499,7 @@ class ProcessState:
         absorbent_spec: dict[str, float],
         des_id: str,
         makeup_fraction: float,
-        flash_spec: dict[str, float],
+        stripper_spec: dict[str, float],
         N_stages: int | None = None,
     ):
         self._instance_id = ProcessState._next_instance_id
@@ -440,8 +512,12 @@ class ProcessState:
         self.absorbent_spec = absorbent_spec
         self.des_id = des_id
         self.makeup_fraction = makeup_fraction
-        self.flash_T = flash_spec["T"]
-        self.flash_P = flash_spec["P"]
+        self.stripper_T = stripper_spec["T"]
+        self.stripper_P = stripper_spec["P"]
+        self.stripper_stages = stripper_spec["N_stages"]
+        self.stripper_feed_stage = stripper_spec.get("feed_stage", 0)
+        self.stripper_reflux = stripper_spec.get("reflux", 0.0)
+        self.stripper_LHK = tuple(stripper_spec.get("LHK", ("Water", des_id)))
         self.gas_total_flow = gas_spec["flow"] + inert_flow
 
         self.N_stages = N_stages if N_stages is not None else COLUMN["N_stages"]
@@ -460,12 +536,9 @@ class ProcessState:
         self.recycle: Any = None
         self.mixer: Any = None
         self.absorber: Any = None
-        self.valve: Any = None
         self.hx: Any = None
         self.heater: Any = None
-        self.flash: Any = None
-        self.condenser: Any = None
-        self.pump: Any = None
+        self.stripper: Any = None
         self.cooler: Any = None
         self.splitter: Any = None
 
@@ -499,22 +572,22 @@ class ProcessState:
         recycle_flow = self.des_total_flow * (1.0 - self.makeup_fraction)
         self.recycle.imol[self.des_id] = recycle_flow
         self.recycle.imol["Water"] = recycle_flow * 0.001
-        self.recycle.T = self.flash_T
-        self.recycle.P = self.flash_P
+        self.recycle.T = self.COOLER_outlet_T if hasattr(self, "COOLER_outlet_T") else COOLER["outlet_T"]
+        self.recycle.P = self.P
         self.recycle.phase = "l"
 
-    def _update_flash_liquid_guess(self, stream: tmo.Stream) -> None:
-        """Provide a non-empty initial guess for the flash liquid stream.
+    def _update_stripper_bottoms_guess(self, stream: tmo.Stream) -> None:
+        """Provide a non-empty initial guess for the stripper bottoms stream.
 
-        This is needed because the HXprocess is placed before the Flash in the
-        system path and would otherwise see an empty hot-side inlet on the first
-        sequential-modular pass.
+        This is needed because the HXprocess is placed before the Stripper in
+        the system path and would otherwise see an empty hot-side inlet on the
+        first sequential-modular pass.
         """
         lean_flow = self.des_total_flow * (1.0 - self.makeup_fraction)
         stream.imol[self.des_id] = lean_flow
         stream.imol["Water"] = lean_flow * 0.05
-        stream.T = self.flash_T
-        stream.P = self.flash_P
+        stream.T = self.stripper_T
+        stream.P = self.stripper_P
         stream.phase = "l"
 
     def build(self) -> None:
@@ -567,26 +640,17 @@ class ProcessState:
         self.absorber.tolerance = OPTIMIZATION.get("tolerance", 1e-2)
         self.absorber.relative_tolerance = OPTIMIZATION.get("relative_tolerance", 1e-2)
 
-        valve_out = bst.Stream(f"valve_out_{n}", phase="l")
-        self.valve = bst.units.IsenthalpicValve(
-            f"valve_{n}",
-            ins=rich_des_product,
-            outs=valve_out,
-            P=self.flash_P,
-            vle=PUMP_VALVE["valve_vle"],
-        )
-
         # Process-to-process heat recovery (rich/lean)
         hx_cold_out = bst.Stream(f"hx_cold_out_{n}", phase="l")
         hx_hot_out = bst.Stream(f"hx_hot_out_{n}", phase="l")
-        flash_liquid = bst.Stream(f"flash_liquid_{n}", phase="l")
-        self._update_flash_liquid_guess(flash_liquid)
+        regenerated_des = bst.Stream(f"regenerated_des_{n}", phase="l")
+        self._update_stripper_bottoms_guess(regenerated_des)
 
         if HX.get("use_process_hx", True):
             try:
                 self.hx = bst.units.HXprocess(
                     f"hx_{n}",
-                    ins=[valve_out, flash_liquid],
+                    ins=[rich_des_product, regenerated_des],
                     outs=[hx_cold_out, hx_hot_out],
                     dT=HX["approach_dT"],
                     phase0="l",
@@ -604,16 +668,16 @@ class ProcessState:
             duty_kj_hr = HX["fallback_duty_kw"] * 3600.0
             self.hx_cold = bst.HXutility(
                 f"hx_cold_{n}",
-                ins=valve_out,
+                ins=rich_des_product,
                 outs=hx_cold_out,
-                H=valve_out.H + duty_kj_hr,
+                H=rich_des_product.H + duty_kj_hr,
                 rigorous=False,
             )
             self.hx_hot = bst.HXutility(
                 f"hx_hot_{n}",
-                ins=flash_liquid,
+                ins=regenerated_des,
                 outs=hx_hot_out,
-                H=flash_liquid.H - duty_kj_hr,
+                H=regenerated_des.H - duty_kj_hr,
                 rigorous=False,
             )
 
@@ -622,44 +686,26 @@ class ProcessState:
             f"heater_{n}",
             ins=hx_cold_out,
             outs=heater_out,
-            T=self.flash_T,
+            T=self.stripper_T,
             rigorous=False,
         )
 
-        flash_vapor = bst.Stream(f"flash_vapor_{n}", phase="g")
-        # flash_liquid is reused as the Flash bottom outlet
-        self.flash = bst.units.Flash(
-            f"flash_{n}",
-            ins=heater_out,
-            outs=[flash_vapor, flash_liquid],
-            P=self.flash_P,
-            T=self.flash_T,
-        )
-
-        # BioSTEAM Flash convention: outs[0] = vapor, outs[1] = liquid.
         co2_vent = bst.Stream(f"co2_vent_{n}", phase="g")
-        water_product = bst.Stream(f"water_product_{n}", phase="l")
-        condenser_P = max(self.flash_P - CONDENSER.get("P_drop", 0.0), 1.0)
-        self.condenser = bst.units.Flash(
-            f"condenser_{n}",
-            ins=flash_vapor,
-            outs=[co2_vent, water_product],
-            P=condenser_P,
-            T=CONDENSER["outlet_T"],
-        )
-
-        pump_out = bst.Stream(f"pump_out_{n}", phase="l")
-        self.pump = bst.units.Pump(
-            f"pump_{n}",
-            ins=hx_hot_out,
-            outs=pump_out,
-            P=self.P,
+        # regenerated_des is reused as the stripper bottoms outlet
+        self.stripper = StripperColumn(
+            f"stripper_{n}",
+            ins=[heater_out],
+            outs=[co2_vent, regenerated_des],
+            LHK=self.stripper_LHK,
+            N_stages=self.stripper_stages,
+            T=self.stripper_T,
+            P=self.stripper_P,
         )
 
         cooler_out = bst.Stream(f"cooler_out_{n}", phase="l")
         self.cooler = bst.HXutility(
             f"cooler_{n}",
-            ins=pump_out,
+            ins=hx_hot_out,
             outs=cooler_out,
             T=self.absorbent_spec["T"],
             rigorous=False,
@@ -673,15 +719,15 @@ class ProcessState:
             split=1.0 - self.makeup_fraction,
         )
 
-        path: list[Any] = [self.mixer, self.absorber, self.valve]
+        path: list[Any] = [self.mixer, self.absorber]
         if self._hx_fallback:
             path.append(self.hx_cold)
         else:
             path.append(self.hx)
-        path.extend([self.heater, self.flash, self.condenser])
+        path.extend([self.heater, self.stripper])
         if self._hx_fallback:
             path.append(self.hx_hot)
-        path.extend([self.pump, self.cooler, self.splitter])
+        path.extend([self.cooler, self.splitter])
 
         self.system = bst.System(
             f"des_full_plant_{n}",
@@ -721,6 +767,7 @@ class ProcessState:
         if self.P == P and self.system is not None:
             return
         self.P = P
+        self.stripper_P = P
         self.build()
 
     def set_T_gas(self, T: float) -> None:
@@ -745,16 +792,16 @@ class ProcessState:
             IDs.append(self.inert_id)
         self.gas_feed.set_flow(flows, "kmol/hr", IDs)
 
-    def set_flash_T(self, T: float) -> None:
-        if self.flash_T == T and self.system is not None:
+    def set_stripper_T(self, T: float) -> None:
+        if self.stripper_T == T and self.system is not None:
             return
-        self.flash_T = T
+        self.stripper_T = T
         self.build()
 
-    def set_flash_P(self, P: float) -> None:
-        if self.flash_P == P and self.system is not None:
+    def set_stripper_P(self, P: float) -> None:
+        if self.stripper_P == P and self.system is not None:
             return
-        self.flash_P = P
+        self.stripper_P = P
         self.build()
 
 
@@ -777,6 +824,8 @@ def _unit_duty_or_power(unit: Any) -> float:
         return 0.0
     if name in ("Flash",):
         return (sum(o.H for o in unit.outs) - sum(i.H for i in unit.ins)) / 3600.0
+    if name == "StripperColumn":
+        return unit.duty / 3600.0
     return 0.0
 
 
@@ -811,23 +860,20 @@ def _equipment_rows(state: ProcessState) -> list[dict[str, Any]]:
     logical_units = [
         ("Mixer", state.mixer),
         ("Absorber", state.absorber),
-        ("Valve", state.valve),
         ("HXprocess (rich/lean)", state.hx if not state._hx_fallback else state.hx_cold),
         ("Heater", state.heater),
-        ("Flash", state.flash),
-        ("Condenser", state.condenser),
-        ("Pump", state.pump),
+        ("Stripper", state.stripper),
         ("Cooler", state.cooler),
         ("Splitter", state.splitter),
     ]
     if state._hx_fallback:
-        # Insert the hot-side fallback HX before the pump.
-        logical_units.insert(7, ("HXutility (lean cooler)", state.hx_hot))
+        # Insert the hot-side fallback HX before the cooler.
+        logical_units.insert(5, ("HXutility (lean cooler)", state.hx_hot))
 
     rows = []
     for label, unit in logical_units:
         value = _unit_duty_or_power(unit)
-        kind = "power" if type(unit).__name__ == "Pump" else "duty"
+        kind = "duty"
         rows.append({
             "Unit": label,
             "T_in (C)": f"{_unit_T_in(unit):.2f}",
@@ -851,12 +897,10 @@ def _write_brief(
     brief_path = run_dir / "brief.md"
     dry_co2 = state.absorber.outs[0]
     rich_des = state.absorber.outs[1]
-    flash_vapor = state.flash.outs[0]
-    regenerated_des = state.flash.outs[1]
+    regenerated_des = state.stripper.outs[1]
     recycle = state.recycle
     purge = state.splitter.outs[1]
-    # Flash convention: outs[0] = vapor (CO2 vent), outs[1] = liquid (water product).
-    water_product = state.condenser.outs[1]
+    co2_vent = state.stripper.outs[0]
 
     target = 1e-3  # 0.1 mol %
     dry_pass = metrics["water_molefrac_out"] <= target
@@ -877,7 +921,7 @@ def _write_brief(
         f.write(f"makeup fraction = {MAKEUP_FRACTION:.2f}, ")
         f.write(f"fresh makeup = {ABSORBENT['flow'] * MAKEUP_FRACTION:.1f} kmol/hr\n\n")
         f.write(f"**Column**: {state.N_stages} equilibrium stages (rigorous COSMOSAC) at {state.P/1e5:.2f} bar\n\n")
-        f.write(f"**Flash**: {metrics['flash_T']-273.15:.1f} C, {metrics['flash_P']/1e5:.3f} bar\n\n")
+        f.write(f"**Stripper**: {state.stripper_stages} stages, {metrics['stripper_T']-273.15:.1f} C, {metrics['stripper_P']/1e5:.3f} bar, reflux = {state.stripper_reflux}\n\n")
         f.write(f"**Tear stream**: splitter recycle outlet → mixer (closes DES recycle loop)\n\n")
         if state._hx_fallback:
             f.write(
@@ -914,18 +958,17 @@ def _write_brief(
         f.write(f"- Regenerated DES water mole fraction: {metrics['regen_water_molefrac']:.6f}\n")
         f.write(f"- Recycle DES flow: {metrics['recycle_des_flow']:.2f} kmol/hr\n")
         f.write(f"- Recycle DES water mole fraction: {metrics['recycle_water_molefrac']:.6f}\n")
-        f.write(f"- Flash water recovery: {metrics['water_recovery']:.2%}\n")
-        f.write(f"- Condensate flow: {metrics['condensate_flow']:.2f} kmol/hr\n")
-        f.write(f"- Condensate water mole fraction: {metrics['condensate_water_molefrac']:.6f}\n")
-        f.write(f"- CO2 vent flow: {metrics['co2_vent_flow']:.2f} kmol/hr\n")
+        f.write(f"- Water stripped from DES: {metrics['water_recovery']:.2%}\n")
+        f.write(f"- Vent flow: {metrics['vent_flow']:.2f} kmol/hr\n")
+        f.write(f"- Vent water flow: {metrics['vent_water_flow']:.2f} kmol/hr\n")
+        f.write(f"- Vent CO2 flow: {metrics['vent_CO2_flow']:.2f} kmol/hr\n")
         f.write(f"- Recycle convergence iterations: {metrics['recycle_iterations']}\n\n")
 
         f.write("## Energy metrics\n\n")
         f.write(f"- HX duty (heat recovery): {metrics['hx_duty']/3600.0:.3f} kW\n")
         f.write(f"- Heater duty: {metrics['heater_duty']/3600.0:.3f} kW\n")
         f.write(f"- Cooler duty: {abs(metrics['cooler_duty'])/3600.0:.3f} kW\n")
-        f.write(f"- Condenser duty: {abs(metrics['condenser_duty'])/3600.0:.3f} kW\n")
-        f.write(f"- Pump power: {metrics['pump_power']:.3f} kW\n")
+        f.write(f"- Reboiler duty: {metrics['reboiler_duty']/3600.0:.3f} kW\n")
         f.write(f"- Heat recovery fraction: {metrics['heat_recovery_fraction']:.3f}\n\n")
 
         f.write("## Target check (< 0.1 mol % water)\n\n")
@@ -937,21 +980,22 @@ def _write_brief(
         f.write("## Water balance\n\n")
         water_in_total = state.gas_feed.imol["Water"]
         water_dry = dry_co2.imol["Water"]
-        water_condensate = water_product.imol["Water"]
+        water_vent = co2_vent.imol["Water"]
         water_regen_des = regenerated_des.imol["Water"]
         water_purge = purge.imol["Water"]
         water_recycle = recycle.imol["Water"]
-        # Only count net outputs: dry CO2, condensate, and purge.  The recycle
-        # portion of the regenerated DES is internal to the loop.
-        water_out_total = water_dry + water_condensate + water_purge
+        # Only count net outputs: dry CO2 and purge.  The recycle portion of
+        # the regenerated DES is internal to the loop; vent water is counted
+        # as an output.
+        water_out_total = water_dry + water_vent + water_purge
         f.write(f"- Water in gas feed: {water_in_total:.4f} kmol/hr\n")
         f.write(f"- Water in dry CO2: {water_dry:.4f} kmol/hr\n")
-        f.write(f"- Water in condensate: {water_condensate:.4f} kmol/hr\n")
+        f.write(f"- Water in vent: {water_vent:.4f} kmol/hr\n")
         f.write(f"- Water in purge DES: {water_purge:.4f} kmol/hr\n")
         f.write(f"- Water in regenerated DES (before split): {water_regen_des:.4f} kmol/hr\n")
         f.write(f"  - of which in recycle DES: {water_recycle:.4f} kmol/hr\n")
         f.write(f"  - of which in purge DES: {water_purge:.4f} kmol/hr\n")
-        f.write(f"- Accounted outputs (dry + condensate + purge): {water_out_total:.4f} kmol/hr\n")
+        f.write(f"- Accounted outputs (dry + vent + purge): {water_out_total:.4f} kmol/hr\n")
         if water_in_total > 0:
             f.write(f"- Closure: {water_out_total / water_in_total:.4%}\n\n")
         else:
@@ -960,7 +1004,7 @@ def _write_brief(
         f.write("## Attribution\n\n")
         f.write("- Thermodynamic backend: Clapeyron/COSMOSAC2013 (V2 rigorous mode only).\n")
         f.write("- DES represented as a single pseudo-component (choline chloride / glycerol).\n")
-        f.write("- Architecture decision records: ADR-0001, ADR-0002, ADR-0003, ADR-0006.\n")
+        f.write("- Architecture decision records: ADR-0001, ADR-0002, ADR-0003, ADR-0007.\n")
     return brief_path
 
 
@@ -971,13 +1015,13 @@ def _write_stream_table(run_dir: Path, state: ProcessState) -> Path:
     rows: list[dict[str, Any]] = []
 
     units = [
-        state.mixer, state.absorber, state.valve,
+        state.mixer, state.absorber,
         state.hx if not state._hx_fallback else state.hx_cold,
-        state.heater, state.flash, state.condenser,
-        state.pump, state.cooler, state.splitter,
+        state.heater, state.stripper,
+        state.cooler, state.splitter,
     ]
     if state._hx_fallback:
-        units.insert(7, state.hx_hot)
+        units.insert(5, state.hx_hot)
 
     for unit in units:
         if unit is None:
@@ -1029,7 +1073,7 @@ def main() -> None:
         raise ValueError(f"DES pseudo-component '{des_id}' not found in chemical data")
 
     print(f"Chemicals: {chemicals.IDs}")
-    print("V2: using rigorous Clapeyron/COSMOSAC backend for absorber and flash.")
+    print("V2: using rigorous Clapeyron/COSMOSAC backend for absorber and stripper.")
     print(f"HX heat recovery: {'enabled' if HX.get('use_process_hx', True) else 'fallback HXutility'}")
 
     print("Creating streams and building flowsheet...")
@@ -1041,7 +1085,7 @@ def main() -> None:
         ABSORBENT,
         des_id,
         makeup_fraction=MAKEUP_FRACTION,
-        flash_spec=FLASH,
+        stripper_spec=STRIPPER,
     )
     state.build()
 
@@ -1058,8 +1102,10 @@ def main() -> None:
     print(f"Regenerated DES water mole fraction: {metrics['regen_water_molefrac']:.6f}")
     print(f"Recycle DES flow: {metrics['recycle_des_flow']:.2f} kmol/hr")
     print(f"Recycle DES water mole fraction: {metrics['recycle_water_molefrac']:.6f}")
-    print(f"Flash water recovery: {metrics['water_recovery']:.2%}")
-    print(f"Condensate water mole fraction: {metrics['condensate_water_molefrac']:.6f}")
+    print(f"Water stripped from DES: {metrics['water_recovery']:.2%}")
+    print(f"Vent water flow: {metrics['vent_water_flow']:.2f} kmol/hr")
+    print(f"Vent CO2 flow: {metrics['vent_CO2_flow']:.2f} kmol/hr")
+    print(f"Reboiler duty: {metrics['reboiler_duty']/3600.0:.3f} kW")
     print(f"Heat recovery fraction: {metrics['heat_recovery_fraction']:.3f}")
     print(f"Recycle convergence iterations: {metrics['recycle_iterations']}")
 

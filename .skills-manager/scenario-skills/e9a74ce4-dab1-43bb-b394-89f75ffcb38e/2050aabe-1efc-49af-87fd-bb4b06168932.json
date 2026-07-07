@@ -8,6 +8,6 @@
     "cline": false,
     "kimi": true,
     "omp_agent": true,
-    "pi": false
+    "pi": true
   }
 }

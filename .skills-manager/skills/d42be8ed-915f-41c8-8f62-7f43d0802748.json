@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "d42be8ed-915f-41c8-8f62-7f43d0802748",
+  "path": "code-simplification",
+  "path_key": "code-simplification",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "addyosmani/agent-skills/code-simplification",
+    "subpath": "skills/code-simplification",
+    "branch": null
+  }
+}

@@ -4,8 +4,10 @@
 This template closes the DES loop with a stripping column regeneration train:
 absorber bottom rich DES is pre-heated by hot regenerated DES, brought to
 stripper feed temperature, and fed to the top of a stripping column. The
-stripper has only a stripping section (reflux = 0) and a reboiler at fixed
-temperature. Water stripped from the DES leaves with the CO2-rich top vapor;
+stripper has only a stripping section (reflux = 0); boilup at the bottom
+provides stripping vapor. Internal stage temperatures are determined by the
+energy balance, not fixed externally. Water stripped from the DES leaves with
+the CO2-rich top vapor;
 the regenerated lean DES is cooled and recycled to the absorber with a small
 purge / fresh makeup split.
 
@@ -67,6 +69,11 @@ if str(REPO_ROOT) not in sys.path:
 # Cp polynomial coefficients by chemical ID, kept for possible range extension.
 _CP_POLYNOMIALS: dict[str, list[float]] = {}
 
+# Module-level cache for the configured chemicals object.  Reusing the same
+# Clapeyron backend across builds avoids the ~20 s Julia/model startup cost
+# when the same DES chemistry is simulated repeatedly in one process.
+_THERMO_CACHE: dict[str, tmo.Chemicals] = {}
+
 import biosteam as bst
 import thermosteam as tmo
 import warnings
@@ -97,96 +104,6 @@ class ConditionedMixer(bst.units.Mixer):
 warnings.filterwarnings("ignore", message=".*CO2 has no defined Dortmund groups.*")
 
 
-class StripperColumn(bst.Unit):
-    """Approximate stripping column as a cascade of isothermal VLE flashes.
-
-    The rigorous ``MESHDistillation`` / ``RigorousDistillation`` class fails
-    with the DES pseudo-component under the Clapeyron/COSMOSAC backend (NaN/Inf
-    in the hot-start matrix).  This unit replaces it with ``N_stages`` flashes
-    at the same temperature and pressure.  Each flash removes a fraction of the
-    remaining water; the vapors are combined into the top product and the final
-    liquid is the regenerated DES bottoms product.
-
-    Parameters
-    ----------
-    N_stages : int
-        Number of equilibrium stages.
-    T : float
-        Stage temperature [K].
-    P : float
-        Stage pressure [Pa].
-    LHK : tuple[str, str] | None
-        Light/heavy keys (kept for API compatibility, not used internally).
-
-    Notes
-    -----
-    The duty reported is the total heat required to keep all stages isothermal;
-    it is an upper bound on the reboiler duty of a true counter-current stripper.
-    """
-
-    _N_ins = 1
-    _N_outs = 2
-
-    def __init__(
-        self,
-        ID: str,
-        ins,
-        outs,
-        N_stages: int,
-        T: float,
-        P: float,
-        LHK: tuple[str, str] | None = None,
-        **kwargs,
-    ):
-        self.N_stages = int(N_stages)
-        self.T = float(T)
-        self.P = float(P)
-        self.LHK = LHK
-        self.duty = 0.0
-        super().__init__(ID, ins, outs, **kwargs)
-
-    def _run(self):
-        feed = self.ins[0]
-        liquid_mol = feed.mol.copy()
-        total_vapor_mol = feed.mol.copy()
-        total_vapor_mol[:] = 0.0
-        total_duty = 0.0
-
-        for i in range(self.N_stages):
-            stage_in = bst.Stream(f"{self.ID}_stage_in_{i}", units="kmol/hr")
-            stage_in.mol = liquid_mol
-            stage_in.T = self.T
-            stage_in.P = self.P
-            stage_in.phase = "l"
-            H_in = stage_in.H
-            stage_in.vle(T=self.T, P=self.P)
-
-            vapor = stage_in["g"]
-            liquid = stage_in["l"]
-
-            total_vapor_mol += vapor.mol
-            liquid_mol = liquid.mol.copy()
-            # Isothermal flash duty: enthalpy increase to reach equilibrium
-            # at fixed T/P (i.e., latent heat of vaporization).
-            total_duty += stage_in.H - H_in
-
-        self.duty = total_duty
-
-        top = self.outs[0]
-        top.empty()
-        top.mol[:] = total_vapor_mol
-        top.T = self.T
-        top.P = self.P
-        top.phase = "g"
-
-        bottom = self.outs[1]
-        bottom.empty()
-        bottom.mol[:] = liquid_mol
-        bottom.T = self.T
-        bottom.P = self.P
-        bottom.phase = "l"
-
-
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -196,7 +113,7 @@ RUN_ID = "run_full_plant_001"
 
 GAS_FEED = {
     "T": 40.0 + 273.15,
-    "P": 1.0 * 1e5,
+    "P": 10.0 * 1e5,
     "flow": 1000.0,
     "CO2": 0.95,
     "Water": 0.05,
@@ -204,8 +121,8 @@ GAS_FEED = {
 
 ABSORBENT = {
     "T": 25.0 + 273.15,
-    "P": 1.0 * 1e5,
-    "flow": 500.0,
+    "P": 10.0 * 1e5,
+    "flow": 5000.0,
 }
 
 MAKEUP_FRACTION = 0.05
@@ -216,15 +133,16 @@ INERT = {
 }
 
 COLUMN = {
-    "N_stages": 3,
+    "N_stages": 5,
 }
 
 STRIPPER = {
-    "T": 150.0 + 273.15,
+    "T": 150.0 + 273.15,  # Heater outlet / stripper feed temperature [K]
     "P": 1.0 * 1e5,
     "N_stages": 5,
     "feed_stage": 0,
     "reflux": 0.0,
+    "boilup": 0.5,
     "LHK": ("Water", "DES_choline_chloride_glycerol"),
 }
 
@@ -306,8 +224,30 @@ def _load_chemicals(data: dict[str, Any], inert_id: str | None = None) -> tmo.Ch
     return chemicals
 
 
+def _thermo_cache_key(data: dict[str, Any], inert_id: str | None) -> str:
+    """Stable cache key for a given chemistry + inert configuration."""
+    chemicals_spec = data["des_dehydration_data"]["chemicals"]
+    return yaml.dump(chemicals_spec, sort_keys=True) + f"\ninert={inert_id}"
+
+
 def load_and_configure_thermo(data: dict[str, Any], inert_id: str | None) -> tmo.Chemicals:
-    """Register chemicals and set the thermo backend to Clapeyron (V2 only)."""
+    """Register chemicals and set the thermo backend to Clapeyron (V2 only).
+
+    A module-level cache keeps the configured ``Chemicals`` object (and the
+    associated warm Clapeyron backend) alive across repeated calls in the same
+    process.  This avoids paying the Julia/model initialization cost for every
+    ``ProcessState.build()`` when the chemistry does not change.
+    """
+    key = _thermo_cache_key(data, inert_id)
+    cached = _THERMO_CACHE.get(key)
+    if cached is not None:
+        # Re-activate the cached thermo object.  The Clapeyron model itself is
+        # cached at the backend class level, so this is cheap.
+        tmo.settings.thermo_backend = "clapeyron"
+        tmo.settings.thermo_safeguards = False
+        tmo.settings.set_thermo(cached)
+        return cached
+
     try:
         tmo.settings.thermo_backend = "clapeyron"
     except Exception as exc:
@@ -321,6 +261,7 @@ def load_and_configure_thermo(data: dict[str, Any], inert_id: str | None) -> tmo
     _patch_co2_liquid_cp(chemicals["CO2"])
     chemicals.compile(skip_checks=True)
     tmo.settings.set_thermo(chemicals)
+    _THERMO_CACHE[key] = chemicals
     return chemicals
 
 
@@ -435,8 +376,10 @@ def compute_metrics(state: "ProcessState") -> dict[str, float]:
     cooler_out = state.cooler.outs[0]
     cooler_duty = cooler_out.H - cooler_in.H
 
-    # Reboiler duty from the stripper (isothermal flash cascade approximation).
-    reboiler_duty = stripper.duty
+    # Reboiler duty from the stripper. For MESHDistillation compute it from
+    # the reboiler (last) stage energy balance: Q = H_out - H_in.
+    reboiler_stage = stripper.stages[-1]
+    reboiler_duty = sum(o.H for o in reboiler_stage.outs) - sum(i.H for i in reboiler_stage.ins)
 
     # No-HX baseline: sensible heating of the absorber-bottom rich DES to stripper T.
     cp_molar = rich_des.Cn  # kJ/kmol/K
@@ -463,7 +406,7 @@ def compute_metrics(state: "ProcessState") -> dict[str, float]:
         "recycle_des_flow": recycle_des_flow,
         "recycle_water_molefrac": recycle_water_molefrac,
         "water_recovery": water_recovery,
-        "stripper_T": state.stripper_T,
+        "stripper_T": stripper.stages[-1].T,
         "stripper_P": state.stripper_P,
         "stripper_stages": state.stripper_stages,
         # BioSTEAM exposes no public recycle-iteration accessor; read the
@@ -517,6 +460,7 @@ class ProcessState:
         self.stripper_stages = stripper_spec["N_stages"]
         self.stripper_feed_stage = stripper_spec.get("feed_stage", 0)
         self.stripper_reflux = stripper_spec.get("reflux", 0.0)
+        self.stripper_boilup = stripper_spec.get("boilup", 0.5)
         self.stripper_LHK = tuple(stripper_spec.get("LHK", ("Water", des_id)))
         self.gas_total_flow = gas_spec["flow"] + inert_flow
 
@@ -546,6 +490,10 @@ class ProcessState:
         self.hx_cold: Any = None
         self.hx_hot: Any = None
         self._hx_fallback = False
+
+        # True when a structural parameter (N_stages, P, stripper T) changes
+        # and the System object must be rebuilt before the next converge().
+        self._needs_rebuild = False
 
         # Property-extrapolation warnings collected during build()
         self.extrapolation_warnings: list[str] = []
@@ -691,15 +639,24 @@ class ProcessState:
         )
 
         co2_vent = bst.Stream(f"co2_vent_{n}", phase="g")
-        # regenerated_des is reused as the stripper bottoms outlet
-        self.stripper = StripperColumn(
+        # Use MESHDistillation as a reflux-free stripper (feed at the top,
+        # boilup at the bottom). The tower is adiabatic: internal stage
+        # temperatures are determined by the energy balance, not fixed.
+        self.stripper = bst.units.MESHDistillation(
             f"stripper_{n}",
             ins=[heater_out],
             outs=[co2_vent, regenerated_des],
-            LHK=self.stripper_LHK,
             N_stages=self.stripper_stages,
-            T=self.stripper_T,
+            feed_stages=[self.stripper_feed_stage],
+            reflux=self.stripper_reflux,
+            boilup=self.stripper_boilup,
             P=self.stripper_P,
+            LHK=self.stripper_LHK,
+            full_condenser=False,
+            algorithms=("sequential modular",),
+            maxiter=OPTIMIZATION.get("maxiter", 15),
+            max_attempts=5,
+            use_cache=OPTIMIZATION.get("use_cache", True),
         )
 
         cooler_out = bst.Stream(f"cooler_out_{n}", phase="l")
@@ -736,24 +693,35 @@ class ProcessState:
             maxiter=RECYCLE.get("maxiter", 100),
             molar_tolerance=RECYCLE.get("tolerance", 1e-6),
         )
-        self.system.simulate()
+        # MESHDistillation's _design()/_actual_stages() requires both LHK
+        # chemicals to be in the VLE chemical list. DES is locked as a
+        # non-volatile liquid, so skip equipment design and only converge
+        # mass/energy balances.
+        self.system.simulate(design_and_cost=False)
+        self._needs_rebuild = False
 
-    def set_N_stages(self, N: float) -> None:
+    # -----------------------------------------------------------------------
+    # Incremental update API (keeps the System alive for warm starts)
+    # -----------------------------------------------------------------------
+    # ``update_*`` methods change parameters in-place and mark structural
+    # changes for rebuild.  Call ``converge()`` to re-run without rebuilding
+    # the whole flowsheet when only stream conditions changed.
+    # -----------------------------------------------------------------------
+    def update_N_stages(self, N: float) -> None:
         N_int = int(round(N))
-        if self.N_stages == N_int and self.system is not None:
+        if self.N_stages == N_int:
             return
         self.N_stages = N_int
-        self.build()
+        self._needs_rebuild = True
 
-    def set_DES_total_flow(self, flow: float) -> None:
+    def update_DES_total_flow(self, flow: float) -> None:
         if self.des_total_flow == flow:
             return
         self.des_total_flow = flow
         if self.fresh_des is not None:
             self.fresh_des.imol[self.des_id] = flow * self.makeup_fraction
-        self._update_recycle_guess()
 
-    def set_makeup_fraction(self, frac: float) -> None:
+    def update_makeup_fraction(self, frac: float) -> None:
         if self.makeup_fraction == frac:
             return
         self.makeup_fraction = frac
@@ -761,23 +729,22 @@ class ProcessState:
             self.fresh_des.imol[self.des_id] = self.des_total_flow * frac
         if self.splitter is not None:
             self.splitter.split = 1.0 - frac
-        self._update_recycle_guess()
 
-    def set_P(self, P: float) -> None:
-        if self.P == P and self.system is not None:
+    def update_P(self, P: float) -> None:
+        if self.P == P:
             return
         self.P = P
         self.stripper_P = P
-        self.build()
+        self._needs_rebuild = True
 
-    def set_T_gas(self, T: float) -> None:
+    def update_T_gas(self, T: float) -> None:
         if self.T_gas == T:
             return
         self.T_gas = T
         if self.gas_feed is not None:
             self.gas_feed.T = T
 
-    def set_x_water(self, x: float) -> None:
+    def update_x_water(self, x: float) -> None:
         if self.x_water == x:
             return
         self.x_water = x
@@ -792,16 +759,69 @@ class ProcessState:
             IDs.append(self.inert_id)
         self.gas_feed.set_flow(flows, "kmol/hr", IDs)
 
-    def set_stripper_T(self, T: float) -> None:
-        if self.stripper_T == T and self.system is not None:
+    def update_stripper_T(self, T: float) -> None:
+        if self.stripper_T == T:
             return
         self.stripper_T = T
+        self._needs_rebuild = True
+
+    def update_stripper_P(self, P: float) -> None:
+        if self.stripper_P == P:
+            return
+        self.stripper_P = P
+        self._needs_rebuild = True
+
+    def converge(self) -> None:
+        """Re-converge the existing System if possible; otherwise rebuild.
+
+        When only stream conditions changed (flow, T, composition), the same
+        System object and its last recycle state are reused.  This avoids the
+        cost of reconstructing every unit.  Because the recycle stream starts
+        from the previously converged state, small parameter perturbations
+        converge quickly, though the final recycle state may differ from a fresh
+        rebuild by an amount comparable to the convergence tolerance.
+
+        To keep incremental results consistent with a fresh rebuild, unit-level
+        caches (notably MESHDistillation stage profiles) are reset before the
+        re-convergence while the recycle stream keeps its warm start.
+        """
+        if self.system is None or self._needs_rebuild:
+            self.build()
+        else:
+            self.system.reset_cache()
+            self.system.simulate(design_and_cost=False)
+
+    # -----------------------------------------------------------------------
+    # Legacy setters: rebuild from scratch each time (slower but safe)
+    # -----------------------------------------------------------------------
+    def set_N_stages(self, N: float) -> None:
+        self.update_N_stages(N)
+        self.build()
+
+    def set_DES_total_flow(self, flow: float) -> None:
+        self.update_DES_total_flow(flow)
+        self.build()
+
+    def set_makeup_fraction(self, frac: float) -> None:
+        self.update_makeup_fraction(frac)
+        self.build()
+
+    def set_P(self, P: float) -> None:
+        self.update_P(P)
+        self.build()
+
+    def set_T_gas(self, T: float) -> None:
+        self.update_T_gas(T)
+
+    def set_x_water(self, x: float) -> None:
+        self.update_x_water(x)
+
+    def set_stripper_T(self, T: float) -> None:
+        self.update_stripper_T(T)
         self.build()
 
     def set_stripper_P(self, P: float) -> None:
-        if self.stripper_P == P and self.system is not None:
-            return
-        self.stripper_P = P
+        self.update_stripper_P(P)
         self.build()
 
 
@@ -818,14 +838,6 @@ def _unit_duty_or_power(unit: Any) -> float:
         return (unit.outs[0].H - unit.ins[0].H) / 3600.0
     if name in ("HXprocess",):
         return abs(float(unit.total_heat_transfer)) / 3600.0 if unit.total_heat_transfer is not None else 0.0
-    if name in ("Pump",):
-        if unit.power_utility is not None:
-            return float(unit.power_utility.rate)
-        return 0.0
-    if name in ("Flash",):
-        return (sum(o.H for o in unit.outs) - sum(i.H for i in unit.ins)) / 3600.0
-    if name == "StripperColumn":
-        return unit.duty / 3600.0
     return 0.0
 
 
@@ -921,7 +933,10 @@ def _write_brief(
         f.write(f"makeup fraction = {MAKEUP_FRACTION:.2f}, ")
         f.write(f"fresh makeup = {ABSORBENT['flow'] * MAKEUP_FRACTION:.1f} kmol/hr\n\n")
         f.write(f"**Column**: {state.N_stages} equilibrium stages (rigorous COSMOSAC) at {state.P/1e5:.2f} bar\n\n")
-        f.write(f"**Stripper**: {state.stripper_stages} stages, {metrics['stripper_T']-273.15:.1f} C, {metrics['stripper_P']/1e5:.3f} bar, reflux = {state.stripper_reflux}\n\n")
+        top_stage = state.stripper.stages[0]
+        bot_stage = state.stripper.stages[-1]
+        f.write(f"**Stripper**: {state.stripper_stages} stages, {metrics['stripper_P']/1e5:.3f} bar, reflux = {state.stripper_reflux}, boilup = {state.stripper_boilup}\n\n")
+        f.write(f"**Stripper operating mode**: adiabatic equilibrium stages; temperatures are determined by the energy balance, not fixed. Top stage {top_stage.T-273.15:.1f} C, bottom stage {bot_stage.T-273.15:.1f} C.\n\n")
         f.write(f"**Tear stream**: splitter recycle outlet → mixer (closes DES recycle loop)\n\n")
         if state._hx_fallback:
             f.write(

@@ -1,4 +1,10 @@
 .DS_Store
 Thumbs.db
 *.tmp
+
+# skills-manager local state
 .skills-manager.lock
+skills-manager.db
+skills-manager.db-shm
+skills-manager.db-wal
+cache/

@@ -1,5 +1,0 @@
-timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
-2026-07-02T14:15	baseline	feature-planning-workflow	-	79.8	baseline	-	初始基线评估; dim4=4, dim9=5	full_test
-2026-07-02T14:35	0b945c61	feature-planning-workflow	79.8	81.0	keep	dim4_checkpoints	添加3处显性CHECKPOINT/STOP标记; dim8沿用前次full_test	full_test+dry_run
-2026-07-02T14:45	f91d7339	feature-planning-workflow	81.0	83.4	keep	dim9_anti_examples	新增Anti-patterns and blacklist独立表格(9条); dim8沿用前次full_test	full_test+dry_run
-2026-07-02T14:55	994c6179	feature-planning-workflow	83.4	85.6	keep	dim2_workflow+dim6_integration	委托给/grill-with-docs、/to-prd、/to-issues; 新增反例8; dim8干跑假设外部skill可用	dry_run

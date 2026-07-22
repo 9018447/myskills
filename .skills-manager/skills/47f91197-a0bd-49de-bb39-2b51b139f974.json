@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "47f91197-a0bd-49de-bb39-2b51b139f974",
+  "path": "workflow-creator",
+  "path_key": "workflow-creator",
+  "enabled": true,
+  "tags": [
+    "自用"
+  ],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

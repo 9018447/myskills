@@ -4,7 +4,9 @@
   "path": "to-tickets",
   "path_key": "to-tickets",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "mattacpockskills"
+  ],
   "source": {
     "type": "skillssh",
     "ref": "mattpocock/skills/to-tickets",

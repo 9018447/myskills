@@ -4,7 +4,9 @@
   "path": "to-spec",
   "path_key": "to-spec",
   "enabled": true,
-  "tags": [],
+  "tags": [
+    "mattacpockskills"
+  ],
   "source": {
     "type": "skillssh",
     "ref": "mattpocock/skills/to-spec",

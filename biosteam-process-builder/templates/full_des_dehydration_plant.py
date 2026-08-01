@@ -77,6 +77,8 @@ _THERMO_CACHE: dict[str, tmo.Chemicals] = {}
 import biosteam as bst
 import thermosteam as tmo
 import warnings
+from des_screening_workflow.biosteam_units import ReferenceAbsorber, ReferenceStripper
+from des_screening_workflow.config import PrescreenConfig
 
 
 class ConditionedMixer(bst.units.Mixer):
@@ -137,13 +139,9 @@ COLUMN = {
 }
 
 STRIPPER = {
-    "T": 150.0 + 273.15,  # Heater outlet / stripper feed temperature [K]
+    "T": 200.0 + 273.15,  # Reboiler temperature spec [K] (DES stability cap)
     "P": 1.0 * 1e5,
     "N_stages": 5,
-    "feed_stage": 0,
-    "reflux": 0.0,
-    "boilup": 0.5,
-    "LHK": ("Water", "DES_choline_chloride_glycerol"),
 }
 
 HX = {
@@ -368,24 +366,23 @@ def compute_metrics(state: "ProcessState") -> dict[str, float]:
             cold_out = state.hx.outs[0]
         hx_duty = max(0.0, cold_out.H - cold_in.H)
 
-    heater_in = state.heater.ins[0]
-    heater_out = state.heater.outs[0]
-    heater_duty = heater_out.H - heater_in.H
+    # No separate feed heater: all utility heat for regeneration is the
+    # stripper reboiler duty (ReferenceStripper carries it from the MESH
+    # energy balance, in kJ/hr).
+    heater_duty = 0.0
 
     cooler_in = state.cooler.ins[0]
     cooler_out = state.cooler.outs[0]
     cooler_duty = cooler_out.H - cooler_in.H
 
-    # Reboiler duty from the stripper. For MESHDistillation compute it from
-    # the reboiler (last) stage energy balance: Q = H_out - H_in.
-    reboiler_stage = stripper.stages[-1]
-    reboiler_duty = sum(o.H for o in reboiler_stage.outs) - sum(i.H for i in reboiler_stage.ins)
+    # Reboiler duty from the reference stripper (kJ/hr, positive = heat in).
+    reboiler_duty = stripper.reboiler_duty
 
     # No-HX baseline: sensible heating of the absorber-bottom rich DES to stripper T.
     cp_molar = rich_des.Cn  # kJ/kmol/K
     duty_without_hx = rich_des.F_mol * cp_molar * (state.stripper_T - rich_des.T)
     # Self-consistent heat-recovery definition: HX share of total heating.
-    total_heating = hx_duty + heater_duty
+    total_heating = hx_duty + reboiler_duty
     heat_recovery_fraction = hx_duty / total_heating if total_heating > 0 else 0.0
 
     vent_flow = co2_vent.F_mol
@@ -406,7 +403,7 @@ def compute_metrics(state: "ProcessState") -> dict[str, float]:
         "recycle_des_flow": recycle_des_flow,
         "recycle_water_molefrac": recycle_water_molefrac,
         "water_recovery": water_recovery,
-        "stripper_T": stripper.stages[-1].T,
+        "stripper_T": stripper.T_bottom,
         "stripper_P": state.stripper_P,
         "stripper_stages": state.stripper_stages,
         # BioSTEAM exposes no public recycle-iteration accessor; read the
@@ -444,6 +441,7 @@ class ProcessState:
         makeup_fraction: float,
         stripper_spec: dict[str, float],
         N_stages: int | None = None,
+        thermo_data: dict | None = None,
     ):
         self._instance_id = ProcessState._next_instance_id
         ProcessState._next_instance_id += 1
@@ -454,14 +452,11 @@ class ProcessState:
         self.gas_spec = gas_spec
         self.absorbent_spec = absorbent_spec
         self.des_id = des_id
+        self.thermo_data = thermo_data
         self.makeup_fraction = makeup_fraction
-        self.stripper_T = stripper_spec["T"]
+        self.stripper_T = stripper_spec["T"]   # reboiler temperature spec [K]
         self.stripper_P = stripper_spec["P"]
         self.stripper_stages = stripper_spec["N_stages"]
-        self.stripper_feed_stage = stripper_spec.get("feed_stage", 0)
-        self.stripper_reflux = stripper_spec.get("reflux", 0.0)
-        self.stripper_boilup = stripper_spec.get("boilup", 0.5)
-        self.stripper_LHK = tuple(stripper_spec.get("LHK", ("Water", des_id)))
         self.gas_total_flow = gas_spec["flow"] + inert_flow
 
         self.N_stages = N_stages if N_stages is not None else COLUMN["N_stages"]
@@ -481,7 +476,6 @@ class ProcessState:
         self.mixer: Any = None
         self.absorber: Any = None
         self.hx: Any = None
-        self.heater: Any = None
         self.stripper: Any = None
         self.cooler: Any = None
         self.splitter: Any = None
@@ -572,21 +566,27 @@ class ProcessState:
         dry_co2_product = bst.Stream(f"dry_CO2_{n}", phase="g")
         rich_des_product = bst.Stream(f"rich_DES_{n}", phase="l")
 
-        self.absorber = bst.units.MultiStageEquilibrium(
+        # Reference MESH absorber (ADR 0012): replaces biosteam's
+        # MultiStageEquilibrium, whose staged-modular solve degenerated
+        # to a dew-point condenser (water removal pinned at 0.9398, decoupled
+        # from the DES thermodynamics — see .scratch/biosteam-mse-unreliable).
+        # Adiabatic: the per-stage energy balance is closed inside solve_absorber.
+        abs_cfg = PrescreenConfig(
+            pressure=self.P,
+            gas_feed_T=self.T_gas,
+            absorbent_T=self.absorbent_spec["T"],
+        )
+        self.absorber = ReferenceAbsorber(
             f"absorber_{n}",
-            N_stages=self.N_stages,
             ins=[self.gas_feed, self.mixer.outs[0]],
             outs=[dry_co2_product, rich_des_product],
-            phases=("g", "l"),
-            feed_stages=(-1, 0),
+            N_stages=self.N_stages,
             P=self.P,
-            algorithms=("sequential modular",),
-            maxiter=OPTIMIZATION.get("maxiter", 15),
-            max_attempts=5,
-            use_cache=OPTIMIZATION.get("use_cache", True),
+            chemicals=self.chemicals,
+            des_id=self.des_id,
+            thermo_data=self.thermo_data,
+            config=abs_cfg,
         )
-        self.absorber.tolerance = OPTIMIZATION.get("tolerance", 1e-2)
-        self.absorber.relative_tolerance = OPTIMIZATION.get("relative_tolerance", 1e-2)
 
         # Process-to-process heat recovery (rich/lean)
         hx_cold_out = bst.Stream(f"hx_cold_out_{n}", phase="l")
@@ -629,34 +629,32 @@ class ProcessState:
                 rigorous=False,
             )
 
-        heater_out = bst.Stream(f"heater_out_{n}", phase="l")
-        self.heater = bst.HXutility(
-            f"heater_{n}",
-            ins=hx_cold_out,
-            outs=heater_out,
-            T=self.stripper_T,
-            rigorous=False,
-        )
-
         co2_vent = bst.Stream(f"co2_vent_{n}", phase="g")
-        # Use MESHDistillation as a reflux-free stripper (feed at the top,
-        # boilup at the bottom). The tower is adiabatic: internal stage
-        # temperatures are determined by the energy balance, not fixed.
-        self.stripper = bst.units.MESHDistillation(
+        # Reference MESH stripper with a reboiler-temperature spec (ADR 0014):
+        # replaces MESHDistillation, whose sequential-modular solve collapsed
+        # to a water-boiling-point flash (bottoms pinned at 372.76 K with
+        # x_lean ~ 0 and an idle reboiler — impossible for the water/DES
+        # binary, where the vapour is pure water and equilibrium pins
+        # x_lean = P / (gamma * Psat(T_bottom))).  All utility heat for
+        # regeneration is the reboiler duty carried by the unit; no separate
+        # feed heater is needed (process HX upstream still pre-heats the rich
+        # DES with the hot lean stream).
+        strip_cfg = PrescreenConfig(
+            pressure=self.stripper_P,
+            gas_feed_T=self.T_gas,
+            absorbent_T=self.absorbent_spec["T"],
+        )
+        self.stripper = ReferenceStripper(
             f"stripper_{n}",
-            ins=[heater_out],
+            ins=[hx_cold_out],
             outs=[co2_vent, regenerated_des],
             N_stages=self.stripper_stages,
-            feed_stages=[self.stripper_feed_stage],
-            reflux=self.stripper_reflux,
-            boilup=self.stripper_boilup,
             P=self.stripper_P,
-            LHK=self.stripper_LHK,
-            full_condenser=False,
-            algorithms=("sequential modular",),
-            maxiter=OPTIMIZATION.get("maxiter", 15),
-            max_attempts=5,
-            use_cache=OPTIMIZATION.get("use_cache", True),
+            T_bottom=self.stripper_T,
+            chemicals=self.chemicals,
+            des_id=self.des_id,
+            thermo_data=self.thermo_data,
+            config=strip_cfg,
         )
 
         cooler_out = bst.Stream(f"cooler_out_{n}", phase="l")
@@ -681,7 +679,7 @@ class ProcessState:
             path.append(self.hx_cold)
         else:
             path.append(self.hx)
-        path.extend([self.heater, self.stripper])
+        path.append(self.stripper)
         if self._hx_fallback:
             path.append(self.hx_hot)
         path.extend([self.cooler, self.splitter])
@@ -693,9 +691,7 @@ class ProcessState:
             maxiter=RECYCLE.get("maxiter", 100),
             molar_tolerance=RECYCLE.get("tolerance", 1e-6),
         )
-        # MESHDistillation's _design()/_actual_stages() requires both LHK
-        # chemicals to be in the VLE chemical list. DES is locked as a
-        # non-volatile liquid, so skip equipment design and only converge
+        # Reference units carry no equipment design; only converge the
         # mass/energy balances.
         self.system.simulate(design_and_cost=False)
         self._needs_rebuild = False
@@ -782,8 +778,8 @@ class ProcessState:
         rebuild by an amount comparable to the convergence tolerance.
 
         To keep incremental results consistent with a fresh rebuild, unit-level
-        caches (notably MESHDistillation stage profiles) are reset before the
-        re-convergence while the recycle stream keeps its warm start.
+        caches are reset before the re-convergence while the recycle stream
+        keeps its warm start.
         """
         if self.system is None or self._needs_rebuild:
             self.build()
@@ -838,6 +834,9 @@ def _unit_duty_or_power(unit: Any) -> float:
         return (unit.outs[0].H - unit.ins[0].H) / 3600.0
     if name in ("HXprocess",):
         return abs(float(unit.total_heat_transfer)) / 3600.0 if unit.total_heat_transfer is not None else 0.0
+    if name in ("ReferenceStripper",):
+        # Reboiler duty carried from the MESH energy balance (kJ/hr -> kW).
+        return getattr(unit, "reboiler_duty", 0.0) / 3600.0
     return 0.0
 
 
@@ -873,8 +872,7 @@ def _equipment_rows(state: ProcessState) -> list[dict[str, Any]]:
         ("Mixer", state.mixer),
         ("Absorber", state.absorber),
         ("HXprocess (rich/lean)", state.hx if not state._hx_fallback else state.hx_cold),
-        ("Heater", state.heater),
-        ("Stripper", state.stripper),
+        ("Stripper (reboiler)", state.stripper),
         ("Cooler", state.cooler),
         ("Splitter", state.splitter),
     ]
@@ -933,10 +931,10 @@ def _write_brief(
         f.write(f"makeup fraction = {MAKEUP_FRACTION:.2f}, ")
         f.write(f"fresh makeup = {ABSORBENT['flow'] * MAKEUP_FRACTION:.1f} kmol/hr\n\n")
         f.write(f"**Column**: {state.N_stages} equilibrium stages (rigorous COSMOSAC) at {state.P/1e5:.2f} bar\n\n")
-        top_stage = state.stripper.stages[0]
-        bot_stage = state.stripper.stages[-1]
-        f.write(f"**Stripper**: {state.stripper_stages} stages, {metrics['stripper_P']/1e5:.3f} bar, reflux = {state.stripper_reflux}, boilup = {state.stripper_boilup}\n\n")
-        f.write(f"**Stripper operating mode**: adiabatic equilibrium stages; temperatures are determined by the energy balance, not fixed. Top stage {top_stage.T-273.15:.1f} C, bottom stage {bot_stage.T-273.15:.1f} C.\n\n")
+        strip_sol = getattr(state.stripper, "_solution", None)
+        f.write(f"**Stripper**: reference MESH stripper, {state.stripper_stages} stages, {metrics['stripper_P']/1e5:.3f} bar, reboiler spec T_bottom = {state.stripper_T-273.15:.1f} C\n\n")
+        if strip_sol is not None:
+            f.write(f"**Stripper solution**: achieved x_lean = {strip_sol.x_lean:.4f}, top stage {strip_sol.T_stages[0]-273.15:.1f} C, reboiler {strip_sol.T_stages[-1]-273.15:.1f} C.\n\n")
         f.write(f"**Tear stream**: splitter recycle outlet → mixer (closes DES recycle loop)\n\n")
         if state._hx_fallback:
             f.write(
@@ -1032,7 +1030,7 @@ def _write_stream_table(run_dir: Path, state: ProcessState) -> Path:
     units = [
         state.mixer, state.absorber,
         state.hx if not state._hx_fallback else state.hx_cold,
-        state.heater, state.stripper,
+        state.stripper,
         state.cooler, state.splitter,
     ]
     if state._hx_fallback:

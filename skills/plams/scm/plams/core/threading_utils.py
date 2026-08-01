@@ -1,0 +1,176 @@
+import threading
+from functools import cached_property
+from contextvars import copy_context
+from typing import Callable, TypeVar, Generic, Optional, Type, Iterable, Any, Mapping
+from typing_extensions import ParamSpec
+from types import TracebackType
+
+
+class LimitedSemaphore:
+    """
+    A semaphore with an adjustable limit on the maximum value
+    """
+
+    def __init__(self, max_value: int):
+        if max_value < 0:
+            raise ValueError(f"max_value must be greater or equal to 0, was {max_value}")
+
+        self._max_value = max_value
+        self._value = max_value
+        self._setter_waiting = False
+        self._set_lock = threading.Lock()
+        self._condition = threading.Condition(threading.Lock())
+
+    def acquire(self) -> None:
+        """
+        Acquire a semaphore, decrementing internal counter by one.
+
+        If internal counter is greater than zero on entry, return immediately,
+        otherwise block and wait until another thread has called release.
+        """
+        with self._condition:
+            # Give priority to the max_value setter and then wait until a semaphore is available
+            while self._setter_waiting or self._value == 0:
+                self._condition.wait()
+            self._value -= 1
+
+    __enter__ = acquire
+
+    def release(self, n: int = 1) -> None:
+        """
+        Release a semaphore, incrementing the internal counter by one or more.
+
+        When the counter goes above the configured maximum value, raises a ValueError.
+
+        When the counter is zero on entry and another thread is waiting for it
+        to become larger than zero again, wake up that thread.
+        """
+        if n < 1:
+            raise ValueError(f"n must be one or more, was {n}")
+
+        with self._condition:
+            # Increase counter if within limit and notify waiting threads
+            if self._value + n > self._max_value:
+                raise ValueError(f"LimitedSemaphore released too many times, maximum is set to {self._max_value}")
+            self._value += n
+            self._condition.notify_all()
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        self.release()
+
+    @property
+    def max_value(self) -> int:
+        """
+        Maximum value for the internal counter.
+
+        If the semaphore exceeds this a ValueError will be raised.
+
+        Setting the maximum value higher than the current maximum will immediately allow further acquire calls.
+        Conversely, reducing the maximum will block until enough threads have released to satisfy the new maximum.
+        """
+        with self._condition:
+            return self._max_value
+
+    @max_value.setter
+    def max_value(self, max_value: int) -> None:
+        with self._set_lock:
+            with self._condition:
+                diff = max_value - self._max_value
+                if diff == 0:
+                    return
+
+                # Block new acquires
+                self._setter_waiting = True
+
+                # If decreasing max value, wait for enough releases to safely increase max
+                # If increasing max value, can just go ahead
+                if diff < 0:
+                    while diff + self._value < 0:
+                        self._condition.wait()
+
+                # Modify the (max) value and notify waiting threads
+                self._value += diff
+                self._max_value = max_value
+                self._setter_waiting = False
+                self._condition.notify_all()
+
+
+T = TypeVar("T")
+
+
+class LazyWrapper(Generic[T]):
+    """
+    Thread-safe wrapper for lazy initialization of objects
+    """
+
+    def __init__(self, factory: Callable[[], T]):
+        """
+        Initialize with a factory function, used to create the object instance on first access
+
+        :param factory: function returning a new instance of an object
+        """
+        self._factory: Callable[[], T] = factory
+
+    @cached_property
+    def value(self) -> T:
+        """
+        Lazily initialized value. On first call, the value will be created from the factory. On subsequent calls, the same cached value will be returned.
+
+        :return: initialized value
+        """
+        return self._factory()
+
+    @property
+    def initialized(self) -> bool:
+        """
+        Check whether the lazy value has already been initialized.
+
+        :return: flag for whether the underlying lazy value is initialized
+        """
+        return "value" in self.__dict__
+
+    def __str__(self) -> str:
+        if self.initialized:
+            return f"Initialized LazyWrapper[{type(self.value).__name__}]"
+        else:
+            return "Uninitialized LazyWrapper"
+
+
+P = ParamSpec("P")
+
+
+class ContextAwareThread(threading.Thread):
+    """
+    Thread which runs in a context copied from parent thread
+    """
+
+    def __init__(
+        self,
+        group: None = None,
+        target: Optional[Callable[..., Any]] = None,
+        name: Optional[str] = None,
+        args: Iterable[Any] = (),
+        kwargs: Optional[Mapping[str, Any]] = None,
+        *,
+        daemon: Optional[bool] = None,
+    ) -> None:
+        self._context = copy_context()
+        super().__init__(
+            group=group,
+            target=target,
+            name=name,
+            args=tuple(args),
+            kwargs=dict(kwargs) if kwargs is not None else None,
+            daemon=daemon,
+        )
+
+    def run(self) -> None:
+        """
+        Run thread target in the context copied from the parent thread
+        """
+        self._context.run(super().run)

@@ -1,4 +1,0 @@
-[submodule "skills"]
-	path = skills
-	url = git@github.com:9018447/myskills.git
-	branch = skills-main

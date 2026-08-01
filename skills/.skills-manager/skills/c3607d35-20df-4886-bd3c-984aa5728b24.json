@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "c3607d35-20df-4886-bd3c-984aa5728b24",
+  "path": "darwin-skill",
+  "path_key": "darwin-skill",
+  "enabled": true,
+  "tags": [
+    "mattacpockskills"
+  ],
+  "source": {
+    "type": "skillssh",
+    "ref": "alchaincyf/darwin-skill/darwin-skill",
+    "subpath": null,
+    "branch": null
+  }
+}

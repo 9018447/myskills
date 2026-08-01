@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "997c7f2a-cf5f-4b48-adc7-bf4511d0cc66",
+  "path": "run-gauss",
+  "path_key": "run-gauss",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

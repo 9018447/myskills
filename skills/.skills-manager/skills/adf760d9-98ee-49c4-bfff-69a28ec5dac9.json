@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "adf760d9-98ee-49c4-bfff-69a28ec5dac9",
+  "path": "segment-anything-model",
+  "path_key": "segment-anything-model",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

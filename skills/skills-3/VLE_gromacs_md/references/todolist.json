@@ -1,0 +1,42 @@
+{
+  "task3": {
+    "description": "prepare for gromacs box",
+    "molecules": [
+      {
+        "name": "LQ1",
+        "count": 200,
+        "phase": "l"
+      },
+      {
+        "name": "LQ2",
+        "count": 200,
+        "phase": "l"
+      },
+      {
+        "name": "LQ3",
+        "count": 100,
+        "phase": "l"
+      }
+    ]
+  },
+  "task4": {
+    "description": "gas molecular dynamics",
+    "molecules": [
+      {
+        "name": "GS1",
+        "count": 2000,
+        "phase": "g"
+      },
+      {
+        "name": "GS2",
+        "count": 2000,
+        "phase": "g"
+      },
+      {
+        "name": "GS3",
+        "count": 100,
+        "phase": "g"
+      }
+    ]
+  }
+}

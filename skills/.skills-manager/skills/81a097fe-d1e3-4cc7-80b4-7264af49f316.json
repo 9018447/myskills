@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "81a097fe-d1e3-4cc7-80b4-7264af49f316",
+  "path": "xenodium-emacs-skills-gnuplot",
+  "path_key": "xenodium-emacs-skills-gnuplot",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

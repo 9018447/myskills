@@ -1,0 +1,35 @@
+{
+  "skill_name": "gnuplot",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我用 gnuplot 画一个正弦和余弦函数的对比图，要求两条线颜色不同，有图例，x 轴范围是 -2pi 到 2pi，输出为 PDF 文件。",
+      "expected_output": "一个完整的 gnuplot 脚本，包含 pdfcairo 终端设置、两条函数曲线（不同颜色和线型）、图例、坐标轴标签，能直接运行生成 PDF。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我有一组实验数据文件 data.txt，内容是温度和压力的测量值（两列），请帮我画一个散点图，并进行线性拟合，把拟合结果和参数显示在图上。输出 PNG 格式。",
+      "expected_output": "一个 gnuplot 脚本，包含数据文件读取、散点图绘制、fit 拟合、拟合曲线叠加、参数显示（使用 sprintf），能正确处理两列数据。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "画一个 2x2 的多子图布局：左上是 sin(x)，右上是 cos(x)，左下是 tan(x) 在 [-1,1] 范围内，右下是 x^2。每个子图要有标题，整体有一个大标题。",
+      "expected_output": "一个使用 multiplot layout 2,2 的 gnuplot 脚本，每个子图有独立标题，整体有总标题，布局合理美观。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "帮我用 gnuplot 画一个 3D 表面图，函数是 sin(sqrt(x^2+y^2))，要给表面上色，设置合适的视角，输出为 PNG。",
+      "expected_output": "一个使用 splot 的 gnuplot 脚本，包含 pm3d 上色、isosamples 设置、hidden3d、view 视角设置、自定义调色板。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "画一个热力图，数据是一个二维高斯分布，x 和 y 范围都是 -3 到 3，用自定义调色板（从深蓝到白色到红色），同时叠加等高线。",
+      "expected_output": "一个 gnuplot 脚本，使用 pm3d at b + view map 绘制热力图，set contour base 叠加等高线，自定义调色板，set cntrparam 设置等高线数量。",
+      "files": []
+    }
+  ]
+}

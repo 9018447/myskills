@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "956ed8ff-2229-479a-83c5-94d1efa1ddab",
+  "path": "merge-vega-json",
+  "path_key": "merge-vega-json",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

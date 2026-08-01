@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "44054644-c77e-4fc9-996b-3216e65aee5b",
+  "path": "molecular-orbital-analysis",
+  "path_key": "molecular-orbital-analysis",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

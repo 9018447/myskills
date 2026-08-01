@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "6a8172c9-a427-46c2-a74d-f0c5ab682ee4",
+  "path": "wos-paper-detail",
+  "path_key": "wos-paper-detail",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "git",
+    "ref": "https://github.com/cookjohn/wos-skills",
+    "subpath": "skills/wos-paper-detail",
+    "branch": null
+  }
+}

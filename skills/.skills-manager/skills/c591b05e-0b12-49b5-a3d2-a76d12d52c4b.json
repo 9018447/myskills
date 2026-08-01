@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "c591b05e-0b12-49b5-a3d2-a76d12d52c4b",
+  "path": "clean-data-csv",
+  "path_key": "clean-data-csv",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

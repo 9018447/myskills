@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "73f0fdcf-aaf3-41be-a763-44f6fd3934ba",
+  "path": "julia",
+  "path_key": "julia",
+  "enabled": true,
+  "tags": [
+    "julia"
+  ],
+  "source": {
+    "type": "skillssh",
+    "ref": "mindrally/skills/julia",
+    "subpath": "julia",
+    "branch": null
+  }
+}

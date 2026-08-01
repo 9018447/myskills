@@ -1,0 +1,64 @@
+{
+  "skill_name": "xyzrender",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a file called caffeine.xyz and I want a publication-ready SVG with hydrogens visible using a PyMOL-like preset. Give me the exact xyzrender command and mention any install step only if I need one.",
+      "expected_output": "A concise command using xyzrender with a preset, hydrogen visibility, and an SVG output path.",
+      "files": [],
+      "expectations": [
+        "Uses the xyzrender CLI rather than unrelated tools",
+        "Includes a preset-based config choice such as paton",
+        "Makes hydrogen visibility explicit",
+        "Exports to an SVG file"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Show me a short Python example that loads caffeine.xyz with xyzrender and saves a rotation GIF. Keep it to the public API.",
+      "expected_output": "A short Python snippet using xyzrender public API functions to load a molecule and render a GIF.",
+      "files": [],
+      "expectations": [
+        "Imports from xyzrender public API",
+        "Uses load() for the input structure",
+        "Uses render_gif() for the animation",
+        "Keeps the example short and runnable"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I want to render a SMILES string with xyzrender, but it fails on a fresh environment. What should I install, and what limitation should I know before trying interactive orientation too?",
+      "expected_output": "An answer that identifies the optional install for SMILES and mentions the separate viewer extra or limitation for interactive orientation.",
+      "files": [],
+      "expectations": [
+        "Names the xyzrender[smi] extra for SMILES support",
+        "Explains that interactive orientation depends on the v extra",
+        "Does not pretend those extras are part of the default install"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I only have calc.fchk and want an NCI surface. In this workspace there is an nci.txt file for Multiwfn. Give me the minimal workflow to produce the cubes and then render the NCI surface with xyzrender.",
+      "expected_output": "A concise workflow that starts with Multiwfn using nci.txt, notes the .cub to .cube handoff if needed, and renders the result with xyzrender --nci-surf.",
+      "files": [],
+      "expectations": [
+        "Starts from Multiwfn rather than pretending xyzrender can derive the NCI surface directly from fchk",
+        "Uses the local nci.txt workflow",
+        "Mentions the .cub to .cube rename when needed",
+        "Uses xyzrender with --nci-surf for the final rendering"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "This repo has drawesp/fchk2cub.sh and drawesp/cube2esp.sh. I want to batch-generate ESP SVGs from all fchk files. Tell me the exact commands and explain how xyzrender is used in that pipeline.",
+      "expected_output": "An answer that reuses the local drawesp scripts, explains the DENSITY/ESP cube pairing, and identifies the xyzrender --esp render step.",
+      "files": [],
+      "expectations": [
+        "Reuses drawesp/fchk2cub.sh and drawesp/cube2esp.sh instead of inventing a new pipeline",
+        "Explains that Multiwfn generates paired DENSITY and ESP cube files",
+        "Identifies xyzrender --esp as the rendering step",
+        "Keeps the guidance practical and command-oriented"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "a7670340-752e-4592-bf1b-d3104f7bee27",
+  "path": "gromacs-md-workflow",
+  "path_key": "gromacs-md-workflow",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

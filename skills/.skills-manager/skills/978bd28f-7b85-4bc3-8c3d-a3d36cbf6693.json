@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "978bd28f-7b85-4bc3-8c3d-a3d36cbf6693",
+  "path": "n8n-node-configuration",
+  "path_key": "n8n-node-configuration",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "czlonkowski/n8n-skills/n8n-node-configuration",
+    "subpath": "skills/n8n-node-configuration",
+    "branch": null
+  }
+}

@@ -1,0 +1,1164 @@
+{
+  "nodes": [
+    {
+      "id": "Output.md",
+      "label": "# Output",
+      "source_file": "Output.md"
+    },
+    {
+      "id": "Input.md",
+      "label": "# Input",
+      "source_file": "Input.md"
+    },
+    {
+      "id": "Documentation_9.md",
+      "label": "# Sigma Moments",
+      "source_file": "Documentation 9.md"
+    },
+    {
+      "id": "Documentation_10.md",
+      "label": "# Eutectic systems",
+      "source_file": "Documentation 10.md"
+    },
+    {
+      "id": "CRSManager.md",
+      "label": "# CRSManager",
+      "source_file": "CRSManager.md"
+    },
+    {
+      "id": "Documentation_13.md",
+      "label": "# Automated pKa calculation",
+      "source_file": "Documentation 13.md"
+    },
+    {
+      "id": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "label": "# Python scripting for COSMO-RS with PLAMS",
+      "source_file": "Python scripting for COSMO-RS with PLAMS.md"
+    },
+    {
+      "id": "Database_API.md",
+      "label": "# Database",
+      "source_file": "Database API.md"
+    },
+    {
+      "id": "Documentation_7.md",
+      "label": "# Automated screening of ionic liquids",
+      "source_file": "Documentation 7.md"
+    },
+    {
+      "id": "Documentation_8.md",
+      "label": "# Calculating and estimating sigma profiles",
+      "source_file": "Documentation 8.md"
+    },
+    {
+      "id": "PropPred.md",
+      "label": "# PropPred",
+      "source_file": "PropPred.md"
+    },
+    {
+      "id": "Documentation_12.md",
+      "label": "# Distribution of species in multispecies calculations",
+      "source_file": "Documentation 12.md"
+    },
+    {
+      "id": "Documentation_11.md",
+      "label": "# Binodal and Spinodal Curves",
+      "source_file": "Documentation 11.md"
+    },
+    {
+      "id": "Documentation_14.md",
+      "label": "# General Information",
+      "source_file": "Documentation 14.md"
+    },
+    {
+      "id": "Documentation_3.md",
+      "label": "# Changing the default parameters or re-parameterizing the COSMO-RS/-SAC methods",
+      "source_file": "Documentation 3.md"
+    },
+    {
+      "id": "Documentation_1.md",
+      "label": "# pyCRS: Basic usage for PropPred and FastSigma",
+      "source_file": "Documentation 1.md"
+    },
+    {
+      "id": "Documentation_6.md",
+      "label": "# Regression of NRTL parameters",
+      "source_file": "Documentation 6.md"
+    },
+    {
+      "id": "Documentation.md",
+      "label": "# pyCRS: Conformer usage for Database and CRSManager",
+      "source_file": "Documentation.md"
+    },
+    {
+      "id": "FaseSigma.md",
+      "label": "# FastSigma",
+      "source_file": "FaseSigma.md"
+    },
+    {
+      "id": "Documentation_4.md",
+      "label": "# Solubility screening for solid solute",
+      "source_file": "Documentation 4.md"
+    },
+    {
+      "id": "pyCRS_Basic_Usage.md",
+      "label": "# pyCRS: Basic usage for Database and CRSManager",
+      "source_file": "pyCRS Basic Usage.md"
+    },
+    {
+      "id": "Documentation_5.md",
+      "label": "# Screening for cocrystals",
+      "source_file": "Documentation 5.md"
+    },
+    {
+      "id": "Documentation_2.md",
+      "label": "# Examples using PLAMS",
+      "source_file": "Documentation 2.md"
+    },
+    {
+      "id": "Molecule.md",
+      "label": "# Molecule",
+      "source_file": "Molecule.md"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Output.md",
+      "target": "Input.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.773
+    },
+    {
+      "source": "Output.md",
+      "target": "CRSManager.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.379
+    },
+    {
+      "source": "Output.md",
+      "target": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.146
+    },
+    {
+      "source": "Output.md",
+      "target": "Database_API.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.419
+    },
+    {
+      "source": "Output.md",
+      "target": "PropPred.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.545
+    },
+    {
+      "source": "Output.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.177
+    },
+    {
+      "source": "Output.md",
+      "target": "Documentation_1.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.224
+    },
+    {
+      "source": "Output.md",
+      "target": "FaseSigma.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.67
+    },
+    {
+      "source": "Output.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.577
+    },
+    {
+      "source": "Input.md",
+      "target": "CRSManager.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.348
+    },
+    {
+      "source": "Input.md",
+      "target": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.138
+    },
+    {
+      "source": "Input.md",
+      "target": "Database_API.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.38
+    },
+    {
+      "source": "Input.md",
+      "target": "PropPred.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.563
+    },
+    {
+      "source": "Input.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.192
+    },
+    {
+      "source": "Input.md",
+      "target": "Documentation_3.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.14
+    },
+    {
+      "source": "Input.md",
+      "target": "Documentation_1.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.257
+    },
+    {
+      "source": "Input.md",
+      "target": "FaseSigma.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.65
+    },
+    {
+      "source": "Input.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.597
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Documentation_10.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.245
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Documentation_13.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.532
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.172
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Documentation_7.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.17
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Documentation_8.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.361
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Documentation_12.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.154
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.122
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Documentation_1.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.147
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.135
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.156
+    },
+    {
+      "source": "Documentation_9.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.133
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Documentation_13.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.353
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.218
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Documentation_8.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.196
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Documentation_12.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.194
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Documentation_11.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.217
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.144
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Documentation_3.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.121
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.161
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.147
+    },
+    {
+      "source": "Documentation_10.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.226
+    },
+    {
+      "source": "CRSManager.md",
+      "target": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.218
+    },
+    {
+      "source": "CRSManager.md",
+      "target": "Database_API.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.733
+    },
+    {
+      "source": "CRSManager.md",
+      "target": "PropPred.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.465
+    },
+    {
+      "source": "CRSManager.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.306
+    },
+    {
+      "source": "CRSManager.md",
+      "target": "FaseSigma.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.538
+    },
+    {
+      "source": "CRSManager.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.159
+    },
+    {
+      "source": "CRSManager.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.189
+    },
+    {
+      "source": "CRSManager.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.533
+    },
+    {
+      "source": "Documentation_13.md",
+      "target": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.164
+    },
+    {
+      "source": "Documentation_13.md",
+      "target": "Documentation_8.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.316
+    },
+    {
+      "source": "Documentation_13.md",
+      "target": "Documentation_12.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.182
+    },
+    {
+      "source": "Documentation_13.md",
+      "target": "Documentation_11.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.153
+    },
+    {
+      "source": "Documentation_13.md",
+      "target": "Documentation_3.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.164
+    },
+    {
+      "source": "Documentation_13.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.213
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Database_API.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.153
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_7.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.279
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_8.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.291
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "PropPred.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.148
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_12.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.507
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_11.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.293
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.502
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_3.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.339
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_1.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.171
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_6.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.134
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.185
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "FaseSigma.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.168
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.369
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.253
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.3
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.63
+    },
+    {
+      "source": "Python_scripting_for_COSMO-RS_with_PLAMS.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.198
+    },
+    {
+      "source": "Database_API.md",
+      "target": "PropPred.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.536
+    },
+    {
+      "source": "Database_API.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.247
+    },
+    {
+      "source": "Database_API.md",
+      "target": "FaseSigma.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.579
+    },
+    {
+      "source": "Database_API.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.194
+    },
+    {
+      "source": "Database_API.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.614
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation_8.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.175
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation_12.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.321
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation_11.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.16
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.203
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation_3.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.128
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation_6.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.136
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.139
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.352
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.152
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.382
+    },
+    {
+      "source": "Documentation_7.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.228
+    },
+    {
+      "source": "Documentation_8.md",
+      "target": "Documentation_12.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.299
+    },
+    {
+      "source": "Documentation_8.md",
+      "target": "Documentation_11.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.213
+    },
+    {
+      "source": "Documentation_8.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.182
+    },
+    {
+      "source": "Documentation_8.md",
+      "target": "Documentation_3.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.19
+    },
+    {
+      "source": "Documentation_8.md",
+      "target": "Documentation_1.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.221
+    },
+    {
+      "source": "Documentation_8.md",
+      "target": "Documentation.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.138
+    },
+    {
+      "source": "Documentation_8.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.18
+    },
+    {
+      "source": "Documentation_8.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.214
+    },
+    {
+      "source": "Documentation_8.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.29
+    },
+    {
+      "source": "PropPred.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.21
+    },
+    {
+      "source": "PropPred.md",
+      "target": "Documentation_1.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.533
+    },
+    {
+      "source": "PropPred.md",
+      "target": "FaseSigma.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.593
+    },
+    {
+      "source": "PropPred.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.128
+    },
+    {
+      "source": "PropPred.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.651
+    },
+    {
+      "source": "Documentation_12.md",
+      "target": "Documentation_11.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.272
+    },
+    {
+      "source": "Documentation_12.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.321
+    },
+    {
+      "source": "Documentation_12.md",
+      "target": "Documentation_3.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.319
+    },
+    {
+      "source": "Documentation_12.md",
+      "target": "Documentation_1.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.149
+    },
+    {
+      "source": "Documentation_12.md",
+      "target": "Documentation.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.313
+    },
+    {
+      "source": "Documentation_12.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.309
+    },
+    {
+      "source": "Documentation_12.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.176
+    },
+    {
+      "source": "Documentation_12.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.371
+    },
+    {
+      "source": "Documentation_12.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.524
+    },
+    {
+      "source": "Documentation_11.md",
+      "target": "Documentation_14.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.153
+    },
+    {
+      "source": "Documentation_11.md",
+      "target": "Documentation_3.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.24
+    },
+    {
+      "source": "Documentation_11.md",
+      "target": "Documentation_6.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.131
+    },
+    {
+      "source": "Documentation_11.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.171
+    },
+    {
+      "source": "Documentation_11.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.192
+    },
+    {
+      "source": "Documentation_11.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.305
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "Documentation_3.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.159
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "Documentation_1.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.227
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "Documentation_6.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.142
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "Documentation.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.307
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "FaseSigma.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.202
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.395
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.618
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.287
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.35
+    },
+    {
+      "source": "Documentation_14.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.176
+    },
+    {
+      "source": "Documentation_3.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.145
+    },
+    {
+      "source": "Documentation_3.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.15
+    },
+    {
+      "source": "Documentation_3.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.399
+    },
+    {
+      "source": "Documentation_1.md",
+      "target": "Documentation.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.151
+    },
+    {
+      "source": "Documentation_1.md",
+      "target": "FaseSigma.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.281
+    },
+    {
+      "source": "Documentation_1.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.203
+    },
+    {
+      "source": "Documentation_1.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.205
+    },
+    {
+      "source": "Documentation_1.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.207
+    },
+    {
+      "source": "Documentation_1.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.341
+    },
+    {
+      "source": "Documentation_6.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.201
+    },
+    {
+      "source": "Documentation_6.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.136
+    },
+    {
+      "source": "Documentation_6.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.167
+    },
+    {
+      "source": "Documentation.md",
+      "target": "Documentation_4.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.27
+    },
+    {
+      "source": "Documentation.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.344
+    },
+    {
+      "source": "Documentation.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.241
+    },
+    {
+      "source": "Documentation.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.143
+    },
+    {
+      "source": "FaseSigma.md",
+      "target": "Molecule.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.711
+    },
+    {
+      "source": "Documentation_4.md",
+      "target": "pyCRS_Basic_Usage.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.396
+    },
+    {
+      "source": "Documentation_4.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.48
+    },
+    {
+      "source": "Documentation_4.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.295
+    },
+    {
+      "source": "pyCRS_Basic_Usage.md",
+      "target": "Documentation_5.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.279
+    },
+    {
+      "source": "pyCRS_Basic_Usage.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.319
+    },
+    {
+      "source": "Documentation_5.md",
+      "target": "Documentation_2.md",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "weight": 0.257
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "f15f87b3-562d-421b-90c0-dba1837b3e96",
+  "path": "wos-parse-results",
+  "path_key": "wos-parse-results",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "git",
+    "ref": "https://github.com/cookjohn/wos-skills",
+    "subpath": "skills/wos-parse-results",
+    "branch": null
+  }
+}

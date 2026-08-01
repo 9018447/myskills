@@ -1,0 +1,57 @@
+; npt_precompress.mdp - Homogeneous solution NPT stage 1
+; Strong pre-compression with Berendsen barostat to remove local vacuum
+
+title                   = Homogeneous NPT stage 1 pre-compression
+
+; Run parameters
+integrator              = md
+nsteps                  = 250000         ; 250000 * 0.002 ps = 500 ps
+dt                      = 0.002
+
+; Output control
+nstxout                 = 5000
+nstvout                 = 5000
+nstenergy               = 5000
+nstlog                  = 5000
+
+; Bond parameters
+continuation            = yes
+constraint_algorithm    = lincs
+constraints             = h-bonds
+lincs_iter              = 1
+lincs_order             = 4
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+ns_type                 = grid
+nstlist                 = 20
+rlist                   = 1.2
+rcoulomb                = 1.2
+rvdw                    = 1.2
+
+; Electrostatics
+coulombtype             = PME
+pme_order               = 4
+fourierspacing          = 0.16
+
+; Temperature coupling
+tcoupl                  = V-rescale
+tc-grps                 = system
+tau_t                   = 0.1
+ref_t                   = 300
+
+; Pressure coupling
+pcoupl                  = Berendsen
+pcoupltype              = isotropic
+tau_p                   = 5.0
+ref_p                   = 80.0
+compressibility         = 4.5e-5
+
+; Periodic boundary conditions
+pbc                     = xyz
+
+; Dispersion correction
+DispCorr                = EnerPres
+
+; Velocity generation
+gen_vel                 = no

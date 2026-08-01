@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "3ed3fc98-5f0d-4606-a786-06b201e58b39",
+  "path": "gjf-flux",
+  "path_key": "gjf-flux",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

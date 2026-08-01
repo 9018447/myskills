@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "fbf79a66-ba75-407b-aadd-fc4777fd04de",
+  "path": "darktable-colorist",
+  "path_key": "darktable-colorist",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

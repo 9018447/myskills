@@ -1,0 +1,10 @@
+%chk=[name].chk
+%mem=20GB
+%nprocshared=16
+#p B3LYP/6-311G(d,p) Opt Freq EmpiricalDispersion=GD3BJ
+
+Template file
+
+0 1
+[GEOMETRY]
+

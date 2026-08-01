@@ -1,0 +1,55 @@
+; nvt.mdp - General NVT equilibration parameters
+;
+title                   = NVT equilibration
+define                  = -DPOSRES      ; position restrain the protein (ensure topology has POSRES)
+
+; Run parameters
+integrator              = md            ; leap-frog integrator
+nsteps                  = 500000        ; 500000 * 0.002 ps = 1000 ps = 1 ns
+dt                      = 0.002         ; 2 fs
+
+; Output control
+nstxout                 = 5000          ; save coordinates every 10 ps
+nstvout                 = 5000          ; save velocities every 10 ps
+nstenergy               = 5000          ; save energies every 10 ps
+nstlog                  = 5000          ; update log file every 10 ps
+
+; Bond parameters
+continuation            = no            ; first dynamics run
+constraint_algorithm    = lincs         ; holonomic constraints 
+constraints             = h-bonds       ; bonds involving H are constrained
+lincs_iter              = 1             ; accuracy of LINCS
+lincs_order             = 4             ; also related to accuracy
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+ns_type                 = grid
+nstlist                 = 20            ; update neighbor list every 40 fs
+rlist                   = 1.2
+rcoulomb                = 1.2
+rvdw                    = 1.2
+
+; Electrostatics
+coulombtype             = PME
+pme_order               = 4
+fourierspacing          = 0.16
+
+; Temperature coupling is on
+tcoupl                  = V-rescale     ; modified Berendsen thermostat
+tc-grps                 = system        ; coupling group (general)
+tau_t                   = 0.1           ; time constant, in ps
+ref_t                   = 300           ; reference temperature, in K
+
+; Pressure coupling is off
+pcoupl                  = no            ; no pressure coupling in NVT
+
+; Periodic boundary conditions
+pbc                     = xyz           ; 3-D PBC
+
+; Dispersion correction
+DispCorr                = EnerPres      ; account for cut-off vdW scheme
+
+; Velocity generation
+gen_vel                 = yes           ; assign velocities from Maxwell distribution
+gen_temp                = 300           ; temperature for Maxwell distribution
+gen_seed                = -1            ; generate a random seed

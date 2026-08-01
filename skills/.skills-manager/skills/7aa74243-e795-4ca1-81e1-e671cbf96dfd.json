@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "skill_id": "7aa74243-e795-4ca1-81e1-e671cbf96dfd",
+  "path": "gcidentifier-jl",
+  "path_key": "gcidentifier-jl",
+  "enabled": true,
+  "tags": [
+    "julia",
+    "自用"
+  ],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

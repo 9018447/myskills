@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "7cdbf399-3dac-4def-9bd3-7d5ee6c98a00",
+  "path": "gs-researcher",
+  "path_key": "gs-researcher",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

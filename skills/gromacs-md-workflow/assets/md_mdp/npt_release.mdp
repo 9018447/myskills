@@ -1,0 +1,57 @@
+; npt_release.mdp - Homogeneous solution NPT stage 2
+; Relax pressure from pre-compression to a very low target pressure with Berendsen barostat
+
+title                   = Homogeneous NPT stage 2 pressure release
+
+; Run parameters
+integrator              = md
+nsteps                  = 500000         ; 500000 * 0.002 ps = 1000 ps = 1 ns
+dt                      = 0.002
+
+; Output control
+nstxout                 = 5000
+nstvout                 = 5000
+nstenergy               = 5000
+nstlog                  = 5000
+
+; Bond parameters
+continuation            = yes
+constraint_algorithm    = lincs
+constraints             = h-bonds
+lincs_iter              = 1
+lincs_order             = 4
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+ns_type                 = grid
+nstlist                 = 20
+rlist                   = 1.2
+rcoulomb                = 1.2
+rvdw                    = 1.2
+
+; Electrostatics
+coulombtype             = PME
+pme_order               = 4
+fourierspacing          = 0.16
+
+; Temperature coupling
+tcoupl                  = V-rescale
+tc-grps                 = system
+tau_t                   = 0.1
+ref_t                   = 300
+
+; Pressure coupling
+pcoupl                  = Berendsen
+pcoupltype              = isotropic
+tau_p                   = 2.0
+ref_p                   = 0.2
+compressibility         = 4.5e-5
+
+; Periodic boundary conditions
+pbc                     = xyz
+
+; Dispersion correction
+DispCorr                = EnerPres
+
+; Velocity generation
+gen_vel                 = no

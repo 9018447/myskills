@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "skill_id": "6abfadd6-471f-464c-a0e2-d160d3a1085f",
+  "path": "heat-capacity-ann",
+  "path_key": "heat-capacity-ann",
+  "enabled": true,
+  "tags": [
+    "biosteam",
+    "自用"
+  ],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

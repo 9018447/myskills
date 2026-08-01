@@ -1,0 +1,26 @@
+{
+  "skill_name": "gcidentifier-jl",
+  "evals": [
+    {
+      "id": 1,
+      "name": "smiles-to-unifac-groups",
+      "prompt": "I have the SMILES CC(Cc1ccc(cc1)C(C(=O)O)C)C for ibuprofen. Decompose it into UNIFAC groups with GCIdentifier and tell me the group counts.",
+      "expected_output": "Uses get_groups_from_smiles with UNIFACGroups; returns COOH=>1, CH3=>3, CH=>1, ACH=>4, ACCH2=>1, ACCH=>1.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "find-missing-saft-gamma-mie-group",
+      "prompt": "get_groups_from_smiles throws 'Could not find all groups' when I fragment CCC(=O)CC (2-pentanone) with SAFTgammaMieGroups. What group is missing and how do I get GCIdentifier to propose it? Show me the reduced recommendation.",
+      "expected_output": "Explains SAFT-gamma-Mie lacks a ketone group; uses find_missing_groups_from_smiles with reduced=true; recommends GCPair for C=O= ( [CX3;H0;!R](=[OX1;H0;!R]) ).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "clapeyron-unifac-bridge",
+      "prompt": "Build a Clapeyron UNIFAC model for a water + ibuprofen mixture. I only know the molecule name 'ibuprofen', not its SMILES. Use GCIdentifier to get the groups and wire it into Clapeyron, then show computing the activity coefficient.",
+      "expected_output": "Uses get_groups_from_name with ChemicalIdentifiers loaded; passes (component, groups) tuple into UNIFAC([\"water\", (component, groups)]); calls activity_coefficient.",
+      "files": []
+    }
+  ]
+}

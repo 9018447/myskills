@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "72d47d42-1b24-447a-b21c-7e6de8e97124",
+  "path": "repo-map-agentsmd",
+  "path_key": "repo-map-agentsmd",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

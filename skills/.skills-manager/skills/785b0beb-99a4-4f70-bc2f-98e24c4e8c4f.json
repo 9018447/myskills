@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "785b0beb-99a4-4f70-bc2f-98e24c4e8c4f",
+  "path": "dft-skills",
+  "path_key": "dft-skills",
+  "enabled": true,
+  "tags": [
+    "DFT"
+  ],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

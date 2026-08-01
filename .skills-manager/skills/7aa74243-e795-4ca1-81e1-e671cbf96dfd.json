@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "skill_id": "fdd7f857-855c-4bc7-9cc5-a91dc5a4308c",
-  "path": "clapeyronjl-skill",
-  "path_key": "clapeyronjl-skill",
+  "skill_id": "7aa74243-e795-4ca1-81e1-e671cbf96dfd",
+  "path": "gcidentifier-jl",
+  "path_key": "gcidentifier-jl",
   "enabled": true,
   "tags": [
     "julia",

@@ -6,6 +6,7 @@
   "tools": {
     "claude_code": false,
     "cline": false,
+    "codex": true,
     "kimi": false,
     "omp_agent": false,
     "pi": false

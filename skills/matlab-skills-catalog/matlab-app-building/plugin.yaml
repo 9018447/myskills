@@ -1,8 +1,0 @@
-# Copyright 2026 The MathWorks, Inc.
-description: >
-  Build MATLAB apps programmatically using UI components, layouts, callbacks, and web integration.
-keywords:
-  - matlab
-  - app-building
-  - app-designer
-  - uifigure

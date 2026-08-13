@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "0ae45e96-1271-4c4c-bf7c-df08a07a0f3f",
+  "path": "grill-me-2",
+  "path_key": "grill-me-2",
+  "enabled": true,
+  "tags": [
+    "matppock"
+  ],
+  "source": {
+    "type": "git",
+    "ref": "git@github.com:devcxl/mattpocock-skills-zh.git",
+    "subpath": "skills/productivity/grill-me",
+    "branch": null
+  }
+}

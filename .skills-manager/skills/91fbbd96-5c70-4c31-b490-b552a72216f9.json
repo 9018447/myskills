@@ -4,9 +4,7 @@
   "path": "grill-me",
   "path_key": "grill-me",
   "enabled": true,
-  "tags": [
-    "mattpocock skills"
-  ],
+  "tags": [],
   "source": {
     "type": "git",
     "ref": "https://github.com/mattpocock/skills",

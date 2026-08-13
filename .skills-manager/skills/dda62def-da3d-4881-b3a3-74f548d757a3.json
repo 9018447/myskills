@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "dda62def-da3d-4881-b3a3-74f548d757a3",
+  "path": "domain-modeling-2",
+  "path_key": "domain-modeling-2",
+  "enabled": true,
+  "tags": [
+    "matppock"
+  ],
+  "source": {
+    "type": "git",
+    "ref": "git@github.com:devcxl/mattpocock-skills-zh.git",
+    "subpath": "skills/engineering/domain-modeling",
+    "branch": null
+  }
+}

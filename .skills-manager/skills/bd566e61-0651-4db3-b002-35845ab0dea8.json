@@ -4,9 +4,7 @@
   "path": "handoff",
   "path_key": "handoff",
   "enabled": true,
-  "tags": [
-    "mattpocock skills"
-  ],
+  "tags": [],
   "source": {
     "type": "git",
     "ref": "https://github.com/mattpocock/skills",

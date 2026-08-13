@@ -4,9 +4,7 @@
   "path": "improve-codebase-architecture",
   "path_key": "improve-codebase-architecture",
   "enabled": true,
-  "tags": [
-    "mattpocock skills"
-  ],
+  "tags": [],
   "source": {
     "type": "git",
     "ref": "https://github.com/mattpocock/skills",

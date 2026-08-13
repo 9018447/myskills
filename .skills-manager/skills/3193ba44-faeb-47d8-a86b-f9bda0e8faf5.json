@@ -4,9 +4,7 @@
   "path": "decision-mapping",
   "path_key": "decision-mapping",
   "enabled": true,
-  "tags": [
-    "mattpocock skills"
-  ],
+  "tags": [],
   "source": {
     "type": "git",
     "ref": "https://github.com/mattpocock/skills",

@@ -4,9 +4,7 @@
   "path": "scaffold-exercises",
   "path_key": "scaffold-exercises",
   "enabled": true,
-  "tags": [
-    "mattpocock skills"
-  ],
+  "tags": [],
   "source": {
     "type": "git",
     "ref": "https://github.com/mattpocock/skills",

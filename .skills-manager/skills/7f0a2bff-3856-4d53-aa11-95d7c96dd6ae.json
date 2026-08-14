@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "7f0a2bff-3856-4d53-aa11-95d7c96dd6ae",
+  "path": "commandcode-api-url",
+  "path_key": "commandcode-api-url",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

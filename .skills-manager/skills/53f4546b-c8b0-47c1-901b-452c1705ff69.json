@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "53f4546b-c8b0-47c1-901b-452c1705ff69",
+  "path": "claude-code-provider",
+  "path_key": "claude-code-provider",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

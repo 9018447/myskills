@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "prompt": "帮我审查一下当前工作区的改动，评估风险",
+    "expected": "用 ocr delegate preview 圈定范围，对每个改动符号做图分析（中心性分层），按风险×中心性给出分级报告，报告落盘到 .scratch/code-review/，聊天里只回简短摘要"
+  },
+  {
+    "id": 2,
+    "prompt": "审查最近一次 commit 的风险，重点看它对调用方的影响",
+    "expected": "用 ocr delegate preview -c <hash> 圈定 commit；对改动符号用 trace_path inbound 拉真实调用方清单，验证签名/返回契约两侧的假设是否匹配，而不是只看 diff；按 T1/T2/T3 分层排序发现"
+  },
+  {
+    "id": 3,
+    "prompt": "审查 main 到 feature 分支的全部差异，给出合并前的风险评级",
+    "expected": "range 模式圈定；大 diff 分批审查（按 rule group 或 ~5 个相关文件一批）；每个 reviewable 文件要么 reviewed 要么 skipped 附原因；产出完整中文报告并给出整体风险评级与合并建议"
+  }
+]

@@ -3,5 +3,9 @@
   "scenario_id": "e9a74ce4-dab1-43bb-b394-89f75ffcb38e",
   "skill_id": "4df48e79-bf11-422d-a170-34be7a057225",
   "sort_order": 0,
-  "tools": {}
+  "tools": {
+    "command_code": true,
+    "deepseek_harness": true,
+    "kimi": true
+  }
 }

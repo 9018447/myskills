@@ -8,3 +8,5 @@ skills-manager.db
 skills-manager.db-shm
 skills-manager.db-wal
 cache/
+__pycache__/
+*.pyc

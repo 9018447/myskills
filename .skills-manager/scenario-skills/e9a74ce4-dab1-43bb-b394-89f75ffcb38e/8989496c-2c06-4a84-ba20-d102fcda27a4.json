@@ -6,6 +6,7 @@
   "tools": {
     "command_code": true,
     "deepseek_harness": true,
-    "kimi": true
+    "kimi": true,
+    "omp_agent": true
   }
 }

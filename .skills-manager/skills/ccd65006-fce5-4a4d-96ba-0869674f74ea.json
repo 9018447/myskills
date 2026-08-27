@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "ccd65006-fce5-4a4d-96ba-0869674f74ea",
+  "path": "humanize-academic-writing",
+  "path_key": "humanize-academic-writing",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "momo2young/humanize-academic-writing/humanize-academic-writing",
+    "subpath": null,
+    "branch": null
+  }
+}

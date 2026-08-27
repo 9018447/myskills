@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "a578c191-3cac-4fe2-800d-1424744a0a03",
+  "path": "latex-formatting",
+  "path_key": "latex-formatting",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "lingzhi227/agent-research-skills/latex-formatting",
+    "subpath": "skills/latex-formatting",
+    "branch": null
+  }
+}

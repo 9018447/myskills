@@ -8,6 +8,7 @@
     "deepseek_harness": true,
     "kimi": true,
     "omp_agent": true,
+    "pi": true,
     "zcode": true
   }
 }

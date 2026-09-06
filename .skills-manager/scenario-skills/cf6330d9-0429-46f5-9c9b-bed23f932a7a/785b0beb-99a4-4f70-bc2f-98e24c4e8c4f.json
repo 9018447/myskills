@@ -10,6 +10,6 @@
     "command_code": false,
     "kimi": false,
     "omp_agent": false,
-    "pi": true
+    "pi": false
   }
 }

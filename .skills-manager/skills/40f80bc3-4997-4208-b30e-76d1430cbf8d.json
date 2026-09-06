@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "40f80bc3-4997-4208-b30e-76d1430cbf8d",
+  "path": "academic-writing",
+  "path_key": "academic-writing",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "poemswe/co-researcher/academic-writing",
+    "subpath": "skills/academic-writing",
+    "branch": null
+  }
+}

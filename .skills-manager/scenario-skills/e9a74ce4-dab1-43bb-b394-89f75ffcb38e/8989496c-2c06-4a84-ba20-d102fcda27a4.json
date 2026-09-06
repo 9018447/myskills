@@ -2,6 +2,12 @@
   "schema_version": 1,
   "scenario_id": "e9a74ce4-dab1-43bb-b394-89f75ffcb38e",
   "skill_id": "8989496c-2c06-4a84-ba20-d102fcda27a4",
-  "sort_order": 9,
-  "tools": {}
+  "sort_order": 11,
+  "tools": {
+    "command_code": true,
+    "deepseek_harness": true,
+    "kimi": true,
+    "omp_agent": true,
+    "zcode": true
+  }
 }

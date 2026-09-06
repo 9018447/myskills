@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "38a2666c-10cb-4bad-a903-b4be1cdf27f0",
+  "path": "onevcat-jj",
+  "path_key": "onevcat-jj",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "onevcat/skills/onevcat-jj",
+    "subpath": "skills/onevcat-jj",
+    "branch": null
+  }
+}

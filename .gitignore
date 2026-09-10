@@ -8,6 +8,19 @@ skills-manager.db
 skills-manager.db-shm
 skills-manager.db-wal
 cache/
+logs/
+
+# secrets — never commit
+.secret.key
+
+# agent tool state
+.codegraph/
+.commandcode/
+.kilocode/
+.pi/
+.remember/
+.obsidian/
+.skills-manager/
 
 # Python build artifacts
 __pycache__/

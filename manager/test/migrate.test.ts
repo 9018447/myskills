@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, symlinkSync, existsSync, lstatSync, realpathSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, symlinkSync, existsSync, lstatSync, realpathSync, readlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -84,6 +84,70 @@ test('migrate --apply: 独有拷入并换链接，同内容换链接，冲突保
   // 清单更新：含收敛成功的，不含冲突和非技能
   const manifest = JSON.parse(readFileSync(join(repo, 'skills-manifest.json'), 'utf8'));
   assert.deepEqual(manifest.agents.claude, ['ext', 'local', 'same']);
+});
+
+test('migrate --apply: 本地技能含符号链接时保守判冲突，不误删本地内容', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'myskills-test-'));
+  const repo = join(tmp, 'repo');
+  const home = join(tmp, 'home');
+  makeSkillDir(repo, 'linkskill');
+  writeFileSync(join(repo, 'agents.json'), JSON.stringify({
+    agents: [{ id: 'claude', name: 'Claude Code', skillsPath: join(home, '.claude', 'skills') }],
+  }));
+  writeFileSync(join(repo, 'skills-manifest.json'), JSON.stringify({ agents: {} }));
+  const skillsDir = join(home, '.claude', 'skills');
+  mkdirSync(skillsDir, { recursive: true });
+  // 本地同名技能：SKILL.md 与仓库一致，但多一个指向本地独有数据的符号链接
+  makeSkillDir(skillsDir, 'linkskill');
+  const dataFile = join(home, 'unique-data.txt');
+  writeFileSync(dataFile, '重要数据');
+  symlinkSync(dataFile, join(skillsDir, 'linkskill', 'data'), 'file');
+
+  const r = run(['migrate', '--apply'], repo);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /linkskill.*冲突/);
+  // 本地内容原样保留：仍是实体目录，符号链接与其目标都还在
+  const st = lstatSync(join(skillsDir, 'linkskill'));
+  assert.ok(st.isDirectory() && !st.isSymbolicLink(), '本地目录不应被换成链接');
+  assert.ok(lstatSync(join(skillsDir, 'linkskill', 'data')).isSymbolicLink(), '符号链接不应被删除');
+  assert.equal(readFileSync(dataFile, 'utf8'), '重要数据');
+  // 冲突技能不收入清单
+  const manifest = JSON.parse(readFileSync(join(repo, 'skills-manifest.json'), 'utf8'));
+  assert.ok(!(manifest.agents.claude ?? []).includes('linkskill'));
+});
+
+test('migrate --apply: 符号链接目标不同、特殊文件类型（fifo）均保守判冲突', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'myskills-test-'));
+  const repo = join(tmp, 'repo');
+  const home = join(tmp, 'home');
+  // 两侧都有同名符号链接但目标不同
+  makeSkillDir(repo, 'sym');
+  writeFileSync(join(repo, 'agents.json'), JSON.stringify({
+    agents: [{ id: 'claude', name: 'Claude Code', skillsPath: join(home, '.claude', 'skills') }],
+  }));
+  writeFileSync(join(repo, 'skills-manifest.json'), JSON.stringify({ agents: {} }));
+  const skillsDir = join(home, '.claude', 'skills');
+  mkdirSync(skillsDir, { recursive: true });
+
+  makeSkillDir(skillsDir, 'sym');
+  symlinkSync(join(home, 'a.txt'), join(repo, 'sym', 'ref'), 'file');
+  symlinkSync(join(home, 'b.txt'), join(skillsDir, 'sym', 'ref'), 'file');
+
+  // 两侧内容一样但含 fifo（特殊类型无法安全比较）
+  makeSkillDir(repo, 'fifoskill');
+  makeSkillDir(skillsDir, 'fifoskill');
+  assert.equal(spawnSync('mkfifo', [join(skillsDir, 'fifoskill', 'pipe')]).status, 0);
+
+  const r = run(['migrate', '--apply'], repo);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /sym.*冲突/);
+  assert.match(r.stdout, /fifoskill.*冲突/);
+  // 都保留本地实体，不换链接
+  for (const name of ['sym', 'fifoskill']) {
+    const st = lstatSync(join(skillsDir, name));
+    assert.ok(st.isDirectory() && !st.isSymbolicLink(), `${name} 应保持原样`);
+  }
+  assert.equal(readlinkSync(join(skillsDir, 'sym', 'ref')), join(home, 'b.txt'));
 });
 
 test('migrate: 断链指向已消失的嵌套路径，但仓库顶层有同名技能 → 修复链接并收入清单', () => {

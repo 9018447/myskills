@@ -71,7 +71,7 @@ function SkillsView({
   setSearching: (b: boolean) => void;
 }) {
   const [filter, setFilter] = useState('');
-  const [cursor, setCursor] = useState(0);
+  const [pos, setPos] = useState(0); // 在「可选中的技能行」序列中的位置（分组模式下同一技能可出现多次，按行实例导航）
   const [focus, setFocus] = useState<Focus>('list');
   const [agentCursor, setAgentCursor] = useState(0);
   const [groupMode, setGroupMode] = useState<GroupMode>('none');
@@ -81,7 +81,6 @@ function SkillsView({
     () => (filter ? skills.filter((s) => s.toLowerCase().includes(filter.toLowerCase())) : skills),
     [skills, filter],
   );
-  const current = shown[Math.min(cursor, Math.max(0, shown.length - 1))];
 
   const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
   const sources = useMemo(() => (groupMode === 'source' ? core.skillSources(root) : {}), [root, tick, groupMode]);
@@ -147,13 +146,19 @@ function SkillsView({
     return out;
   }, [groupMode, shown, skills, agents, manifest, sources, presets]);
 
+  // 光标落在技能行实例上（分组头不可选中）；同一技能出现在多个组时各是独立行，互不串扰
+  const skillRowIdx = useMemo(() => rows.flatMap((r, i) => (r.skill !== undefined ? [i] : [])), [rows]);
+  const clampedPos = Math.min(pos, Math.max(0, skillRowIdx.length - 1));
+  const currentRowIdx = skillRowIdx.length ? skillRowIdx[clampedPos] : -1;
+  const current = currentRowIdx >= 0 ? rows[currentRowIdx].skill : undefined;
+
   useInput((input, key) => {
     if (searching) {
       if (key.escape) setSearching(false);
       else if (key.return) setSearching(false);
       else if (key.backspace || key.delete) setFilter((f) => f.slice(0, -1));
       else if (input && !key.ctrl && !key.meta) setFilter((f) => f + input);
-      setCursor(0);
+      setPos(0);
       return;
     }
     if (input === '/') {
@@ -162,7 +167,7 @@ function SkillsView({
     }
     if (input === 'g') {
       setGroupMode((m) => GROUP_ORDER[(GROUP_ORDER.indexOf(m) + 1) % GROUP_ORDER.length]);
-      setCursor(0);
+      setPos(0);
       return;
     }
     if (key.tab) {
@@ -170,8 +175,8 @@ function SkillsView({
       return;
     }
     if (focus === 'list') {
-      if (key.upArrow) setCursor((c) => Math.max(0, c - 1));
-      if (key.downArrow) setCursor((c) => Math.min(shown.length - 1, c + 1));
+      if (key.upArrow) setPos((p) => Math.max(0, p - 1));
+      if (key.downArrow) setPos((p) => Math.min(skillRowIdx.length - 1, p + 1));
       if (input === ' ') onNotice('空格只在右侧分发面板有效：先按 Tab 切过去，再空格勾选');
       return;
     }
@@ -187,8 +192,7 @@ function SkillsView({
   });
 
   const height = 15;
-  const currentPos = Math.max(0, rows.findIndex((r) => r.skill === current));
-  const start = Math.max(0, Math.min(currentPos - Math.floor(height / 2), Math.max(0, rows.length - height)));
+  const start = Math.max(0, Math.min(currentRowIdx - Math.floor(height / 2), Math.max(0, rows.length - height)));
   const windowRows = rows.slice(start, start + height);
 
   return h(
@@ -201,7 +205,7 @@ function SkillsView({
       ),
       ...windowRows.map((r, i) => {
         if (r.header !== undefined) return h(Text, { key: `h${start + i}`, color: 'yellow', bold: true }, `▸ ${r.header}`);
-        const active = r.skill === current;
+        const active = start + i === currentRowIdx;
         return h(Text, { key: `s${start + i}`, color: active ? 'cyan' : undefined, bold: active }, `${active ? '❯' : ' '} ${r.skill}`);
       }),
     ),
@@ -463,8 +467,14 @@ function AgentsView({ root, onNotice, bumpTick, setBusy }: { root: string; onNot
           setForm(next);
           return;
         }
-        // edit 模式：一步，改 skillsPath
-        const updated = agents.map((a, i) => (i === cursor ? { ...a, skillsPath: form.buffer.trim() } : a));
+        // edit 模式：一步，改 skillsPath；与新增一样拒绝空路径
+        const newPath = form.buffer.trim();
+        if (!newPath) {
+          onNotice('路径不能为空');
+          setForm(null);
+          return;
+        }
+        const updated = agents.map((a, i) => (i === cursor ? { ...a, skillsPath: newPath } : a));
         core.saveAgents(root, updated);
         setAgents(updated);
         onNotice(`已更新 ${agents[cursor].id} 的路径（按 s 提交推送）`);
@@ -472,8 +482,8 @@ function AgentsView({ root, onNotice, bumpTick, setBusy }: { root: string; onNot
         setForm(null);
         return;
       }
-      if (key.backspace || key.delete) setForm({ ...form, buffer: form.buffer.slice(0, -1) });
-      else if (input && !key.ctrl && !key.meta) setForm({ ...form, buffer: form.buffer + input });
+      if (key.backspace || key.delete) setForm((f) => (f ? { ...f, buffer: f.buffer.slice(0, -1) } : f));
+      else if (input && !key.ctrl && !key.meta) setForm((f) => (f ? { ...f, buffer: f.buffer + input } : f));
       return;
     }
     if (key.upArrow) setCursor((c) => Math.max(0, c - 1));

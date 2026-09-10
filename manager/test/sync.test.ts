@@ -88,6 +88,38 @@ test('sync: 本地无变化时不产生空提交', () => {
   assert.equal(git(repo, ['rev-parse', 'HEAD']), git(remote, ['rev-parse', 'main']));
 });
 
+test('sync: 无实质变化时不产生新提交，sha 与 updatedAt 均保持稳定', () => {
+  const { repo } = makeRemoteFixture();
+  assert.equal(run(['sync', '--remote', 'origin'], repo).status, 0);
+  const statusFile = join(repo, 'machines', `${hostname()}.json`);
+  const count1 = git(repo, ['rev-list', '--count', 'HEAD']);
+  const status1 = JSON.parse(readFileSync(statusFile, 'utf8'));
+
+  const r = run(['sync', '--remote', 'origin'], repo);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /无变化，跳过提交/);
+  assert.equal(git(repo, ['rev-list', '--count', 'HEAD']), count1, '第二次 sync 不应产生新提交');
+  const status2 = JSON.parse(readFileSync(statusFile, 'utf8'));
+  assert.equal(status2.sha, status1.sha, 'sha 不应变化');
+  assert.equal(status2.updatedAt, status1.updatedAt, 'updatedAt 不应每次刷新');
+});
+
+test('sync: sha 语义——状态 sha 等于同步所基于的内容提交（pull 后的 HEAD），而非状态提交自身', () => {
+  const { repo, other } = makeRemoteFixture();
+  // 另一台机器推一个内容提交
+  mkdirSync(join(other, 'beta'), { recursive: true });
+  writeFileSync(join(other, 'beta', 'SKILL.md'), '---\nname: beta\n---\n');
+  git(other, ['add', '-A']);
+  git(other, ['commit', '-m', 'add beta']);
+  git(other, ['push', 'origin', 'main']);
+  const contentSha = git(other, ['rev-parse', 'HEAD']);
+
+  assert.equal(run(['sync', '--remote', 'origin'], repo).status, 0);
+  const st = JSON.parse(readFileSync(join(repo, 'machines', `${hostname()}.json`), 'utf8'));
+  assert.equal(st.sha, contentSha, 'sha 应等于 pull 到的内容提交');
+  assert.notEqual(st.sha, git(repo, ['rev-parse', 'HEAD']), '状态提交在内容提交之后，sha 不含它');
+});
+
 test('sync: 未提交的清单改动随 sync 一并提交推送', () => {
   const { repo, remote } = makeRemoteFixture();
   // 模拟 TUI 勾选/应用预设后的状态：清单文件已写但未提交

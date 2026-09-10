@@ -115,3 +115,37 @@ test('install: 同名技能已存在时拒绝覆盖', () => {
   assert.notEqual(r.status, 0, '应拒绝覆盖');
   assert.match(readFileSync(join(repo, 'alpha', 'SKILL.md'), 'utf8'), /existing/, '原内容不被破坏');
 });
+
+test('install: --name 含 ../ 等非法技能名时拒绝，不在仓库外写文件', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'myskills-test-'));
+  const tarball = makeTarball(tmp, 'o-evil-deadbeef', { 'SKILL.md': '---\nname: evil\n---\n' });
+  const binDir = makeGhStub(tmp, tarball);
+  const { repo } = makeGitRepo(tmp);
+
+  for (const bad of ['../evil', 'a/b', '.hidden', '..']) {
+    const r = spawnSync('node', [CLI, 'install', 'o/evil', '--name', bad], {
+      cwd: repo,
+      env: { ...process.env, ...GIT_ENV, PATH: `${binDir}:${process.env.PATH}`, FIXTURE_TARBALL: tarball, MYSKILLS_REMOTE: 'origin' },
+      encoding: 'utf8',
+    });
+    assert.notEqual(r.status, 0, `--name ${bad} 应被拒绝`);
+    assert.match(r.stderr, /非法技能名/);
+  }
+  assert.ok(!existsSync(join(tmp, 'evil')), '仓库父目录不应出现逃逸目录');
+});
+
+test('install: subdir 含 ../ 逃逸 tarball 顶层目录时拒绝', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'myskills-test-'));
+  const tarball = makeTarball(tmp, 'o-skills-deadbeef', { 'skills/pdf/SKILL.md': '---\nname: pdf\n---\n' });
+  const binDir = makeGhStub(tmp, tarball);
+  const { repo } = makeGitRepo(tmp);
+
+  const r = spawnSync('node', [CLI, 'install', 'https://github.com/o/skills/tree/main/../repo.tar.gz'], {
+    cwd: repo,
+    env: { ...process.env, ...GIT_ENV, PATH: `${binDir}:${process.env.PATH}`, FIXTURE_TARBALL: tarball, MYSKILLS_REMOTE: 'origin' },
+    encoding: 'utf8',
+  });
+  assert.notEqual(r.status, 0, '越界 subdir 应被拒绝');
+  assert.match(r.stderr, /子目录越界/);
+  assert.ok(!existsSync(join(repo, 'repo.tar.gz')), '不应把 tarball 当技能拷入仓库');
+});

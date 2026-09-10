@@ -48,17 +48,17 @@ Validation is typically iterative:
 **Doesn't block execution** - Workflow can be activated but may have issues
 
 **Types**:
-- `best_practice` - Recommended but not required
-- `deprecated` - Using old API/feature
-- `performance` - Potential performance issue
+- `best_practice` - Recommended but not required — surfaces under `ai-friendly` / `strict` only
+- `deprecated` - Using old API/feature — surfaces under every profile
+- `security` - Hardcoded secrets, unauthenticated webhooks — surfaces under every profile
+- `performance` - Potential performance issue — advisory, `ai-friendly` / `strict`
 
-**Example**:
+**Example** (best-practice — appears under `ai-friendly` / `strict`):
 ```json
 {
-  "type": "best_practice",
-  "property": "errorHandling",
-  "message": "Slack API can have rate limits",
-  "suggestion": "Add onError: 'continueRegularOutput' with retryOnFail"
+  "type": "warning",
+  "nodeName": "Slack",
+  "message": "Slack API can have rate limits and transient failures"
 }
 ```
 
@@ -136,54 +136,35 @@ const result3 = validate_node({
 
 ## Validation Profiles
 
-Choose the right profile for your stage:
+The four profiles are **cumulative** (n8n-mcp ≥ 2.63.0): each surfaces everything the lower one does, plus more. The dividing line is best-practice *advisories* — `minimal` and `runtime` withhold them; `ai-friendly` and `strict` add them. Errors are the same across every profile except that `minimal` skips a few config-level checks (e.g. enum validation of an explicit `operation`). Security and deprecation warnings surface under every profile.
 
 ### minimal
-**Use when**: Quick checks during editing
+**Use when**: Quick structural checks while wiring a workflow together.
 
-**Validates**:
-- Only required fields
-- Basic structure
+**Surfaces**: hard errors that would stop execution (missing required fields, empty code, broken connections). Skips enum checks and all advisories.
 
-**Pros**: Fastest, most permissive
-**Cons**: May miss issues
+**Fastest and most permissive.**
 
-### runtime (RECOMMENDED)
-**Use when**: Pre-deployment validation
+### runtime (RECOMMENDED default)
+**Use when**: Ongoing validation as you build; the everyday profile.
 
-**Validates**:
-- Required fields
-- Value types
-- Allowed values
-- Basic dependencies
+**Surfaces**: errors (required fields, value types, allowed values, dependencies, broken references) plus security and deprecation warnings. **No** best-practice advisories.
 
-**Pros**: Balanced, catches real errors
-**Cons**: Some edge cases missed
-
-**This is the recommended profile for most use cases**
+**Balanced — catches everything that breaks, stays quiet about style.**
 
 ### ai-friendly
-**Use when**: AI-generated configurations
+**Use when**: You want the best-practice advice before deploying.
 
-**Validates**:
-- Same as runtime
-- Reduces false positives
-- More tolerant of minor issues
+**Surfaces**: everything `runtime` does, **plus** best-practice advisories — per-node "without error handling" suggestions, "webhook should always send a response", rate-limit notes, outdated-`typeVersion` suggestions, `cachedResultName` and long-chain hints.
 
-**Pros**: Less noisy for AI workflows
-**Cons**: May allow some questionable configs
+**Note**: `ai-friendly` is *stricter* than `runtime`, not looser. (Older docs described it as reducing false positives — that was true only while profile gating was broken; it is fixed now.)
 
 ### strict
-**Use when**: Production deployment, critical workflows
+**Use when**: Hardening a production-critical workflow.
 
-**Validates**:
-- Everything
-- Best practices
-- Performance concerns
-- Security issues
+**Surfaces**: everything `ai-friendly` does, **plus** leftover-property checks ("property 'X' won't be used — not visible with current settings").
 
-**Pros**: Maximum safety
-**Cons**: Many warnings, some false positives
+**Maximum lint.** With the false positives fixed at the source, its warnings are advice to weigh, not noise to fight.
 
 ---
 
@@ -205,14 +186,16 @@ Every type above has worked examples (broken config → fix) plus the patchNodeF
 
 ## Auto-Sanitization System
 
-**Automatically fixes common operator structure issues** on ANY workflow update — `n8n_create_workflow`, `n8n_update_partial_workflow`, or any save. Trust it; don't hand-fix these.
+**Automatically normalizes common operator structures** on ANY workflow update — `n8n_create_workflow`, `n8n_update_partial_workflow`, or any save. Trust it; don't hand-fix these.
 
-**What it fixes**:
-- **Binary operators** (equals, notEquals, contains, notContains, greaterThan, lessThan, startsWith, endsWith) — removes the wrong `singleValue` property.
+**What it normalizes on save**:
+- **Binary operators** (equals, notEquals, contains, notContains, greaterThan, lessThan, startsWith, endsWith) — removes a stray `singleValue` property.
 - **Unary operators** (isEmpty, isNotEmpty, true, false) — adds `singleValue: true`.
-- **IF/Switch metadata** — adds complete `conditions.options` metadata for IF v2.2+ and Switch v3.2+.
+- **IF/Switch metadata** — fills in `conditions.options` for IF v2.2+ and Switch v3.2+.
 
-**What it CANNOT fix** (handle manually): broken connections to non-existent nodes (use `cleanStaleConnections`), branch-count mismatches (add/remove connections or rules), and paradoxical corrupt states (may need manual DB intervention).
+**Validation no longer errors on these shapes** (n8n-mcp ≥ 2.63.0). n8n derives unary-ness from the operator name and defaults the `conditions.options` sub-fields, so `validate_node` / `validate_workflow` accept a condition whether or not `singleValue` and the options metadata are present — the sanitizer just tidies the canonical form on save. (Older servers wrongly errored on the un-normalized shape; if you see that, upgrade.) What still *is* a real error: a v1-shaped `conditions` object on a v2 node, an empty filter with no conditions, and legacy v1 operator names (e.g. `smaller`) inside a v2 structure.
+
+**What the sanitizer CANNOT fix** (handle manually): broken connections to non-existent nodes (use `cleanStaleConnections`), branch-count mismatches (add/remove connections or rules), and paradoxical corrupt states (may need manual DB intervention).
 
 Before/after examples and the full cannot-fix detail are in **[ERROR_CATALOG.md](ERROR_CATALOG.md)** (Auto-Sanitization sections).
 
@@ -220,16 +203,18 @@ Before/after examples and the full cannot-fix detail are in **[ERROR_CATALOG.md]
 
 ## False Positives
 
-Validation warnings that are technically "wrong" but acceptable in your use case. Not every warning needs a fix — many are context-dependent. Common ones and when each is acceptable vs. worth fixing:
+The validator overhaul (n8n-mcp ≥ 2.63.0) removed the classic false positives — template literals inside expressions, optional chaining, omitted-operation defaults, the Webhook → Respond-to-Webhook pattern, IF/Filter legacy shapes, and more no longer fire. There is no standing list of "known false positives to ignore."
 
-- **"Missing error handling"** — OK for dev/testing and non-critical notifications; fix for production handling important data.
+What remains are **best-practice advisories** (surfaced only under `ai-friendly` / `strict`) that flag a real trade-off but may be acceptable in your case. Not every advisory needs a fix — many are context-dependent. Common ones and when each is acceptable vs. worth fixing:
+
+- **"...without error handling"** — OK for dev/testing and non-critical notifications; fix for production handling important data. (Never a hard error — style doesn't block execution.)
 - **"No retry logic"** — OK for idempotent ops, APIs with their own retry, manual triggers; fix for flaky external services and production automation.
-- **"Missing rate limiting"** — OK for internal/low-volume/server-side-limited APIs; fix for public, high-volume APIs.
+- **"...rate limits and transient failures"** — OK for internal/low-volume/server-side-limited APIs; fix for public, high-volume APIs.
 - **"Unbounded query"** — OK for small known datasets, aggregations, dev/testing; fix for production queries on large tables.
 
-**Reduce false positives** with the `ai-friendly` profile (e.g. `validate_node({nodeType, config, profile: "ai-friendly"})`).
+Security and deprecation warnings, by contrast, surface under *every* profile and should be treated as real.
 
-Full per-case guidance, security/credential warnings, known n8n false-positive issues (#304, #306, #338), profile strategies, the "should I fix this?" decision framework, and how to document accepted warnings are in **[FALSE_POSITIVES.md](FALSE_POSITIVES.md)**.
+Full per-case guidance, the list of what the validator no longer flags, profile strategies, the "should I fix this?" decision framework, and how to document accepted advisories are in **[FALSE_POSITIVES.md](FALSE_POSITIVES.md)**.
 
 ---
 
@@ -317,14 +302,14 @@ validate_workflow({
 
 **Fix**: Remove stale connection or create missing node
 
-#### 2. Circular Dependencies
+#### 2. Cycles (warning, not an error)
 ```json
 {
-  "error": "Circular dependency detected: Node A → Node B → Node A"
+  "warning": "Workflow contains a cycle: Node A → Node B → Node A"
 }
 ```
 
-**Fix**: Restructure workflow to remove loop
+A cycle is a **warning**, not a hard error (n8n-mcp ≥ 2.63.0) — runtime-controlled loops (error-retry, data-driven pagination, a router feeding back) execute to completion and are legitimate. **Fix** only if the loop is unintentional: ensure the cycle has a real exit (a conditional node, an error output, or a bounded counter) so it can't spin forever.
 
 #### 3. Multiple Start Nodes
 ```json
@@ -464,6 +449,32 @@ n8n_autofix_workflow({
 
 ---
 
+## Running the workflow after it validates
+
+`validate_workflow` checks structure, parameters and expressions — it never runs anything. A workflow that validates cleanly can still fail on real data, so run it once before calling it done.
+
+**With a webhook, form or chat trigger:** `n8n_test_workflow({workflowId})` — the default `method: "auto"` detects the trigger and fires it over HTTP (the workflow must be active).
+
+**Without such a trigger** (Manual Trigger, Schedule, sub-workflow) there is no HTTP entry point. Use the pin-data path, which runs through n8n's own MCP server (`N8N_MCP_ACCESS_TOKEN`, n8n 2.34+):
+
+1. `n8n_test_workflow({workflowId, method: "prepare"})` — lists the nodes that need pinned data.
+2. Build one sample item per listed node, keyed by node **name**, each item wrapped in `{json: {...}}`:
+   ```json
+   {"When clicking 'Test workflow'": [{"json": {"orderId": "1234", "email": "a@b.com"}}]}
+   ```
+   A flat object instead of an array of `{json}` items is the usual mistake here.
+3. `n8n_test_workflow({workflowId, method: "pinned", pinData})` — runs it with that data and waits for the result.
+
+**For a quick manual run without pinned data**, `method: "direct"` starts a manual execution and returns as soon as it has started; poll `n8n_executions({action: "get", id: executionId, mode: "error"})` for the outcome. Nothing is pinned on a `direct` run, so every node executes and any external call it makes is real — and even `pinned` only pins trigger, credentialed and HTTP Request nodes. `executionMode: "production"` changes the execution context, not whether there are side effects; leave it at the default unless the user asked for a production run.
+
+**`method: "auto"` never runs a workflow through n8n's MCP server.** On a workflow with no external trigger it reports that fact and names `prepare`/`pinned`/`direct`; the routed methods only run when you ask for them by name.
+
+**Consent before the first routed run.** n8n refuses these calls for a workflow whose "Available in MCP" setting is off, which comes back as `WORKFLOW_NOT_EXPOSED`. Re-running with `exposeToMcp: true` turns that setting on and retries once. It is a visible, persistent setting on the workflow (and enabling it is a workflow update, so a concurrent UI edit can be overwritten) — **ask the user before passing it**. The consent flow only ever enables the setting; nothing disables it implicitly. Turning it off again is a deliberate act: `n8n_update_partial_workflow({id: workflowId, operations: [{type: "updateSettings", settings: {availableInMCP: false}}]})`, or the toggle in the n8n UI.
+
+**Reading the result:** a run that started and then failed comes back as `EXECUTION_FAILED` with the `executionId` — inspect it with `n8n_executions({action: "get", id, mode: "error"})` and fix from the node that threw, then validate and run again.
+
+---
+
 ## Reviewing an existing workflow
 
 Validating as you build (the loop above) is for catching schema and shape errors in your own in-progress work. **Reviewing an existing workflow** — yours or one you've been handed — is a different job: the workflow already passes `validate_workflow` clean, and you're hunting for the issues validation doesn't see (silent connection bugs, injection-prone queries, dropped-item Switches, Set/Code antipatterns, missing error paths). For that, pull the workflow with `n8n_get_workflow` and walk **[REVIEW_CHECKLIST.md](REVIEW_CHECKLIST.md)** — a severity-tiered audit (MUST FIX / SHOULD FIX / NICE TO HAVE) where every item points to the canonical skill for the fix. Run `n8n_audit_instance` alongside it to surface hardcoded secrets and unauthenticated webhooks across the whole instance.
@@ -485,9 +496,9 @@ For comprehensive error catalogs, false positives, and workflow review:
 **Key Points**:
 1. **Validation is iterative** (avg 2-3 cycles, 23s + 58s)
 2. **Errors must be fixed**, warnings are optional
-3. **Auto-sanitization** fixes operator structures automatically
-4. **Use runtime profile** for balanced validation
-5. **False positives exist** - learn to recognize them
+3. **Auto-sanitization** normalizes operator structures on save; validation no longer errors on the raw shape
+4. **Use runtime profile** by default; step up to `ai-friendly`/`strict` for best-practice advisories
+5. **Classic false positives are fixed** (≥ 2.63.0) — remaining warnings are advisories or security/deprecation notices, not validator mistakes
 6. **Read error messages** - they contain fix guidance
 
 **Validation Process**:

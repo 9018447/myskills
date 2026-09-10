@@ -194,13 +194,13 @@ const name = $json.body.name;
 ```
 
 ### #2: Return Format
-**CRITICAL**: Must return array with json property
+**Prefer the canonical `[{json: {...}}]`** — unambiguous in both execution modes. A bare object auto-wraps in *Run Once for All Items* mode, so it runs too; what actually fails is returning a primitive (string/number) or `null`.
 
 ```javascript
-// ❌ WRONG
+// ⚠️ Auto-wrapped in All Items mode → [{json: {result: 'success'}}]. Runs, but prefer the array form.
 return {json: {result: 'success'}};
 
-// ✅ CORRECT
+// ✅ CANONICAL
 return [{json: {result: 'success'}}];
 ```
 
@@ -290,7 +290,7 @@ const value = $json.field;
 ### Essential Rules
 1. Choose "All Items" mode (recommended)
 2. Access data: `$input.all()`, `$input.first()`, `$input.item`
-3. **MUST return**: `[{json: {...}}]` format
+3. **Return** the canonical `[{json: {...}}]` (bare objects auto-wrap in All Items mode; primitives/`null` fail)
 4. **Webhook data**: Under `.body` property
 5. **No `{{}}` syntax**: Use JavaScript directly
 
@@ -345,6 +345,6 @@ Each evaluation tests skill activation, correct guidance, and reference to appro
 
 ## Author
 
-Conceived by Romuald Członkowski - [www.aiadvisors.pl/en](https://www.aiadvisors.pl/en)
+Conceived by Romuald Członkowski - [aiadvisors.pl/en](https://aiadvisors.pl/en)
 
 Part of the n8n-skills collection.

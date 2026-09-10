@@ -179,6 +179,7 @@
       "popular-web-designs",
       "resolving-merge-conflicts",
       "resolving-merge-conflicts-zh",
+      "setup-matt-pocock-skills",
       "setup-matt-pocock-skills-zh",
       "tdd",
       "tdd-zh",
@@ -210,6 +211,19 @@
       "to-tickets-zh",
       "wait-what-zh",
       "writing-for-agents-zh"
+    ],
+    "matlab": [
+      "matlab",
+      "matlab-analyze-data",
+      "matlab-create-live-script",
+      "matlab-debugging",
+      "matlab-deploy-embedded-ai",
+      "matlab-install-products",
+      "matlab-list-products",
+      "matlab-performance-optimizer",
+      "matlab-review-code",
+      "matlab-testing",
+      "matlab-train-network"
     ]
   }
 }

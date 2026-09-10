@@ -3,6 +3,7 @@
     "agents": [
       "agent-browser",
       "ask-matt-zh",
+      "biosteam",
       "codebase-memory",
       "create-agentsmd",
       "diagnosing-bugs-zh",
@@ -103,6 +104,7 @@
     ],
     "codex": [
       "ask-matt-zh",
+      "biosteam",
       "claude-handoff-zh",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",
@@ -127,6 +129,7 @@
     ],
     "pi": [
       "ask-matt-zh",
+      "biosteam",
       "claude-handoff-zh",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",
@@ -150,6 +153,7 @@
     ],
     "omp": [
       "ask-matt-zh",
+      "biosteam",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",
       "graph-risk-review",

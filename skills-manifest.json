@@ -224,6 +224,9 @@
       "matlab-review-code",
       "matlab-testing",
       "matlab-train-network"
+    ],
+    "academic": [
+      "scientific-visualization"
     ]
   }
 }

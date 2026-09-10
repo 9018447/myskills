@@ -195,10 +195,12 @@ export function status(repoRoot: string): MachineStatus {
 }
 
 // sync = pull --ff-only → link → status → 提交并推送清单（skills-manifest.json、agents.json）与 machines/ 变更
+// pull 显式带 --no-rebase：用户若全局设了 pull.rebase=true，rebase 模式会要求工作区干净，
+// 而 sync 的入口场景恰恰是"清单已改但未提交"，会直接失败
 export function sync(repoRoot: string, remote: string): string[] {
   const lines: string[] = [];
   const branch = git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
-  git(repoRoot, ['pull', '--ff-only', remote, branch]);
+  git(repoRoot, ['pull', '--no-rebase', '--ff-only', remote, branch]);
   lines.push(...link(repoRoot).lines);
   status(repoRoot);
   lines.push(`已写入 machines/${hostname()}.json`);

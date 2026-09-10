@@ -46,8 +46,8 @@ function makeRemoteFixture() {
   return { tmp, repo, home, remote, other };
 }
 
-function run(args: string[], cwd: string) {
-  return spawnSync('node', [CLI, ...args], { cwd, env: { ...process.env, ...GIT_ENV }, encoding: 'utf8' });
+function run(args: string[], cwd: string, env: Record<string, string> = {}) {
+  return spawnSync('node', [CLI, ...args], { cwd, env: { ...process.env, ...GIT_ENV, ...env }, encoding: 'utf8' });
 }
 
 test('sync: pull 远端新提交，重建链接，状态文件提交并推送', () => {
@@ -96,6 +96,22 @@ test('sync: 未提交的清单改动随 sync 一并提交推送', () => {
     JSON.stringify({ agents: { claude: ['alpha'] }, presets: { base: ['alpha'] } }),
   );
   const r = run(['sync', '--remote', 'origin'], repo);
+  assert.equal(r.status, 0, r.stderr);
+  const remoteManifest = JSON.parse(git(remote, ['show', 'main:skills-manifest.json']));
+  assert.deepEqual(remoteManifest.presets, { base: ['alpha'] });
+});
+
+// 用户全局配置 pull.rebase=true 时，pull 会走 rebase 分支并要求工作区干净，
+// 使 sync 在有未提交清单改动时直接失败；sync 必须自带 --no-rebase
+test('sync: 全局 pull.rebase=true 时仍能提交未提交的清单改动', () => {
+  const { tmp, repo, remote } = makeRemoteFixture();
+  const globalConfig = join(tmp, 'gitconfig');
+  writeFileSync(globalConfig, '[pull]\n\trebase = true\n');
+  writeFileSync(
+    join(repo, 'skills-manifest.json'),
+    JSON.stringify({ agents: { claude: ['alpha'] }, presets: { base: ['alpha'] } }),
+  );
+  const r = run(['sync', '--remote', 'origin'], repo, { GIT_CONFIG_GLOBAL: globalConfig });
   assert.equal(r.status, 0, r.stderr);
   const remoteManifest = JSON.parse(git(remote, ['show', 'main:skills-manifest.json']));
   assert.deepEqual(remoteManifest.presets, { base: ['alpha'] });

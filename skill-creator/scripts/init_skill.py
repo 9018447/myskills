@@ -3,14 +3,13 @@
 Skill Initializer - Creates a new skill from template
 
 Usage:
-    init_skill.py <skill-name> --path <path> [--resources scripts,references,assets] [--examples] [--interface key=value]
+    init_skill.py <skill-name> --path <path> [--resources scripts,references,assets] [--examples]
 
 Examples:
     init_skill.py my-new-skill --path skills/public
     init_skill.py my-new-skill --path skills/public --resources scripts,references
     init_skill.py my-api-helper --path skills/private --resources scripts --examples
     init_skill.py custom-skill --path /custom/location
-    init_skill.py my-skill --path skills/public --interface short_description="Short UI label"
 """
 
 import argparse
@@ -18,14 +17,12 @@ import re
 import sys
 from pathlib import Path
 
-from generate_openai_yaml import write_openai_yaml
-
 MAX_SKILL_NAME_LENGTH = 64
 ALLOWED_RESOURCES = {"scripts", "references", "assets"}
 
 SKILL_TEMPLATE = """---
 name: {skill_name}
-description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+description: "TODO: Explain what the skill does and the requests, files, or situations that should trigger it."
 ---
 
 # {skill_title}
@@ -83,20 +80,20 @@ Executable code (Python/Bash/etc.) that can be run directly to perform specific 
 
 **Appropriate for:** Python scripts, shell scripts, or any executable code that performs automation, data processing, or specific operations.
 
-**Note:** Scripts may be executed without loading into context, but can still be read by Codex for patching or environment adjustments.
+**Note:** Scripts can often run without loading their full contents into agent context, but runtime behavior varies.
 
 ### references/
-Documentation and reference material intended to be loaded into context to inform Codex's process and thinking.
+Documentation and reference material intended to be loaded into context to inform the agent's work.
 
 **Examples from other skills:**
 - Product management: `communication.md`, `context_building.md` - detailed workflow guides
 - BigQuery: API reference documentation and query examples
 - Finance: Schema documentation, company policies
 
-**Appropriate for:** In-depth documentation, API references, database schemas, comprehensive guides, or any detailed information that Codex should reference while working.
+**Appropriate for:** In-depth documentation, API references, database schemas, comprehensive guides, or detailed information the agent should reference while working.
 
 ### assets/
-Files not intended to be loaded into context, but rather used within the output Codex produces.
+Files not intended to be loaded into context, but rather used within the output the agent produces.
 
 **Examples from other skills:**
 - Brand styling: PowerPoint template files (.pptx), logo files
@@ -173,7 +170,7 @@ This placeholder represents where asset files would be stored.
 Replace with actual asset files (templates, images, fonts, etc.) or delete if not needed.
 
 Asset files are NOT intended to be loaded into context, but rather used within
-the output Codex produces.
+the output the agent produces.
 
 Example asset files from other skills:
 - Brand guidelines: logo.png, slides_template.pptx
@@ -255,7 +252,7 @@ def create_resource_dirs(skill_dir, skill_name, skill_title, resources, include_
                 print("[OK] Created assets/")
 
 
-def init_skill(skill_name, path, resources, include_examples, interface_overrides):
+def init_skill(skill_name, path, resources, include_examples):
     """
     Initialize a new skill directory with template SKILL.md.
 
@@ -296,15 +293,6 @@ def init_skill(skill_name, path, resources, include_examples, interface_override
         print(f"[ERROR] Error creating SKILL.md: {e}")
         return None
 
-    # Create agents/openai.yaml
-    try:
-        result = write_openai_yaml(skill_dir, skill_name, interface_overrides)
-        if not result:
-            return None
-    except Exception as e:
-        print(f"[ERROR] Error creating agents/openai.yaml: {e}")
-        return None
-
     # Create resource directories if requested
     if resources:
         try:
@@ -324,8 +312,8 @@ def init_skill(skill_name, path, resources, include_examples, interface_override
             print("2. Add resources to scripts/, references/, and assets/ as needed")
     else:
         print("2. Create resource directories only if needed (scripts/, references/, assets/)")
-    print("3. Update agents/openai.yaml if the UI metadata should differ")
-    print("4. Run the validator when ready to check the skill structure")
+    print("3. Add target-runtime adapter metadata only if required")
+    print("4. Run the portable and target-runtime validators")
 
     return skill_dir
 
@@ -345,12 +333,6 @@ def main():
         "--examples",
         action="store_true",
         help="Create example files inside the selected resource directories",
-    )
-    parser.add_argument(
-        "--interface",
-        action="append",
-        default=[],
-        help="Interface override in key=value format (repeatable)",
     )
     args = parser.parse_args()
 
@@ -385,7 +367,7 @@ def main():
         print("   Resources: none (create as needed)")
     print()
 
-    result = init_skill(skill_name, path, resources, args.examples, args.interface)
+    result = init_skill(skill_name, path, resources, args.examples)
 
     if result:
         sys.exit(0)

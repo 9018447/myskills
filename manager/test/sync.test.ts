@@ -87,3 +87,16 @@ test('sync: 本地无变化时不产生空提交', () => {
   // 远端与工作区一致
   assert.equal(git(repo, ['rev-parse', 'HEAD']), git(remote, ['rev-parse', 'main']));
 });
+
+test('sync: 未提交的清单改动随 sync 一并提交推送', () => {
+  const { repo, remote } = makeRemoteFixture();
+  // 模拟 TUI 勾选/应用预设后的状态：清单文件已写但未提交
+  writeFileSync(
+    join(repo, 'skills-manifest.json'),
+    JSON.stringify({ agents: { claude: ['alpha'] }, presets: { base: ['alpha'] } }),
+  );
+  const r = run(['sync', '--remote', 'origin'], repo);
+  assert.equal(r.status, 0, r.stderr);
+  const remoteManifest = JSON.parse(git(remote, ['show', 'main:skills-manifest.json']));
+  assert.deepEqual(remoteManifest.presets, { base: ['alpha'] });
+});

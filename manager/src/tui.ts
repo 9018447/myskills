@@ -59,12 +59,11 @@ interface Row {
 }
 
 function SkillsView({
-  root, agents, manifest, setManifest, onNotice, bumpTick, tick, searching, setSearching,
+  root, agents, manifest, onNotice, bumpTick, tick, searching, setSearching,
 }: {
   root: string;
   agents: core.AgentDef[];
   manifest: Record<string, Set<string>>;
-  setManifest: (m: Record<string, Set<string>>) => void;
   onNotice: (s: string) => void;
   bumpTick: () => void;
   tick: number;
@@ -181,8 +180,7 @@ function SkillsView({
     if (input === ' ' && current && agents[agentCursor]) {
       const agentId = agents[agentCursor].id;
       const on = core.toggleSkill(root, agentId, current);
-      setManifest({ ...manifest, [agentId]: new Set(core.loadManifest(root).agents[agentId] ?? []) });
-      onNotice(`${on ? '勾选' : '取消'} ${current} → ${agentId}（清单已写，按 l 生效）`);
+      onNotice(`${on ? '勾选' : '取消'} ${current} → ${agentId}（按 l 生效，按 s 提交推送）`);
       bumpTick();
     }
   });
@@ -321,7 +319,7 @@ function PresetsView({
       }
       if (key.return) {
         core.setPreset(root, editing, [...sel]);
-        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能，清单已写，应用到 agent 后按 l 生效）`);
+        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能；应用到 agent 后按 l 生效，按 s 提交推送）`);
         bumpTick();
         setMode('list');
       }
@@ -345,7 +343,7 @@ function PresetsView({
         if (applySel.size === 0) return;
         const r = core.applyPreset(root, editing, [...applySel]);
         const parts = Object.entries(r.added).map(([id, n]) => `${id}+${n}`);
-        onNotice(`已应用预设 ${editing}：${parts.join('  ')}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}（按 l 生效）`);
+        onNotice(`已应用预设 ${editing}：${parts.join('  ')}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}（按 l 生效，按 s 提交推送）`);
         bumpTick();
         setMode('list');
       }
@@ -448,7 +446,7 @@ function AgentsView({ root, onNotice, bumpTick }: { root: string; onNotice: (s: 
             const next_ = [...agents, draft];
             core.saveAgents(root, next_);
             setAgents(next_);
-            onNotice(`已添加 agent ${draft.id}（记得提交 agents.json）`);
+            onNotice(`已添加 agent ${draft.id}（按 s 提交推送）`);
             bumpTick();
             setForm(null);
             return;
@@ -460,7 +458,7 @@ function AgentsView({ root, onNotice, bumpTick }: { root: string; onNotice: (s: 
         const updated = agents.map((a, i) => (i === cursor ? { ...a, skillsPath: form.buffer.trim() } : a));
         core.saveAgents(root, updated);
         setAgents(updated);
-        onNotice(`已更新 ${agents[cursor].id} 的路径（记得提交 agents.json）`);
+        onNotice(`已更新 ${agents[cursor].id} 的路径（按 s 提交推送）`);
         bumpTick();
         setForm(null);
         return;
@@ -548,6 +546,11 @@ export function App({ root, remote }: AppProps) {
     const m = core.loadManifest(root);
     return Object.fromEntries(Object.entries(m.agents).map(([k, v]) => [k, new Set(v)]));
   });
+  // 清单以磁盘文件为准：任何子视图写入后 bumpTick，这里重新加载，避免勾选状态停留在旧快照
+  useEffect(() => {
+    const m = core.loadManifest(root);
+    setManifest(Object.fromEntries(Object.entries(m.agents).map(([k, v]) => [k, new Set(v)])));
+  }, [root, tick]);
   const agents = useMemo(() => {
     try {
       return core.loadAgents(root);
@@ -594,7 +597,7 @@ export function App({ root, remote }: AppProps) {
     Box, { flexDirection: 'column' },
     h(Text, { bold: true, color: 'magenta' }, 'myskills 管理'),
     view === 'skills'
-      ? h(SkillsView, { root, agents, manifest, setManifest, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), tick, searching, setSearching })
+      ? h(SkillsView, { root, agents, manifest, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), tick, searching, setSearching })
       : view === 'machines'
         ? h(MachinesView, { root, tick })
         : view === 'agents'

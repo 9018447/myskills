@@ -66,3 +66,25 @@ test('tui: 搜索模式屏蔽全局键，q 不退出而是进入过滤词', asyn
   assert.match(lastFrame()!, /技能（0\/2）/); // 过滤词 bq 无匹配，证明 q 进了搜索框
   unmount();
 });
+
+test('tui: 应用预设后返回技能页，分发勾选状态已刷新', async () => {
+  const { repo } = makeFixture();
+  writeFileSync(
+    join(repo, 'skills-manifest.json'),
+    JSON.stringify({ agents: {}, presets: { base: ['alpha'] } }, null, 2),
+  );
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write('p'); // 预设视图
+  await tick();
+  stdin.write('a'); // 应用第一个预设
+  await tick();
+  stdin.write(' '); // 勾选 claude
+  await tick();
+  stdin.write('\r'); // 确认应用
+  await tick();
+  stdin.write('\x1b'); // 返回技能页
+  await tick();
+  assert.match(lastFrame()!, /\[x\] claude/); // 勾选状态必须反映刚应用的预设，而不是旧的空快照
+  unmount();
+});

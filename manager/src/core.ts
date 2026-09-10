@@ -194,7 +194,7 @@ export function status(repoRoot: string): MachineStatus {
   return s;
 }
 
-// sync = pull --ff-only → link → status → 提交并推送 machines/ 变更
+// sync = pull --ff-only → link → status → 提交并推送清单（skills-manifest.json、agents.json）与 machines/ 变更
 export function sync(repoRoot: string, remote: string): string[] {
   const lines: string[] = [];
   const branch = git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
@@ -202,14 +202,14 @@ export function sync(repoRoot: string, remote: string): string[] {
   lines.push(...link(repoRoot).lines);
   status(repoRoot);
   lines.push(`已写入 machines/${hostname()}.json`);
-  git(repoRoot, ['add', 'machines/']);
+  git(repoRoot, ['add', 'skills-manifest.json', 'agents.json', 'machines/']);
   const dirty = spawnSync('git', ['diff', '--cached', '--quiet'], { cwd: repoRoot }).status !== 0;
   if (dirty) {
-    git(repoRoot, ['commit', '-m', `chore: ${hostname()} 同步状态`]);
+    git(repoRoot, ['commit', '-m', `chore: ${hostname()} 同步清单与状态`]);
     git(repoRoot, ['push', remote, 'HEAD']);
-    lines.push('状态已提交并推送');
+    lines.push('清单与状态已提交并推送');
   } else {
-    lines.push('状态无变化，跳过提交');
+    lines.push('无变化，跳过提交');
   }
   return lines;
 }

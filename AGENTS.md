@@ -25,7 +25,7 @@
 myskills                 # 进管理 TUI：浏览/搜索技能、勾选分发、分组浏览（g：按agent/来源/项目路径/预设集）、预设集（p）、机器状态、agent 注册表、GitHub 安装
 myskills link            # 按清单重建各 agent 目录的符号链接（清理孤儿/断链）
 myskills status          # 写入 machines/<hostname>.json
-myskills sync            # pull --ff-only → link → status → 提交并推送状态
+myskills sync            # pull --ff-only → link → status → 提交并推送清单（skills-manifest.json、agents.json）与状态
 myskills install <github-url> [--name n]   # 从 GitHub 安装技能入仓并推送（走 gh，支持 /tree/ref/subdir 集合仓子目录）
 myskills migrate         # 存量收敛 dry-run；加 --apply 执行
 ```

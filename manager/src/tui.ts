@@ -335,10 +335,13 @@ export function App({ root, remote }: AppProps) {
   );
 }
 
-// 直接运行时渲染
+// 直接运行时渲染；也供 cli.ts 的 tui 子命令调用
+export function start(remote: string) {
+  render(h(App, { root: core.findRepoRoot(process.cwd()), remote }));
+}
+
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*\//, ''))) {
-  const root = core.findRepoRoot(process.cwd());
   const remoteIdx = process.argv.indexOf('--remote');
   const remote = remoteIdx > -1 ? process.argv[remoteIdx + 1] : (process.env.MYSKILLS_REMOTE ?? 'aliyun');
-  render(h(App, { root, remote }));
+  start(remote);
 }

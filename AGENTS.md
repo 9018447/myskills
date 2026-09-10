@@ -19,14 +19,18 @@
 
 ## 工具用法（manager/）
 
+首次使用在 `manager/` 下跑一次 `npm link`，之后全局可用：
+
 ```bash
-node manager/src/cli.ts link       # 按清单重建各 agent 目录的符号链接（清理孤儿/断链）
-node manager/src/cli.ts status     # 写入 machines/<hostname>.json
-node manager/src/cli.ts sync       # pull --ff-only → link → status → 提交并推送状态
-node manager/src/cli.ts install <github-url> [--name n]   # 从 GitHub 安装技能入仓并推送（走 gh，支持 /tree/ref/subdir 集合仓子目录）
-node manager/src/cli.ts migrate    # 存量收敛 dry-run；加 --apply 执行
-node manager/src/tui.ts            # 管理 TUI：浏览/搜索技能、勾选分发、link/sync、机器状态、agent 注册表、GitHub 安装
+myskills                 # 进管理 TUI：浏览/搜索技能、勾选分发、机器状态、agent 注册表、GitHub 安装
+myskills link            # 按清单重建各 agent 目录的符号链接（清理孤儿/断链）
+myskills status          # 写入 machines/<hostname>.json
+myskills sync            # pull --ff-only → link → status → 提交并推送状态
+myskills install <github-url> [--name n]   # 从 GitHub 安装技能入仓并推送（走 gh，支持 /tree/ref/subdir 集合仓子目录）
+myskills migrate         # 存量收敛 dry-run；加 --apply 执行
 ```
+
+没跑过 `npm link` 的环境用 `node manager/src/cli.ts <子命令>` 等价替代；TUI 对应 `node manager/src/tui.ts`。
 
 测试：`cd manager && npm test`（node:test，fixture 文件系统 + 本地裸仓库 + PATH 注入桩 gh）。
 
@@ -34,9 +38,9 @@ node manager/src/tui.ts            # 管理 TUI：浏览/搜索技能、勾选�
 
 ```bash
 git clone git@codeup.aliyun.com:69b3a6855523c716219ff9a9/myskills.git ~/my-skills
-cd ~/my-skills
-node manager/src/cli.ts migrate --apply   # 若本机有存量技能目录；否则跳过
-node manager/src/cli.ts sync              # 拉最新、按清单建链接、上报状态
+cd ~/my-skills/manager && npm link && cd ..
+myskills migrate --apply   # 若本机有存量技能目录；否则跳过
+myskills sync              # 拉最新、按清单建链接、上报状态
 ```
 
 安装新技能只在登录了 `gh` 的机器上执行；分发靠 git，其他机器 `sync` 即得。

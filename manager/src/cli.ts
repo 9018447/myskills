@@ -9,8 +9,21 @@ function resolveRemote(): string {
 }
 
 const command = process.argv[2];
+
+async function launchTui(): Promise<void> {
+  if (!process.stdout.isTTY) {
+    console.log('用法: myskills [link|status|sync|install|migrate|tui]（直接敲 myskills 进 TUI）');
+    return;
+  }
+  const { start } = await import('./tui.ts');
+  start(resolveRemote());
+}
+
 try {
   switch (command) {
+    case 'tui':
+      await launchTui();
+      break;
     case 'link':
       for (const line of link(findRepoRoot(process.cwd())).lines) console.log(line);
       break;
@@ -31,9 +44,12 @@ try {
     case 'migrate':
       for (const line of migrate(findRepoRoot(process.cwd()), process.argv.includes('--apply')).lines) console.log(line);
       break;
+    case undefined:
+      await launchTui();
+      break;
     default:
-      console.error('用法: myskills <link|status|sync|install|migrate>');
-      process.exit(command ? 1 : 0);
+      console.error('用法: myskills [link|status|sync|install|migrate|tui]（直接敲 myskills 进 TUI）');
+      process.exit(1);
   }
 } catch (err) {
   console.error((err as Error).message);

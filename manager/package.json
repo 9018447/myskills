@@ -5,9 +5,17 @@
   "type": "module",
   "description": "myskills 仓库的多机分发管理工具：link/status/sync/install/migrate",
   "bin": {
-    "myskills": "src/cli.ts"
+    "myskills": "src/cli.ts",
+    "myskills-tui": "src/tui.ts"
   },
   "scripts": {
     "test": "node --test \"test/*.test.ts\""
+  },
+  "dependencies": {
+    "ink": "^7.1.1",
+    "react": "^19.3.0"
+  },
+  "devDependencies": {
+    "ink-testing-library": "^4.0.0"
   }
 }

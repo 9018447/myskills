@@ -25,6 +25,7 @@ node manager/src/cli.ts status     # 写入 machines/<hostname>.json
 node manager/src/cli.ts sync       # pull --ff-only → link → status → 提交并推送状态
 node manager/src/cli.ts install <github-url> [--name n]   # 从 GitHub 安装技能入仓并推送（走 gh，支持 /tree/ref/subdir 集合仓子目录）
 node manager/src/cli.ts migrate    # 存量收敛 dry-run；加 --apply 执行
+node manager/src/tui.ts            # 管理 TUI：浏览/搜索技能、勾选分发、link/sync、机器状态、agent 注册表、GitHub 安装
 ```
 
 测试：`cd manager && npm test`（node:test，fixture 文件系统 + 本地裸仓库 + PATH 注入桩 gh）。

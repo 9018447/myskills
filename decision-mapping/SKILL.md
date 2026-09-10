@@ -101,7 +101,7 @@ End every session by clearing the context and opening one or more fresh sessions
 > Invoke /decision-mapping with the map at <path>, ticket rate-limits.
 > ```
 
-**No open tickets remain.** The fog is pushed back far enough that the path to the finish line is clear — the map is done. (The initial grilling may also surface no fog at all, in which case there was never a map to build.) Recommend implementing directly, or using `/to-prd` to schedule a multi-session implementation.
+**No open tickets remain.** The fog is pushed back far enough that the path to the finish line is clear — the map is done. (The initial grilling may also surface no fog at all, in which case there was never a map to build.) Recommend implementing directly, or using `/to-spec` to schedule a multi-session implementation.
 
 ## Notes
 

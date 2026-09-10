@@ -73,6 +73,47 @@
       "ponytail-gain",
       "ponytail-help",
       "ponytail-review"
+    ],
+    "codex": [
+      "claude-handoff",
+      "handoff-for-mattpocock",
+      "open-code-review-delegate",
+      "skill-creator",
+      "tdd",
+      "to-spec",
+      "to-tickets",
+      "wait-what",
+      "wizard",
+      "writing-for-agents"
+    ],
+    "pi": [
+      "claude-handoff",
+      "handoff-for-mattpocock",
+      "skill-creator",
+      "tdd",
+      "to-spec",
+      "to-tickets",
+      "wait-what",
+      "wizard",
+      "writing-for-agents"
+    ],
+    "omp": [
+      "domain-modeling",
+      "graph-risk-review",
+      "grill-me",
+      "grill-with-docs",
+      "grilling",
+      "handoff",
+      "implement",
+      "open-code-review-delegate",
+      "popular-web-designs",
+      "resolving-merge-conflicts",
+      "setup-matt-pocock-skills",
+      "skill-creator",
+      "tdd",
+      "to-spec",
+      "to-tickets",
+      "wait-what"
     ]
   }
 }

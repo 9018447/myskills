@@ -3,6 +3,9 @@
     { "id": "agents", "name": "Universal ~/.agents/skills", "skillsPath": "~/.agents/skills" },
     { "id": "claude", "name": "Claude Code", "skillsPath": "~/.claude/skills" },
     { "id": "cursor", "name": "Cursor", "skillsPath": "~/.cursor/skills" },
-    { "id": "kimi-code", "name": "Kimi Code", "skillsPath": "~/.kimi-code/skills" }
+    { "id": "kimi-code", "name": "Kimi Code", "skillsPath": "~/.kimi-code/skills" },
+    { "id": "codex", "name": "Codex CLI", "skillsPath": "~/.codex/skills" },
+    { "id": "pi", "name": "Pi", "skillsPath": "~/.pi/agent/skills" },
+    { "id": "omp", "name": "OMP", "skillsPath": "~/.omp/agent/skills" }
   ]
 }

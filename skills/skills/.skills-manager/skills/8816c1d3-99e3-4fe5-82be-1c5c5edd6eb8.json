@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "8816c1d3-99e3-4fe5-82be-1c5c5edd6eb8",
+  "path": "n8n-mcp-tools-expert",
+  "path_key": "n8n-mcp-tools-expert",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "czlonkowski/n8n-skills/n8n-mcp-tools-expert",
+    "subpath": "skills/n8n-mcp-tools-expert",
+    "branch": null
+  }
+}

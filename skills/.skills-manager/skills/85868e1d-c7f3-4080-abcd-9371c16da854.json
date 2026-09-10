@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "85868e1d-c7f3-4080-abcd-9371c16da854",
+  "path": "mdanalysis-skill",
+  "path_key": "mdanalysis-skill",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

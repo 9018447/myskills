@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "5896a210-aa04-40e9-ae33-5409b2fcf67a",
+  "path": "academic-paper",
+  "path_key": "academic-paper",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "imbad0202/academic-research-skills/academic-paper",
+    "subpath": "academic-paper",
+    "branch": null
+  }
+}

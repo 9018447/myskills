@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "40b464f8-2c9d-4e96-aa42-23310510a7ab",
+  "path": "teach",
+  "path_key": "teach",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "git",
+    "ref": "git@github.com:devcxl/mattpocock-skills-zh.git",
+    "subpath": "skills/productivity/teach",
+    "branch": null
+  }
+}

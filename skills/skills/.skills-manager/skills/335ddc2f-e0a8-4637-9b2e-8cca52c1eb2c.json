@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "335ddc2f-e0a8-4637-9b2e-8cca52c1eb2c",
+  "path": "typst-author",
+  "path_key": "typst-author",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

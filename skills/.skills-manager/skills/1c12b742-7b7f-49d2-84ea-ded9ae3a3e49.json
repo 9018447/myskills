@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "1c12b742-7b7f-49d2-84ea-ded9ae3a3e49",
+  "path": "codebase-memory-explore",
+  "path_key": "codebase-memory-explore",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

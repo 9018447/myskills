@@ -1,0 +1,57 @@
+; vle_npt.mdp - VLE NPT equilibration with semiisotropic compression (Z-axis only)
+; 5ns simulation for gas-liquid equilibration
+
+title                   = VLE NPT equilibration (semiisotropic Z)
+
+; Run parameters
+integrator              = md            ; leap-frog integrator
+nsteps                  = 2500000       ; 2500000 * 0.002 ps = 5000 ps = 5 ns
+dt                      = 0.002         ; 2 fs
+
+; Output control
+nstxout                 = 5000          ; save coordinates every 10 ps
+nstvout                 = 5000          ; save velocities every 10 ps
+nstenergy               = 5000          ; save energies every 10 ps
+nstlog                  = 5000          ; update log file every 10 ps
+
+; Bond parameters
+continuation            = yes           ; Restarting after EM
+constraint_algorithm    = lincs
+constraints             = h-bonds
+lincs_iter              = 1
+lincs_order             = 4
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+ns_type                 = grid
+nstlist                 = 20
+rlist                   = 1.2
+rcoulomb                = 1.2
+rvdw                    = 1.2
+
+; Electrostatics
+coulombtype             = PME
+pme_order               = 4
+fourierspacing          = 0.16
+
+; Temperature coupling is on
+tcoupl                  = V-rescale
+tc-grps                 = system
+tau_t                   = 0.1
+ref_t                   = 300
+
+; Pressure coupling - Semiisotropic, compress Z only
+pcoupl                  = C-rescale      ; 推荐的控压器 (或者使用 Parrinello-Rahman 用于成品模拟)
+pcoupltype              = semiisotropic  ; 核心设置：半各向同性控压
+tau_p                   = 2.0            ; 压力耦合时间常数 (ps)
+ref_p                   = 1.0  1.0       ; 目标压力 (bar)，格式为：[X/Y面] [Z轴]
+compressibility         = 0.0  4.5e-5    ; 等温压缩率 (bar^-1)，格式为：[X/Y面] [Z轴]
+
+; Periodic boundary conditions
+pbc                     = xyz
+
+; Dispersion correction
+DispCorr                = EnerPres
+
+; Velocity generation
+gen_vel                 = no            ; Velocity generation is off

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "8e709a57-be3a-45b3-bb3d-630c36f43d5a",
+  "path": "mcp2cli",
+  "path_key": "mcp2cli",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

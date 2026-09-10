@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "e97688a6-e17a-4a80-aaa7-096df10bdac7",
+  "path": "python-aspen",
+  "path_key": "python-aspen",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

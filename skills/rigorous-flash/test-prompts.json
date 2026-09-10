@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "prompt": "我的 DES/水闪蒸在 100°C/0.5 bar 下没有任何分离效果，水回收率是 0，降低压力到 0.1 bar 突然变成 100%，像是开关一样",
+    "expected": "识别 flash trap，建议用 direct tp_flash 绕过 VLE wrapper"
+  },
+  {
+    "id": 2,
+    "prompt": "闪蒸结果里 DES 损失不为零，200°C 时全部气化了，但 DES 的 Psat 应该是 1e-6 Pa",
+    "expected": "诊断 DES 被解锁导致丢失 DIPPR101Sat 纯组分模型"
+  },
+  {
+    "id": 3,
+    "prompt": "用 bst.units.Flash 跑 DES 脱水流程，结果 ms.vle() 给出 50/50 的气液分离，不管改温度还是压力都不变",
+    "expected": "识别 VLE wrapper 的 PH-flash fallback 和 bubble_pressure 50/50 fallback"
+  }
+]

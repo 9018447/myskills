@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "0bc69f36-3f44-44c1-803d-dcacd7f0ba02",
+  "path": "agentic-jujutsu",
+  "path_key": "agentic-jujutsu",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "ruvnet/ruflo/agentic-jujutsu",
+    "subpath": ".agents/skills/agentic-jujutsu",
+    "branch": null
+  }
+}

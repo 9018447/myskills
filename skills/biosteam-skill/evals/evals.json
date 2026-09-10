@@ -1,0 +1,23 @@
+{
+  "skill_name": "biosteam",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我创建一个简单的乙醇-水分离流程，用一个混合器混合两股进料，然后用精馏塔分离",
+      "expected_output": "完整的可运行 Python 脚本，包含 chemicals 定义、set_thermo、两股进料、Mixer、BinaryDistillation、System.simulate()",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我有一个 BioSTEAM 的系统，想做技术经济分析算 NPV 和 IRR，怎么设置 TEA？",
+      "expected_output": "TEA 子类模板，包含 _FOC/_DPI/_TDC/_FCI 方法、TEA 实例化代码、NPV/IRR 打印和 solve_price 示例",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "我的 BioSTEAM 仿真报错 'Missing thermo package'，还有一个回收流股导致不收敛，怎么解决？",
+      "expected_output": "诊断步骤：1) set_thermo() 必须最先调用；2) 回收流股收敛方法（Wegstein/Aitken）、maxiter 调整、skip_simulation_of_units_with_empty_inlets 设置",
+      "files": []
+    }
+  ]
+}

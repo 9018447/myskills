@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "a6409a7e-de8d-4fbb-8d16-91641921461c",
+  "path": "chrome-devtools",
+  "path_key": "chrome-devtools",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

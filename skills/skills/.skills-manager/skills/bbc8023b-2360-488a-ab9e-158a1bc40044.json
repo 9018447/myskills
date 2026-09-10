@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "bbc8023b-2360-488a-ab9e-158a1bc40044",
+  "path": "biosteam",
+  "path_key": "biosteam",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

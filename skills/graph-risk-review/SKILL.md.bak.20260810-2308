@@ -1,0 +1,239 @@
+---
+name: graph-risk-review
+description: >
+  Deep code review that fuses git-diff engineering (via the `ocr` CLI in
+  delegate mode) with the codebase-memory-mcp knowledge graph to assess
+  real-world risk of every change. Goes far beyond line-level linting: for
+  each changed symbol it traces inbound callers, computes blast radius and
+  graph centrality, pulls complexity hot-path metrics, and weighs every
+  finding by how much of the codebase it can actually break. Produces a
+  risk-graded Chinese Markdown report saved to disk. Use whenever the user
+  asks to review code, review changes/commits/branches, do 代码审查,
+  评估改动风险, 影响面分析, or wants to know "how risky is this diff" —
+  even if they just say "帮我看看这次改动" or "这个 commit 有没有问题".
+license: Apache-2.0
+compatibility: >
+  Requires the `ocr` CLI (delegate mode only — no LLM endpoint needed) and
+  the codebase-memory-mcp MCP server with the target repo indexed.
+metadata:
+  version: "1.1.0"
+  tags: [code-review, risk, knowledge-graph, impact-analysis]
+---
+
+# Graph Risk Review
+
+A code review has two independent questions: *is this change correct?* and
+*how much damage can it do if it's wrong?* A diff alone can only answer the
+first. This skill answers both by running a conventional diff review (ocr
+delegate mode handles file selection and rule resolution deterministically)
+**and** lifting every changed symbol into the codebase knowledge graph, where
+caller counts, transitive dependents, route reachability, and complexity
+metrics tell you the blast radius. A mediocre bug in a leaf utility is Low
+risk; the same bug in a function with 40 inbound callers on a hot path is
+Critical. Review effort and report ordering should follow that logic.
+
+## Prerequisites
+
+```bash
+which ocr || npm install -g @alibaba-group/open-code-review
+```
+
+Check the repo is indexed in the knowledge graph: run `search_graph` for any
+known symbol. If results look absent or the repo was never indexed, run
+`index_repository` (prefer `mode="fast"` for large repos). If the working
+tree has drifted far from the last index (many files changed since), re-index
+first — impact analysis on a stale graph produces confidently wrong caller
+lists, which is worse than no graph at all. State in the report which index
+the analysis is based on.
+
+Delegate mode never calls an LLM on the ocr side; no `ocr llm test` needed.
+
+## Workflow
+
+### Step 1: Scope the review with ocr delegate
+
+```bash
+ocr delegate preview --format json                  # workspace changes (default)
+ocr delegate preview --format json -c <hash>        # single commit
+ocr delegate preview --format json --from main --to feature   # branch range
+```
+
+The preview output splits files into `reviewable_files` and `excluded_files`
+(each with an exclusion reason). Only **reviewable** files need individual
+accounting: every one must end the review as **reviewed** or **skipped with
+a concrete reason** — never silently dropped. Excluded files need no
+per-file attention; in the report just give the count and a one-line summary
+of what was excluded (e.g. "75 个文档/批跑产物数据文件").
+
+Within the reviewable set, use judgment about depth: source code files get
+full review; generated data files, runtime state dumps, lockfile-style YAML
+and similar non-logic artifacts may be skimmed and skipped with a reason —
+but if such a file feeds program behavior (config schemas, state consumed by
+a solver), say so and check the fields that changed.
+
+### Step 2: Fetch rules and diffs
+
+```bash
+ocr delegate rule --format json <path1> <path2> ...
+```
+
+The rule output groups files by rule content. If the terminal truncates long
+JSON output, re-run with output redirected to a file and `Read` that file
+instead. Files whose extension matches no rule (e.g. `.sh` under a Python
+project's rules) simply get no group — review them with general engineering
+judgment; that's expected, not an error.
+
+Get diffs with git, using the mode metadata from Step 1 (`git diff HEAD --
+<path>` for tracked workspace files, `git diff <merge_base>..<to>` for range
+mode, `git show <commit>` for commit mode; read untracked files whole). For
+**newly added files** the diff is the entire file — skip the diff view and
+just read the file directly.
+
+### Step 3: Graph impact analysis — the core of this skill
+
+Before reviewing line-by-line, map the change onto the graph. For each
+changed file, identify the changed symbols (diff `@@` hunk headers name the
+enclosing function; fall back to reading the file around changed lines).
+
+For each changed symbol:
+
+1. **Locate it**: `search_graph(name_pattern=".*symbol.*")` or a BM25 query.
+   Note overloads/same-name symbols — match by file path.
+2. **Blast radius**: `trace_path(function_name=..., direction="inbound",
+   risk_labels=true, depth=3)`. Record: direct caller count, transitive
+   dependents, and whether any caller is an entry point / Route (externally
+   visible behavior) or a hot loop.
+3. **Complexity / hot-path check**: `query_graph` for the changed functions'
+   metrics — `complexity`, `transitive_loop_depth`, `linear_scan_in_loop`,
+   `alloc_in_loop`, `unguarded_recursion`. A change inside a function already
+   flagged as a hot-path candidate deserves extra scrutiny.
+4. **Cross-service reach** (multi-repo setups): if the changed symbol sits
+   behind a Route/Channel, use `trace_path(mode="cross_service")` to see
+   which other services consume it. Skip this step for single-repo reviews.
+
+Build a **centrality tier** per changed symbol — this drives everything later:
+
+- **T1 枢纽**: ≥10 direct callers, or reachable from a Route/entry point within 2 hops
+- **T2 骨干**: 3–9 direct callers, or on a flagged hot path
+- **T3 边缘**: 0–2 callers, internal-only
+
+Thresholds are starting points, not law. Override with judgment when the
+numbers mislead, and always state the reason. Example: a batch-engine
+function with only 4 direct callers is still T1 if two of those callers are
+the drivers that run it over every candidate in a fleet-wide batch — blast
+radius is measured in affected *outcomes*, not just caller cardinality.
+Conversely, a 10-caller function whose callers are all dead code is T3.
+
+### Step 4: Review each file, graph context in hand
+
+For every reviewable file, review the diff against its rule group (Step 2)
+**and** its impact context (Step 3). The graph changes what you look for:
+
+- Changed function signature or return-contract on a T1/T2 symbol → check
+  the actual callers from `trace_path` output for broken assumptions, don't
+  just eyeball the diff. Use `get_code_snippet` on both sides of a contract
+  (caller and callee) to verify status enums, argument names, and return
+  shapes actually match — a callee's docstring revealing a legal state the
+  caller rejects is a real finding, not a nit.
+- New branch/early-return in a high-complexity function → reason about which
+  caller-visible states it can now produce.
+- Changed behavior reachable from a Route → treat as API-visible; flag
+  backward-compat risk explicitly.
+- Pure T3 leaf changes with no findings → one line in the report, move on.
+  Don't manufacture issues to justify the review.
+
+Work in bounded batches for large changes — a good batch is one rule group
+or ~5 related files, whichever is smaller. Do not stop at the first
+high-severity finding. Track coverage in a checklist.
+
+**Verify data-processing logic empirically.** For scripts that compute over
+data (monitors, statistics, report generators), don't reason about formats
+in your head — open a real data file in the repo (or a fixture/test output)
+and check the script's assumptions against actual contents. Off-by-one and
+format-assumption bugs in glue scripts only surface this way, and they
+matter because people make decisions from those numbers.
+
+### Step 5: Fuse findings into risk grades
+
+Final risk = **finding severity × centrality tier**. A High bug in a T1
+symbol is Critical; a Medium style concern in T3 stays Low. When a finding
+and the graph disagree (e.g. scary-looking diff in a truly dead function),
+trust the graph and downgrade — but note the downgrade reasoning in the
+report so the user can challenge it.
+
+The `risk_labels` from `trace_path` (CRITICAL/HIGH/MEDIUM by hop distance)
+mean only *"this caller is N hops from the symbol"* — they are a proximity
+signal, not a severity. Use them as evidence when assigning the centrality
+tier (a hop-1 caller that is an entry point strengthens T1), never multiply
+them into the grade directly.
+
+### Step 6: Write the report to disk
+
+Write the full report (Chinese) to:
+
+- `.scratch/code-review/review-<YYYYMMDD-HHMMSS>.md` when the repo has a
+  `.scratch/` directory, otherwise `code-review-<YYYYMMDD-HHMMSS>.md` in the
+  repo root.
+
+In chat, return only a short summary (risk grade, top findings, report path).
+
+**Report template — use exactly this structure:**
+
+```markdown
+# 代码审查与风险评估报告
+
+- 范围：<workspace / commit / from..to> | 审查时间 | 图索引版本说明
+- 覆盖：reviewed N / skipped M（coverage %），skipped 附原因；
+  excluded K（ocr 排除的文件，一句话概括类别）
+
+## 风险总览
+
+| 等级 | 数量 | 说明 |
+|------|------|------|
+| Critical / High / Medium / Low | ... | 一句话 |
+
+整体风险评级：<Critical/High/Medium/Low> + 一句话理由
+
+## 影响面分析（图工具）
+
+| 改动符号 | 文件 | 中心性层级 | 直接调用方 | 是否触达入口/Route | 热路径标记 |
+|---------|------|-----------|-----------|-------------------|-----------|
+
+(随后用 1–3 句话指出本次改动中爆炸半径最大的符号及原因；
+若有 override 中心性层级的判断，在此说明理由)
+
+## 详细发现（按风险等级排序）
+
+### Critical / High
+- **`path/to/file.py:42`** — 问题描述
+  - 图上下文：该符号被 X 个函数调用，触达 <入口/Route 名称>
+  - 建议：修复方式
+
+### Medium / Low
+- 同上格式，Low 可只列一行
+
+## 覆盖与跳过
+- skipped 文件清单 + 原因；excluded 文件只给数量与类别
+
+## 结论与建议行动
+- 合并前必须处理 / 可以合并但建议跟进 / 无需行动
+```
+
+## Gotchas
+
+- **Graph staleness is the top failure mode** — if the diff renames or adds
+  symbols, they won't be in the old index. Re-index (`mode="fast"`) or
+  clearly mark those symbols as "未入图" and fall back to plain review.
+- **Same-name symbols** — `search_graph` returns all matches; always confirm
+  by file path before tracing.
+- **Long ocr output gets truncated in the terminal** — redirect to a file
+  and `Read` it rather than working from a cut-off paste.
+- **Risk labels are hop-distance based** — see Step 5; they grade graph
+  proximity, not business criticality.
+- **Don't inflate** — if the graph shows a change is genuinely isolated,
+  report it as low-risk quickly. The skill's value is calibration, not alarm.
+  Equally, before reporting a suspected bug, trace the actual call paths to
+  confirm it's reachable — killing your own false positive is part of the job.
+- **jj-managed repos** — `ocr delegate` reads git refs. If the repo is
+  jj-colocated this usually works via the git backend; if workspace mode
+  misbehaves, fall back to explicit `--from`/`--to` git refs.

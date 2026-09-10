@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "6446b6f7-baef-4470-98b1-06dae5815793",
+  "path": "jujutsu",
+  "path_key": "jujutsu",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "f7b4845c-73ad-4496-b31a-e87ff6700892",
+  "path": "pokemon-player",
+  "path_key": "pokemon-player",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

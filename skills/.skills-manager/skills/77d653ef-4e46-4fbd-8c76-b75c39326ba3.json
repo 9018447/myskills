@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "77d653ef-4e46-4fbd-8c76-b75c39326ba3",
+  "path": "n8n-validation-expert",
+  "path_key": "n8n-validation-expert",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "czlonkowski/n8n-skills/n8n-validation-expert",
+    "subpath": "skills/n8n-validation-expert",
+    "branch": null
+  }
+}

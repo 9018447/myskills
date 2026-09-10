@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "1bc428b2-7dbd-45b6-897b-02938f966bdc",
+  "path": "gcidentifier-jl",
+  "path_key": "gcidentifier-jl",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

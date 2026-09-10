@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "f090b082-77f5-4406-a7b9-2efbc1dc7e6a",
+  "path": "wos-navigate-pages",
+  "path_key": "wos-navigate-pages",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "git",
+    "ref": "https://github.com/cookjohn/wos-skills",
+    "subpath": "skills/wos-navigate-pages",
+    "branch": null
+  }
+}

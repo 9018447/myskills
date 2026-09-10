@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "d11fdd03-1798-4fd3-bb41-f66fcd5fab14",
+  "path": "graph-risk-review",
+  "path_key": "graph-risk-review",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

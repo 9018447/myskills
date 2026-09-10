@@ -1,0 +1,27 @@
+[CodeGraph daemon] Listening on /home/smh/homeconfig/skills/.codegraph/daemon.sock (pid 1668884, v0.9.9). Idle timeout 300000ms.
+[CodeGraph MCP] File watcher active — graph will auto-sync on changes
+[CodeGraph MCP] Caught up 287 file(s) changed since last run
+[CodeGraph] File watcher error {
+  error: "Error: ELOOP: too many symbolic links encountered, stat '/home/smh/homeconfig/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills'"
+}
+[CodeGraph] File watcher error {
+  error: "Error: ELOOP: too many symbolic links encountered, stat '/home/smh/homeconfig/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/.agents/skills/obsidian-bases'"
+}
+[CodeGraph] File watcher error {
+  error: "Error: ELOOP: too many symbolic links encountered, stat '/home/smh/homeconfig/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/.agents/skills/obsidian-cli'"
+}
+[CodeGraph] File watcher error {
+  error: "Error: ELOOP: too many symbolic links encountered, stat '/home/smh/homeconfig/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/.agents/skills/obsidian-markdown'"
+}
+[CodeGraph] File watcher error {
+  error: "Error: ELOOP: too many symbolic links encountered, stat '/home/smh/homeconfig/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/.claude'"
+}
+[CodeGraph] File watcher error {
+  error: "Error: ELOOP: too many symbolic links encountered, stat '/home/smh/homeconfig/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/.claude/skills/obsidian-bases'"
+}
+[CodeGraph] File watcher error {
+  error: "Error: ELOOP: too many symbolic links encountered, stat '/home/smh/homeconfig/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/.claude/skills/obsidian-cli'"
+}
+[CodeGraph] File watcher error {
+  error: "Error: ELOOP: too many symbolic links encountered, stat '/home/smh/homeconfig/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/skills/.claude/skills/obsidian-markdown'"
+}

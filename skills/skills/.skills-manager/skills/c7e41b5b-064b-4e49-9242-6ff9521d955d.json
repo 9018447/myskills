@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "c7e41b5b-064b-4e49-9242-6ff9521d955d",
+  "path": "request-refactor-plan",
+  "path_key": "request-refactor-plan",
+  "enabled": true,
+  "tags": [
+    "mattacpockskills"
+  ],
+  "source": {
+    "type": "skillssh",
+    "ref": "mattpocock/skills/request-refactor-plan",
+    "subpath": "skills/deprecated/request-refactor-plan",
+    "branch": null
+  }
+}

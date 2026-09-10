@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "e53ab253-d381-4dbb-a302-d75e4ab5e8ad",
+  "path": "n8n-code-javascript",
+  "path_key": "n8n-code-javascript",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "czlonkowski/n8n-skills/n8n-code-javascript",
+    "subpath": "skills/n8n-code-javascript",
+    "branch": null
+  }
+}

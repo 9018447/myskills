@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "0cfce098-31bb-4bf7-a270-286d3806da0c",
+  "path": "n8n-workflow-patterns",
+  "path_key": "n8n-workflow-patterns",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "czlonkowski/n8n-skills/n8n-workflow-patterns",
+    "subpath": "skills/n8n-workflow-patterns",
+    "branch": null
+  }
+}

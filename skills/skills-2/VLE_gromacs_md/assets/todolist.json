@@ -1,0 +1,117 @@
+{
+  "task1": {
+    "description": "分子结构的预优化",
+    "molecules": [
+      {
+        "name": "DMH",
+        "smiles": "CC1(C(=O)[N-]C(=O)[N-]1)C",
+        "charge": -2
+      },
+      {
+        "name": "DBN",
+        "smiles": "C1CC2=[NH+]CCCN2C1",
+        "charge": 1
+      },
+      {
+        "name": "CO2",
+        "smiles": "O=C=O",
+        "charge": 0
+      },
+      {
+        "name": "H2O",
+        "smiles": "O",
+        "charge": 0
+      },
+      {
+        "name": "YBJ",
+        "smiles": "CC(NC(CO)C)C",
+        "charge": 0
+      },
+      {
+        "name": "QYE",
+        "smiles": "C(CNCCO)N",
+        "charge": 0
+      }
+    ]
+  },
+  "task2": {
+    "description": "构象搜索",
+    "conformations": [
+      {
+        "mol1": "DMH",
+        "mol2": "CO2",
+        "ratio1": 1,
+        "ratio2": 1,
+        "charge": -2
+      },
+      {
+        "mol1": "DMH",
+        "mol2": "DBN",
+        "ratio1": 1,
+        "ratio2": 2,
+        "charge": 0
+      },
+      {
+        "mol1": "DBN",
+        "mol2": "CO2",
+        "ratio1": 1,
+        "ratio2": 1,
+        "charge": 1
+      },
+      {
+        "mol1": "YBJ",
+        "mol2": "CO2",
+        "ratio1": 1,
+        "ratio2": 1,
+        "charge": 0
+      },
+      {
+        "mol1": "QYE",
+        "mol2": "CO2",
+        "ratio1": 1,
+        "ratio2": 1,
+        "charge": 0
+      }
+    ]
+  },
+  "task3": {
+    "description": "prepare for gromacs box",
+    "molecules": [
+      {
+        "name": "LQ1",
+        "count": 200,
+        "phase": "l"
+      },
+      {
+        "name": "LQ2",
+        "count": 200,
+        "phase": "l"
+      },
+      {
+        "name": "LQ3",
+        "count": 100,
+        "phase": "l"
+      }
+    ]
+  },
+  "task4": {
+    "description": "gas molecular dynamics",
+    "molecules": [
+      {
+        "name": "GS1",
+        "count": 2000,
+        "phase": "g"
+      },
+      {
+        "name": "GS2",
+        "count": 2000,
+        "phase": "g"
+      },
+      {
+        "name": "GS3",
+        "count": 100,
+        "phase": "g"
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+.important code {
+    background: #d8c876;
+}
+
+div.important {
+    background-color: #f0e099;
+    border: 1px solid #b07400;
+}
+
+
+
+.danger code {
+    background: #f2b5b5;
+}
+
+div.danger {
+    background-color: #ffd6d6;
+    border: 1px solid #f66;
+}
+
+
+
+.note code {
+    background: #d6d6d6;
+}
+
+div.note {
+    background-color: #e6e6e6;
+    border: 1px solid #808080;
+}
+
+
+
+.attention code {
+    background: #85c5f2;
+}
+
+div.attention {
+    background-color: #a6e6ff;
+    border: 1px solid #66f;
+}

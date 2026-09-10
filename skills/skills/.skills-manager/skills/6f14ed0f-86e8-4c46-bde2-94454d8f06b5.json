@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "6f14ed0f-86e8-4c46-bde2-94454d8f06b5",
+  "path": "molecular-sampler",
+  "path_key": "molecular-sampler",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "955da300-1f9a-4276-a3ca-8a48ae2c2c49",
+  "path": "scientific-writing-2",
+  "path_key": "scientific-writing-2",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "k-dense-ai/claude-scientific-skills/scientific-writing",
+    "subpath": "skills/scientific-writing",
+    "branch": null
+  }
+}

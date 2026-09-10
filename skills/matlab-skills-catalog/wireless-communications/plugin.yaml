@@ -1,0 +1,26 @@
+# Copyright 2026 The MathWorks, Inc.
+description: Communications Toolbox, 5G Toolbox, WLAN Toolbox, Bluetooth Toolbox, Satellite Communications Toolbox, Wireless Network Toolbox, and Wireless Testbench.
+keywords:
+  - matlab
+  - wireless
+  - communications
+  - 5g
+  - lte
+  - wlan
+  - wifi
+  - 802.11
+  - satellite
+  - gnss
+  - gps
+  - galileo
+  - navic
+  - dvb-s2
+  - dvb-s2x
+  - dvb-rcs2
+  - ccsds
+  - superframes
+  - tm-tc
+  - sda
+  - Bluetooth
+  - Ble
+

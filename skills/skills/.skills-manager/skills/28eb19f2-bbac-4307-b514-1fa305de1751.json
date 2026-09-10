@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "skill_id": "28eb19f2-bbac-4307-b514-1fa305de1751",
+  "path": "biosteam-process-builder",
+  "path_key": "biosteam-process-builder",
+  "enabled": true,
+  "tags": [
+    "biosteam",
+    "自用"
+  ],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

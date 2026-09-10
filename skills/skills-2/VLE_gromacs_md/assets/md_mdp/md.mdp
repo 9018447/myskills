@@ -1,0 +1,56 @@
+; md.mdp - General Production MD parameters with Annealing
+;
+title                   = Production MD simulation with Annealing
+; Run parameters
+integrator              = md            ; leap-frog integrator
+nsteps                  = 2500000        ; 2500000 * 0.002 ps = 5000 ps = 5 ns
+dt                      = 0.002         ; 2 fs
+
+; Output control
+nstxout-compressed      = 5000          ; write compressed coordinates every 10 ps
+nstxout                 = 0             ; don't save full coordinates (too large)
+nstvout                 = 0             ; don't save velocities
+nstenergy               = 5000          ; save energies every 10 ps
+nstlog                  = 5000          ; update log file every 10 ps
+
+; Bond parameters
+continuation            = yes           ; Restarting after NPT
+constraint_algorithm    = lincs
+constraints             = h-bonds
+lincs_iter              = 1
+lincs_order             = 4
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+ns_type                 = grid
+nstlist                 = 20
+rlist                   = 1.2
+rcoulomb                = 1.2
+rvdw                    = 1.2
+
+; Electrostatics
+coulombtype             = PME
+pme_order               = 4
+fourierspacing          = 0.16
+
+; Temperature coupling is on
+tcoupl                  = V-rescale
+tc-grps                 = system
+tau_t                   = 0.1
+ref_t                   = 300           ; will be overridden by annealing
+
+; Pressure coupling is on
+pcoupl                  = C-rescale     ; C-rescale pressure coupling
+pcoupltype              = isotropic;
+tau_p                   = 1.0
+ref_p                   = 1.0
+compressibility         = 4.5e-5
+
+; Periodic boundary conditions
+pbc                     = xyz
+
+; Dispersion correction
+DispCorr                = EnerPres
+
+; Velocity generation
+gen_vel                 = no

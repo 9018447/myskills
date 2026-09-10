@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "246b3e6a-ae08-450c-b803-c66aca872abe",
+  "path": "handoff-for-mattpocock",
+  "path_key": "handoff-for-mattpocock",
+  "enabled": true,
+  "tags": [
+    "matppock"
+  ],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

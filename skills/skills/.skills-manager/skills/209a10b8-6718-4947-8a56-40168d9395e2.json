@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "209a10b8-6718-4947-8a56-40168d9395e2",
+  "path": "multiwfn",
+  "path_key": "multiwfn",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

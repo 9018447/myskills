@@ -1,0 +1,7 @@
+.DS_Store
+Thumbs.db
+*.tmp
+__pycache__/
+*.pyc
+.skills-manager.lock
+biosteam-process-builder/outputs/

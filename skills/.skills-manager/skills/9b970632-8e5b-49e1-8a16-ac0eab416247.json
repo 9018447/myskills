@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "9b970632-8e5b-49e1-8a16-ac0eab416247",
+  "path": "git-guardrails-claude-code-2",
+  "path_key": "git-guardrails-claude-code-2",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "git",
+    "ref": "git@github.com:devcxl/mattpocock-skills-zh.git",
+    "subpath": "skills/misc/git-guardrails-claude-code",
+    "branch": null
+  }
+}

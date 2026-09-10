@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "d729c93c-c857-4bde-b6b9-22f4e0bfd5ac",
+  "path": "ssh",
+  "path_key": "ssh",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "openhands/skills/ssh",
+    "subpath": "skills/ssh",
+    "branch": null
+  }
+}

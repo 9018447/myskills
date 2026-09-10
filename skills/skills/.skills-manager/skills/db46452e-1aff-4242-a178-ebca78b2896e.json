@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "db46452e-1aff-4242-a178-ebca78b2896e",
+  "path": "gaussian",
+  "path_key": "gaussian",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

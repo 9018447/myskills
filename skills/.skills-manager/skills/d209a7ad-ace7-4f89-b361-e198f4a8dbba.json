@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "d209a7ad-ace7-4f89-b361-e198f4a8dbba",
+  "path": "phonopy",
+  "path_key": "phonopy",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

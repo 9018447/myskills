@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "d09c51b1-22a3-422d-94c2-d9f5d7c245da",
+  "path": "baoyu-comic",
+  "path_key": "baoyu-comic",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "import",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

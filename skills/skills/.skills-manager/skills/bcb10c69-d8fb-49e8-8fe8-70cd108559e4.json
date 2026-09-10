@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "bcb10c69-d8fb-49e8-8fe8-70cd108559e4",
+  "path": "paper-writing",
+  "path_key": "paper-writing",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "skillssh",
+    "ref": "evoscientist/evoskills/paper-writing",
+    "subpath": "skills/paper-writing",
+    "branch": null
+  }
+}

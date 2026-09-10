@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "skill_id": "7ad4e7b3-01c7-4e6e-b5e1-37a95eb3b1d4",
+  "path": "group-contribution-estimator",
+  "path_key": "group-contribution-estimator",
+  "enabled": true,
+  "tags": [
+    "自用"
+  ],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

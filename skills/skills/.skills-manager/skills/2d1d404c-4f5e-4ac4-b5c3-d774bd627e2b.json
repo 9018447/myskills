@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "2d1d404c-4f5e-4ac4-b5c3-d774bd627e2b",
+  "path": "pubchem-database",
+  "path_key": "pubchem-database",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

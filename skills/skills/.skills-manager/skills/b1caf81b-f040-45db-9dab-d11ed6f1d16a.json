@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "skill_id": "b1caf81b-f040-45db-9dab-d11ed6f1d16a",
+  "path": "rigorous-flash",
+  "path_key": "rigorous-flash",
+  "enabled": true,
+  "tags": [
+    "biosteam",
+    "自用"
+  ],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

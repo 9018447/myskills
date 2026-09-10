@@ -1,0 +1,5 @@
+timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
+2026-08-10T23:05	baseline	graph-risk-review	-	76.3	baseline	-	初始评估：dim3=6 dim4=3 为短板；实测prompt1 baseline跑偏、prompt2 baseline质量高但无覆盖纪律	full_test
+2026-08-10T23:20	bak.20260810-2308	graph-risk-review	76.3	79.9	keep	dim4检查点	新增2个显式检查点（re-index前+大范围审查前），实测触发/跳过均正确，dim4 3->9	full_test
+2026-08-10T23:35	bak.20260810-2308	graph-risk-review	79.9	83.5	keep	dim3失败模式	新增Failure Modes & Recovery三段式表（7行），实测未索引仓库正确走兜底并标注降级点，dim3 6->9	full_test
+2026-08-10T23:50	bak.20260810-2308	graph-risk-review	83.5	85.3	keep	dim9反例黑名单	新增9条黑名单表取代Gotchas散点，实测微小commit正确报Low不inflate，dim9 7->10；Delta=1.8<2触顶信号	full_test

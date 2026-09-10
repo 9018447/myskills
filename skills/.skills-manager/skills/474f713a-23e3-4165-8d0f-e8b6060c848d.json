@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "skill_id": "474f713a-23e3-4165-8d0f-e8b6060c848d",
+  "path": "iflow-search-skill",
+  "path_key": "iflow-search-skill",
+  "enabled": true,
+  "tags": [],
+  "source": {
+    "type": "local",
+    "ref": null,
+    "subpath": null,
+    "branch": null
+  }
+}

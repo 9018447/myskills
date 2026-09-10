@@ -109,3 +109,32 @@ test('tui: 按 l 有执行反馈，完成后提示动作数', async () => {
   assert.match(lastFrame()!, /link 完成/);
   unmount();
 });
+
+test('tui: 预设集视图里 l/s/f 全局可用', async () => {
+  const { repo } = makeFixture();
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write('p'); // 进预设集视图
+  await tick();
+  stdin.write('l'); // 不返回技能页，直接按 l
+  await tick();
+  await tick();
+  assert.match(lastFrame()!, /link 完成/);
+  unmount();
+});
+
+test('tui: agent 表单输入时 l 进入输入框，不触发全局 link', async () => {
+  const { repo } = makeFixture();
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write('a'); // 进 agent 注册表视图
+  await tick();
+  stdin.write('n'); // 打开新增表单
+  await tick();
+  stdin.write('l'); // 应进入 id 输入框
+  await tick();
+  await tick();
+  assert.match(lastFrame()!, /id（如 claude）: l/);
+  assert.doesNotMatch(lastFrame()!, /link 完成/);
+  unmount();
+});

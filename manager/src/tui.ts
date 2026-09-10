@@ -418,11 +418,16 @@ function PresetsView({
   );
 }
 
-function AgentsView({ root, onNotice, bumpTick }: { root: string; onNotice: (s: string) => void; bumpTick: () => void }) {
+function AgentsView({ root, onNotice, bumpTick, setBusy }: { root: string; onNotice: (s: string) => void; bumpTick: () => void; setBusy: (b: boolean) => void }) {
   const [agents, setAgents] = useState<core.AgentDef[]>(() => core.loadAgents(root));
   const [cursor, setCursor] = useState(0);
   // 表单：step 0 不在表单；否则依次问 id → name → path；edit 模式只问 path
   const [form, setForm] = useState<{ mode: 'add' | 'edit'; step: number; draft: Partial<core.AgentDef>; buffer: string } | null>(null);
+
+  useEffect(() => {
+    setBusy(form !== null); // 表单输入时屏蔽全局键，否则输入 l/s/f 会触发 link/sync/fetch
+  }, [form, setBusy]);
+  useEffect(() => () => setBusy(false), [setBusy]);
 
   useInput((input, key) => {
     if (form) {
@@ -581,25 +586,31 @@ export function App({ root, remote }: AppProps) {
 
   useInput((input, key) => {
     if (searching || viewBusy || running) return; // 搜索/子模式/耗时操作执行中屏蔽全局键（q/l/s/m/a/i/p）
-    if (input === 'q' || (key.ctrl && input === 'c')) {
+    if ((input === 'q' && view !== 'install') || (key.ctrl && input === 'c')) {
       exit();
       return;
+    }
+    // l/s/f 全局可用（含预设集等子视图；install 视图是文本输入，除外）
+    if (view !== 'install') {
+      if (input === 'l') {
+        runAction('link', () => {
+          const r = core.link(root);
+          return `link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
+        });
+        return;
+      }
+      if (input === 's') {
+        runAction('sync', () => `sync 完成：${core.sync(root, remote).at(-1)}`);
+        return;
+      }
+      if (input === 'f') {
+        runAction('fetch', () => (core.fetchRemote(root, remote) ? 'fetch 完成' : 'fetch 失败'));
+        return;
+      }
     }
     if (view !== 'skills') {
       if (view !== 'install' && (key.escape || input === 'm')) setView('skills');
       return; // 子视图自己处理输入
-    }
-    if (input === 'l') {
-      runAction('link', () => {
-        const r = core.link(root);
-        return `link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
-      });
-    }
-    if (input === 's') {
-      runAction('sync', () => `sync 完成：${core.sync(root, remote).at(-1)}`);
-    }
-    if (input === 'f') {
-      runAction('fetch', () => (core.fetchRemote(root, remote) ? 'fetch 完成' : 'fetch 失败'));
     }
     if (input === 'm') setView('machines');
     if (input === 'a') setView('agents');
@@ -615,7 +626,7 @@ export function App({ root, remote }: AppProps) {
       : view === 'machines'
         ? h(MachinesView, { root, tick })
         : view === 'agents'
-          ? h(AgentsView, { root, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1) })
+          ? h(AgentsView, { root, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), setBusy: setViewBusy })
           : view === 'presets'
             ? h(PresetsView, { root, agents, tick, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), setBusy: setViewBusy })
             : h(InstallView, { root, remote, onNotice: setNotice, onDone: () => { setView('skills'); setTick((t) => t + 1); } }),

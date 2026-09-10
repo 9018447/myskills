@@ -13,6 +13,10 @@ export interface AgentDef {
 
 export interface Manifest {
   agents: Record<string, string[]>;
+  // 技能来源仓库："owner/repo" 或 "owner/repo/subdir"；install 时记录，存量由 skillSources 从 git 历史推断
+  sources?: Record<string, string>;
+  // 预设集：名字 → 技能列表；应用到 agent 时并集追加
+  presets?: Record<string, string[]>;
 }
 
 export function expandHome(p: string): string {
@@ -247,7 +251,10 @@ export function install(repoRoot: string, input: string, nameOverride: string | 
 
   cpSync(src, dest, { recursive: true });
   rmSync(tmp, { recursive: true, force: true });
-  git(repoRoot, ['add', name]);
+  const manifest = loadManifest(repoRoot);
+  (manifest.sources ??= {})[name] = subdir ? `${owner}/${repo}/${subdir.replace(/\/+$/, '')}` : `${owner}/${repo}`;
+  saveManifest(repoRoot, manifest);
+  git(repoRoot, ['add', name, 'skills-manifest.json']);
   git(repoRoot, ['commit', '-m', `feat: 安装技能 ${name}（来自 github.com/${owner}/${repo}）`]);
   git(repoRoot, ['push', remote, 'HEAD']);
   return `已安装 ${name}（来自 github.com/${owner}/${repo}${subdir ? ` 的 ${subdir}` : ''}），并推送`;
@@ -403,4 +410,85 @@ export function aheadBehind(repoRoot: string, remote: string): { ahead: number; 
 
 export function fetchRemote(repoRoot: string, remote: string): boolean {
   return spawnSync('git', ['fetch', remote], { cwd: repoRoot, encoding: 'utf8' }).status === 0;
+}
+
+// 技能来源：manifest.sources 优先；缺失的从 git 历史推断（install 提交 message 含「来自 github.com/...」）；再缺标 'local'
+export function skillSources(repoRoot: string): Record<string, string> {
+  const manifest = loadManifest(repoRoot);
+  const skills = listRepoSkills(repoRoot);
+  const result: Record<string, string> = {};
+  for (const s of skills) {
+    if (manifest.sources?.[s]) result[s] = manifest.sources[s];
+  }
+  const missing = skills.filter((s) => !result[s]);
+  if (missing.length > 0) {
+    const r = spawnSync('git', ['log', '--diff-filter=A', '--format=%x00%s', '--name-only', '--', '*/SKILL.md'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    if (r.status === 0) {
+      let subject = '';
+      for (const line of r.stdout.split('\n')) {
+        if (line.startsWith('\0')) {
+          subject = line.slice(1);
+          continue;
+        }
+        const top = line.split('/')[0];
+        if (!top || !missing.includes(top) || result[top]) continue;
+        const m = subject.match(/来自 github\.com\/([^/\s)]+)\/([^/\s)]+?)(?: 的 (.+?))?）/);
+        if (m) result[top] = m[3] ? `${m[1]}/${m[2]}/${m[3]}` : `${m[1]}/${m[2]}`;
+      }
+    }
+  }
+  for (const s of skills) {
+    if (!result[s]) result[s] = 'local';
+  }
+  return result;
+}
+
+// 预设集 CRUD 与应用
+export function setPreset(repoRoot: string, name: string, skills: string[]): void {
+  const manifest = loadManifest(repoRoot);
+  (manifest.presets ??= {})[name] = [...new Set(skills)].sort();
+  saveManifest(repoRoot, manifest);
+}
+
+export function deletePreset(repoRoot: string, name: string): void {
+  const manifest = loadManifest(repoRoot);
+  if (manifest.presets) delete manifest.presets[name];
+  saveManifest(repoRoot, manifest);
+}
+
+export interface ApplyResult {
+  added: Record<string, number>; // 各 agent 新增数量
+  missing: string[]; // 预设里但仓库中不存在的技能
+}
+
+// 并集追加：预设技能并入目标 agent 清单，已有的不重复
+export function applyPreset(repoRoot: string, name: string, agentIds: string[]): ApplyResult {
+  const manifest = loadManifest(repoRoot);
+  const skills = manifest.presets?.[name];
+  if (!skills) throw new Error(`预设集 ${name} 不存在`);
+  const missing = skills.filter((s) => !existsSync(join(repoRoot, s)));
+  const valid = skills.filter((s) => !missing.includes(s));
+  const added: Record<string, number> = {};
+  for (const id of agentIds) {
+    const list = manifest.agents[id] ?? [];
+    const before = list.length;
+    manifest.agents[id] = [...new Set([...list, ...valid])].sort();
+    added[id] = manifest.agents[id].length - before;
+  }
+  saveManifest(repoRoot, manifest);
+  return { added, missing };
+}
+
+// agent 的项目分组键：skillsPath 里第一个点开头的段之前是项目路径；直接在家目录下的算「全局」
+export function agentProjectGroup(agent: AgentDef): string {
+  const p = expandHome(agent.skillsPath);
+  const segments = p.split('/');
+  const dotIdx = segments.findIndex((s) => s.startsWith('.'));
+  if (dotIdx === -1) return dirname(dirname(p));
+  const prefix = segments.slice(0, dotIdx).join('/') || '/';
+  return prefix === homedir() ? '全局' : prefix;
 }

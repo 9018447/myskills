@@ -1,12 +1,22 @@
 #!/usr/bin/env node
-// myskills 管理 TUI：浏览/搜索技能、勾选分发、同步状态、机器仪表盘、agent 管理、GitHub 安装
+// myskills 管理 TUI：浏览/搜索技能、勾选分发、分组浏览、预设集、同步状态、机器仪表盘、agent 管理、GitHub 安装
 // 不用 JSX（node 直接运行 TS 不支持），全部 createElement
 import { createElement as h, useState, useMemo, useEffect } from 'react';
 import { render, Box, Text, useApp, useInput } from 'ink';
 import * as core from './core.ts';
 
-type View = 'skills' | 'machines' | 'agents' | 'install';
+type View = 'skills' | 'machines' | 'agents' | 'install' | 'presets';
 type Focus = 'list' | 'dist';
+type GroupMode = 'none' | 'agent' | 'source' | 'project' | 'preset';
+
+const GROUP_ORDER: GroupMode[] = ['none', 'agent', 'source', 'project', 'preset'];
+const GROUP_LABEL: Record<GroupMode, string> = {
+  none: '',
+  agent: '按agent',
+  source: '按来源',
+  project: '按项目路径',
+  preset: '按预设集',
+};
 
 interface AppProps {
   root: string;
@@ -14,10 +24,11 @@ interface AppProps {
 }
 
 const HELP: Record<View, string> = {
-  skills: '↑↓ 移动  / 搜索  Tab 切到分发  空格 勾选  l=link  s=sync  f=fetch  m=机器  a=agent  i=安装  q=退出',
+  skills: '↑↓ 移动  / 搜索  g=分组  Tab 切到分发  空格 勾选  l=link  s=sync  f=fetch  p=预设  m=机器  a=agent  i=安装  q=退出',
   machines: 'm/esc 返回  q=退出',
   agents: '↑↓ 移动  n=新增  e=改路径  d=删除  esc 返回  q=退出',
   install: '输入 URL 回车安装（集合仓用 /tree/ref/子目录）  esc 返回',
+  presets: '↑↓ 移动  n=新建  e=编辑成员  d=删除  a=应用到agent  esc 返回  q=退出',
 };
 
 function StatusLine({ root, remote, tick }: { root: string; remote: string; tick: number }) {
@@ -42,8 +53,13 @@ function StatusLine({ root, remote, tick }: { root: string; remote: string; tick
   );
 }
 
+interface Row {
+  header?: string;
+  skill?: string;
+}
+
 function SkillsView({
-  root, agents, manifest, setManifest, onNotice, bumpTick, searching, setSearching,
+  root, agents, manifest, setManifest, onNotice, bumpTick, tick, searching, setSearching,
 }: {
   root: string;
   agents: core.AgentDef[];
@@ -51,6 +67,7 @@ function SkillsView({
   setManifest: (m: Record<string, Set<string>>) => void;
   onNotice: (s: string) => void;
   bumpTick: () => void;
+  tick: number;
   searching: boolean;
   setSearching: (b: boolean) => void;
 }) {
@@ -58,6 +75,7 @@ function SkillsView({
   const [cursor, setCursor] = useState(0);
   const [focus, setFocus] = useState<Focus>('list');
   const [agentCursor, setAgentCursor] = useState(0);
+  const [groupMode, setGroupMode] = useState<GroupMode>('none');
 
   const skills = useMemo(() => core.listRepoSkills(root), [root]);
   const shown = useMemo(
@@ -65,6 +83,70 @@ function SkillsView({
     [skills, filter],
   );
   const current = shown[Math.min(cursor, Math.max(0, shown.length - 1))];
+
+  const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
+  const sources = useMemo(() => (groupMode === 'source' ? core.skillSources(root) : {}), [root, tick, groupMode]);
+
+  // 分组浏览：把技能列表渲染成「分组头 + 技能」行序列；同一技能可出现在多个组下
+  const rows = useMemo<Row[]>(() => {
+    if (groupMode === 'none') return shown.map((s) => ({ skill: s }));
+    const shownSet = new Set(shown);
+    const skillSet = new Set(skills);
+    const assigned = new Set<string>();
+    const groups: [string, string[]][] = [];
+    if (groupMode === 'agent') {
+      const sorted = [...agents].sort(
+        (a, b) => core.agentProjectGroup(a).localeCompare(core.agentProjectGroup(b)) || a.id.localeCompare(b.id),
+      );
+      for (const a of sorted) {
+        const members = [...(manifest[a.id] ?? [])].filter((s) => skillSet.has(s)).sort();
+        groups.push([`${core.agentProjectGroup(a)} / ${a.id}`, members]);
+        members.forEach((m) => assigned.add(m));
+      }
+      const rest = skills.filter((s) => !assigned.has(s));
+      if (rest.length) groups.push(['未分发', rest]);
+    } else if (groupMode === 'source') {
+      const bySource = new Map<string, string[]>();
+      for (const s of skills) {
+        const src = sources[s] ?? 'local';
+        const label = src === 'local' ? '本地/未知' : `github.com/${src}`;
+        const list = bySource.get(label) ?? [];
+        list.push(s);
+        bySource.set(label, list);
+      }
+      for (const [label, members] of [...bySource.entries()].sort((a, b) => a[0].localeCompare(b[0]))) groups.push([label, members]);
+    } else if (groupMode === 'project') {
+      const byProject = new Map<string, Set<string>>();
+      for (const a of agents) {
+        const g = core.agentProjectGroup(a);
+        const set = byProject.get(g) ?? new Set<string>();
+        byProject.set(g, set);
+        for (const s of manifest[a.id] ?? []) if (skillSet.has(s)) set.add(s);
+      }
+      for (const [label, set] of [...byProject.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+        groups.push([label, [...set].sort()]);
+        set.forEach((s) => assigned.add(s));
+      }
+      const rest = skills.filter((s) => !assigned.has(s));
+      if (rest.length) groups.push(['未分发', rest]);
+    } else {
+      for (const [name, members] of Object.entries(presets).sort((a, b) => a[0].localeCompare(b[0]))) {
+        const valid = members.filter((s) => skillSet.has(s));
+        groups.push([`预设: ${name}`, valid]);
+        valid.forEach((s) => assigned.add(s));
+      }
+      const rest = skills.filter((s) => !assigned.has(s));
+      if (rest.length) groups.push(['不在任何预设', rest]);
+    }
+    const out: Row[] = [];
+    for (const [label, members] of groups) {
+      const visible = members.filter((s) => shownSet.has(s));
+      if (!visible.length) continue;
+      out.push({ header: label });
+      for (const m of visible) out.push({ skill: m });
+    }
+    return out;
+  }, [groupMode, shown, skills, agents, manifest, sources, presets]);
 
   useInput((input, key) => {
     if (searching) {
@@ -77,6 +159,11 @@ function SkillsView({
     }
     if (input === '/') {
       setSearching(true);
+      return;
+    }
+    if (input === 'g') {
+      setGroupMode((m) => GROUP_ORDER[(GROUP_ORDER.indexOf(m) + 1) % GROUP_ORDER.length]);
+      setCursor(0);
       return;
     }
     if (key.tab) {
@@ -101,17 +188,22 @@ function SkillsView({
   });
 
   const height = 15;
-  const start = Math.max(0, Math.min(cursor - Math.floor(height / 2), Math.max(0, shown.length - height)));
-  const windowRows = shown.slice(start, start + height);
+  const currentPos = Math.max(0, rows.findIndex((r) => r.skill === current));
+  const start = Math.max(0, Math.min(currentPos - Math.floor(height / 2), Math.max(0, rows.length - height)));
+  const windowRows = rows.slice(start, start + height);
 
   return h(
     Box, { flexDirection: 'row', gap: 2 },
     h(
       Box, { flexDirection: 'column', width: 34, borderStyle: 'round', borderColor: focus === 'list' ? 'cyan' : 'gray', paddingX: 1 },
-      h(Text, { bold: true }, `技能（${shown.length}/${skills.length}）${searching ? ` 搜索: ${filter}▌` : filter ? ` 过滤: ${filter}` : ''}`),
-      ...windowRows.map((s, i) => {
-        const active = start + i === cursor;
-        return h(Text, { key: s, color: active ? 'cyan' : undefined, bold: active }, `${active ? '❯' : ' '} ${s}`);
+      h(
+        Text, { bold: true },
+        `技能（${shown.length}/${skills.length}）${groupMode !== 'none' ? ` [${GROUP_LABEL[groupMode]}]` : ''}${searching ? ` 搜索: ${filter}▌` : filter ? ` 过滤: ${filter}` : ''}`,
+      ),
+      ...windowRows.map((r, i) => {
+        if (r.header !== undefined) return h(Text, { key: `h${start + i}`, color: 'yellow', bold: true }, `▸ ${r.header}`);
+        const active = r.skill === current;
+        return h(Text, { key: `s${start + i}`, color: active ? 'cyan' : undefined, bold: active }, `${active ? '❯' : ' '} ${r.skill}`);
       }),
     ),
     h(
@@ -144,6 +236,183 @@ function MachinesView({ root, tick }: { root: string; tick: number }) {
             `${m.host}  ${m.branch}@${m.sha.slice(0, 7)}  断链 ${m.brokenLinks}  ${m.updatedAt}`,
           ),
         ),
+  );
+}
+
+type PresetMode = 'list' | 'new' | 'members' | 'apply';
+
+function PresetsView({
+  root, agents, tick, onNotice, bumpTick, setBusy,
+}: {
+  root: string;
+  agents: core.AgentDef[];
+  tick: number;
+  onNotice: (s: string) => void;
+  bumpTick: () => void;
+  setBusy: (b: boolean) => void;
+}) {
+  const [mode, setMode] = useState<PresetMode>('list');
+  const [cursor, setCursor] = useState(0);
+  const [buffer, setBuffer] = useState('');
+  const [editing, setEditing] = useState(''); // members/apply 模式作用的预设名
+  const [sel, setSel] = useState<Set<string>>(new Set()); // members 模式的勾选
+  const [applySel, setApplySel] = useState<Set<string>>(new Set()); // apply 模式勾选的 agent
+  const [mCursor, setMCursor] = useState(0);
+  const [mFilter, setMFilter] = useState('');
+  const [mSearching, setMSearching] = useState(false);
+
+  const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
+  const names = useMemo(() => Object.keys(presets).sort(), [presets]);
+  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+  const mShown = useMemo(
+    () => (mFilter ? skills.filter((s) => s.toLowerCase().includes(mFilter.toLowerCase())) : skills),
+    [skills, mFilter],
+  );
+
+  useEffect(() => {
+    setBusy(mode !== 'list' || mSearching);
+  }, [mode, mSearching, setBusy]);
+  useEffect(() => () => setBusy(false), [setBusy]);
+
+  const openMembers = (name: string) => {
+    setEditing(name);
+    setSel(new Set(presets[name] ?? []));
+    setMCursor(0);
+    setMFilter('');
+    setMSearching(false);
+    setMode('members');
+  };
+
+  useInput((input, key) => {
+    if (mode === 'new') {
+      if (key.escape) setMode('list');
+      else if (key.return) {
+        const name = buffer.trim();
+        if (!name) return;
+        openMembers(name);
+      } else if (key.backspace || key.delete) setBuffer((b) => b.slice(0, -1));
+      else if (input && !key.ctrl && !key.meta) setBuffer((b) => b + input);
+      return;
+    }
+    if (mode === 'members') {
+      if (mSearching) {
+        if (key.escape || key.return) setMSearching(false);
+        else if (key.backspace || key.delete) setMFilter((f) => f.slice(0, -1));
+        else if (input && !key.ctrl && !key.meta) setMFilter((f) => f + input);
+        setMCursor(0);
+        return;
+      }
+      if (key.escape) {
+        setMode('list');
+        return;
+      }
+      if (input === '/') {
+        setMSearching(true);
+        return;
+      }
+      if (key.upArrow) setMCursor((c) => Math.max(0, c - 1));
+      if (key.downArrow) setMCursor((c) => Math.min(mShown.length - 1, c + 1));
+      if (input === ' ' && mShown[mCursor]) {
+        const s = mShown[mCursor];
+        const next = new Set(sel);
+        if (next.has(s)) next.delete(s);
+        else next.add(s);
+        setSel(next);
+      }
+      if (key.return) {
+        core.setPreset(root, editing, [...sel]);
+        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能，清单已写，应用到 agent 后按 l 生效）`);
+        bumpTick();
+        setMode('list');
+      }
+      return;
+    }
+    if (mode === 'apply') {
+      if (key.escape) {
+        setMode('list');
+        return;
+      }
+      if (key.upArrow) setMCursor((c) => Math.max(0, c - 1));
+      if (key.downArrow) setMCursor((c) => Math.min(agents.length - 1, c + 1));
+      if (input === ' ' && agents[mCursor]) {
+        const id = agents[mCursor].id;
+        const next = new Set(applySel);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        setApplySel(next);
+      }
+      if (key.return) {
+        if (applySel.size === 0) return;
+        const r = core.applyPreset(root, editing, [...applySel]);
+        const parts = Object.entries(r.added).map(([id, n]) => `${id}+${n}`);
+        onNotice(`已应用预设 ${editing}：${parts.join('  ')}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}（按 l 生效）`);
+        bumpTick();
+        setMode('list');
+      }
+      return;
+    }
+    // mode === 'list'
+    if (key.upArrow) setCursor((c) => Math.max(0, c - 1));
+    if (key.downArrow) setCursor((c) => Math.min(names.length - 1, c + 1));
+    if (input === 'n') {
+      setBuffer('');
+      setMode('new');
+    }
+    if (input === 'e' && names[cursor]) openMembers(names[cursor]);
+    if (input === 'd' && names[cursor]) {
+      const victim = names[cursor];
+      core.deletePreset(root, victim);
+      setCursor((c) => Math.max(0, c - 1));
+      onNotice(`已删除预设 ${victim}`);
+      bumpTick();
+    }
+    if (input === 'a' && names[cursor]) {
+      setEditing(names[cursor]);
+      setApplySel(new Set());
+      setMCursor(0);
+      setMode('apply');
+    }
+  });
+
+  if (mode === 'members') {
+    const height = 15;
+    const start = Math.max(0, Math.min(mCursor - Math.floor(height / 2), Math.max(0, mShown.length - height)));
+    const windowSkills = mShown.slice(start, start + height);
+    return h(
+      Box, { flexDirection: 'column', borderStyle: 'round', paddingX: 1 },
+      h(Text, { bold: true }, `编辑预设: ${editing}（已选 ${sel.size}）${mSearching ? ` 搜索: ${mFilter}▌` : mFilter ? ` 过滤: ${mFilter}` : ''}`),
+      ...windowSkills.map((s, i) => {
+        const active = start + i === mCursor;
+        return h(Text, { key: s, color: active ? 'cyan' : undefined }, `${active ? '❯' : ' '} [${sel.has(s) ? 'x' : ' '}] ${s}`);
+      }),
+      h(Text, { dimColor: true }, '↑↓ 移动  空格 勾选  / 搜索  回车 保存  esc 取消'),
+    );
+  }
+  if (mode === 'apply') {
+    return h(
+      Box, { flexDirection: 'column', borderStyle: 'round', paddingX: 1 },
+      h(Text, { bold: true }, `应用预设 ${editing} 到（空格勾选，回车确认）：`),
+      ...agents.map((a, i) => {
+        const active = i === mCursor;
+        return h(
+          Text, { key: a.id, color: active ? 'cyan' : undefined },
+          `${active ? '❯' : ' '} [${applySel.has(a.id) ? 'x' : ' '}] ${a.id}  ${core.agentProjectGroup(a)}${core.agentInstalled(a) ? '' : '（未安装）'}`,
+        );
+      }),
+      h(Text, { dimColor: true }, '并集追加到所选 agent 的清单；esc 取消'),
+    );
+  }
+  return h(
+    Box, { flexDirection: 'column', borderStyle: 'round', paddingX: 1 },
+    h(Text, { bold: true }, `预设集（${names.length}）`),
+    names.length === 0 && mode === 'list' ? h(Text, { dimColor: true }, '暂无预设，按 n 新建') : null,
+    ...names.map((n, i) =>
+      h(
+        Text, { key: n, color: i === cursor ? 'cyan' : undefined },
+        `${i === cursor ? '❯' : ' '} ${n}（${presets[n].length}）: ${presets[n].join(', ')}`,
+      ),
+    ),
+    mode === 'new' ? h(Text, { color: 'yellow' }, `预设名: ${buffer}▌`) : null,
   );
 }
 
@@ -217,7 +486,7 @@ function AgentsView({ root, onNotice, bumpTick }: { root: string; onNotice: (s: 
 
   const prompt = form
     ? form.mode === 'add'
-      ? ['id（如 claude）', '显示名', 'skills 目录路径（支持 ~）'][form.step]
+      ? ['id（如 claude）', '显示名', 'skills 目录路径（支持 ~；项目级 agent 填项目内的绝对路径）'][form.step]
       : `${agents[cursor]?.id} 的新路径`
     : null;
 
@@ -274,6 +543,7 @@ export function App({ root, remote }: AppProps) {
   const [notice, setNotice] = useState('');
   const [tick, setTick] = useState(0);
   const [searching, setSearching] = useState(false);
+  const [viewBusy, setViewBusy] = useState(false); // 子视图处于表单/多选等子模式时屏蔽全局键
   const [manifest, setManifest] = useState<Record<string, Set<string>>>(() => {
     const m = core.loadManifest(root);
     return Object.fromEntries(Object.entries(m.agents).map(([k, v]) => [k, new Set(v)]));
@@ -287,7 +557,7 @@ export function App({ root, remote }: AppProps) {
   }, [root, tick]);
 
   useInput((input, key) => {
-    if (searching) return; // 搜索输入时屏蔽全局键（q/l/s/m/a/i）
+    if (searching || viewBusy) return; // 搜索/子模式输入时屏蔽全局键（q/l/s/m/a/i/p）
     if (input === 'q' || (key.ctrl && input === 'c')) {
       exit();
       return;
@@ -317,18 +587,21 @@ export function App({ root, remote }: AppProps) {
     if (input === 'm') setView('machines');
     if (input === 'a') setView('agents');
     if (input === 'i') setView('install');
+    if (input === 'p') setView('presets');
   });
 
   return h(
     Box, { flexDirection: 'column' },
     h(Text, { bold: true, color: 'magenta' }, 'myskills 管理'),
     view === 'skills'
-      ? h(SkillsView, { root, agents, manifest, setManifest, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), searching, setSearching })
+      ? h(SkillsView, { root, agents, manifest, setManifest, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), tick, searching, setSearching })
       : view === 'machines'
         ? h(MachinesView, { root, tick })
         : view === 'agents'
           ? h(AgentsView, { root, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1) })
-          : h(InstallView, { root, remote, onNotice: setNotice, onDone: () => { setView('skills'); setTick((t) => t + 1); } }),
+          : view === 'presets'
+            ? h(PresetsView, { root, agents, tick, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), setBusy: setViewBusy })
+            : h(InstallView, { root, remote, onNotice: setNotice, onDone: () => { setView('skills'); setTick((t) => t + 1); } }),
     h(Text, { color: 'green' }, notice),
     h(StatusLine, { root, remote, tick }),
     h(Text, { dimColor: true }, HELP[view]),

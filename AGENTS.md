@@ -6,8 +6,8 @@
 
 - 顶层目录 = 一个技能（含 `SKILL.md`）
 - 例外：`manager/`（管理工具）、`machines/`（各机器状态）、集合目录（`data-processing/`、`molecular-*/`、`tools/`、`machine-learning-potentials/`、`atomistic-workflows/`、`agent-workflow/`、`matlab-skills-catalog/`、`mattpocock-skills-zh/`，它们内部含子技能）
-- `agents.json` —— agent 注册表：id、名称、skills 目录路径（支持 `~`）。新增支持的 agent 就加一条
-- `skills-manifest.json` —— 分发清单：每个 agent 装哪些技能。**这是分发的唯一来源**
+- `agents.json` —— agent 注册表：id、名称、skills 目录路径（支持 `~`；也支持项目级 agent，填项目内的绝对路径）。新增支持的 agent 就加一条
+- `skills-manifest.json` —— 分发清单：每个 agent 装哪些技能。**这是分发的唯一来源**。另有两个可选字段：`sources`（技能来源 GitHub 仓库，install 时自动记录）、`presets`（预设集：名字 → 技能列表，TUI 里按 p 管理，应用到 agent 时并集追加）
 - `machines/<hostname>.json` —— 各机器同步状态（sha、时间、断链数）
 
 ## 行为约定
@@ -22,7 +22,7 @@
 首次使用在 `manager/` 下跑一次 `npm link`，之后全局可用：
 
 ```bash
-myskills                 # 进管理 TUI：浏览/搜索技能、勾选分发、机器状态、agent 注册表、GitHub 安装
+myskills                 # 进管理 TUI：浏览/搜索技能、勾选分发、分组浏览（g：按agent/来源/项目路径/预设集）、预设集（p）、机器状态、agent 注册表、GitHub 安装
 myskills link            # 按清单重建各 agent 目录的符号链接（清理孤儿/断链）
 myskills status          # 写入 machines/<hostname>.json
 myskills sync            # pull --ff-only → link → status → 提交并推送状态

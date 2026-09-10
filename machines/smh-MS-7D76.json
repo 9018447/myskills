@@ -1,7 +1,7 @@
 {
   "host": "smh-MS-7D76",
-  "updatedAt": "2026-09-10T08:38:45.132Z",
-  "sha": "8a795215292e80b233f5c905ea0d600efff3c3d5",
+  "updatedAt": "2026-09-10T08:40:05.021Z",
+  "sha": "61bf633137715a1ef45d41fb5eb4b1fe7b10c9cc",
   "branch": "main",
   "brokenLinks": 0,
   "agents": {
@@ -9,7 +9,7 @@
       "linked": 37
     },
     "claude": {
-      "linked": 20
+      "linked": 19
     },
     "cursor": {
       "linked": 17
@@ -18,13 +18,13 @@
       "linked": 25
     },
     "codex": {
-      "linked": 27
-    },
-    "pi": {
       "linked": 26
     },
+    "pi": {
+      "linked": 25
+    },
     "omp": {
-      "linked": 33
+      "linked": 32
     }
   }
 }

@@ -1,0 +1,30 @@
+{
+  "host": "omarchy",
+  "updatedAt": "2026-09-10T15:19:25.199Z",
+  "sha": "aa739c1aa641f3b4c1a5e20fc212eb82f2daece6",
+  "branch": "main",
+  "brokenLinks": 0,
+  "agents": {
+    "agents": {
+      "linked": 31
+    },
+    "claude": {
+      "linked": 19
+    },
+    "cursor": {
+      "skipped": true
+    },
+    "kimi-code": {
+      "linked": 28
+    },
+    "codex": {
+      "linked": 23
+    },
+    "pi": {
+      "linked": 22
+    },
+    "omp": {
+      "skipped": true
+    }
+  }
+}

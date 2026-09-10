@@ -88,3 +88,24 @@ test('tui: 应用预设后返回技能页，分发勾选状态已刷新', async 
   assert.match(lastFrame()!, /\[x\] claude/); // 勾选状态必须反映刚应用的预设，而不是旧的空快照
   unmount();
 });
+
+test('tui: 焦点在技能列表时按空格给出提示，而不是无反应', async () => {
+  const { repo } = makeFixture();
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write(' '); // 焦点默认在左侧列表
+  await tick();
+  assert.match(lastFrame()!, /先按 Tab 切过去/);
+  unmount();
+});
+
+test('tui: 按 l 有执行反馈，完成后提示动作数', async () => {
+  const { repo } = makeFixture();
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write('l');
+  await tick();
+  await tick();
+  assert.match(lastFrame()!, /link 完成/);
+  unmount();
+});

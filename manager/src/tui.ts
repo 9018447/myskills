@@ -172,6 +172,7 @@ function SkillsView({
     if (focus === 'list') {
       if (key.upArrow) setCursor((c) => Math.max(0, c - 1));
       if (key.downArrow) setCursor((c) => Math.min(shown.length - 1, c + 1));
+      if (input === ' ') onNotice('空格只在右侧分发面板有效：先按 Tab 切过去，再空格勾选');
       return;
     }
     // focus === 'dist'
@@ -340,7 +341,10 @@ function PresetsView({
         setApplySel(next);
       }
       if (key.return) {
-        if (applySel.size === 0) return;
+        if (applySel.size === 0) {
+          onNotice('未勾选任何 agent，应用取消（空格勾选，回车确认）');
+          return;
+        }
         const r = core.applyPreset(root, editing, [...applySel]);
         const parts = Object.entries(r.added).map(([id, n]) => `${id}+${n}`);
         onNotice(`已应用预设 ${editing}：${parts.join('  ')}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}（按 l 生效，按 s 提交推送）`);
@@ -558,9 +562,25 @@ export function App({ root, remote }: AppProps) {
       return [];
     }
   }, [root, tick]);
+  const [running, setRunning] = useState(false); // 有耗时操作（link/sync/fetch）在跑时屏蔽全局键
+
+  // 耗时操作先渲染「执行中」帧，再异步执行，避免界面卡住让人以为没按上
+  const runAction = (label: string, fn: () => string) => {
+    setRunning(true);
+    setNotice(`${label} 执行中…`);
+    setTimeout(() => {
+      try {
+        setNotice(fn());
+      } catch (err) {
+        setNotice(`${label} 失败: ${(err as Error).message}`);
+      }
+      setRunning(false);
+      setTick((t) => t + 1);
+    }, 20);
+  };
 
   useInput((input, key) => {
-    if (searching || viewBusy) return; // 搜索/子模式输入时屏蔽全局键（q/l/s/m/a/i/p）
+    if (searching || viewBusy || running) return; // 搜索/子模式/耗时操作执行中屏蔽全局键（q/l/s/m/a/i/p）
     if (input === 'q' || (key.ctrl && input === 'c')) {
       exit();
       return;
@@ -570,22 +590,16 @@ export function App({ root, remote }: AppProps) {
       return; // 子视图自己处理输入
     }
     if (input === 'l') {
-      const r = core.link(root);
-      setNotice(`link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`);
-      setTick((t) => t + 1);
+      runAction('link', () => {
+        const r = core.link(root);
+        return `link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
+      });
     }
     if (input === 's') {
-      try {
-        const lines = core.sync(root, remote);
-        setNotice(`sync 完成：${lines[lines.length - 1]}`);
-      } catch (err) {
-        setNotice(`sync 失败: ${(err as Error).message}`);
-      }
-      setTick((t) => t + 1);
+      runAction('sync', () => `sync 完成：${core.sync(root, remote).at(-1)}`);
     }
     if (input === 'f') {
-      setNotice(core.fetchRemote(root, remote) ? 'fetch 完成' : 'fetch 失败');
-      setTick((t) => t + 1);
+      runAction('fetch', () => (core.fetchRemote(root, remote) ? 'fetch 完成' : 'fetch 失败'));
     }
     if (input === 'm') setView('machines');
     if (input === 'a') setView('agents');
@@ -605,7 +619,7 @@ export function App({ root, remote }: AppProps) {
           : view === 'presets'
             ? h(PresetsView, { root, agents, tick, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), setBusy: setViewBusy })
             : h(InstallView, { root, remote, onNotice: setNotice, onDone: () => { setView('skills'); setTick((t) => t + 1); } }),
-    h(Text, { color: 'green' }, notice),
+    h(Text, { color: running ? 'yellow' : 'green' }, notice),
     h(StatusLine, { root, remote, tick }),
     h(Text, { dimColor: true }, HELP[view]),
   );

@@ -1,0 +1,8 @@
+{
+  "agents": [
+    { "id": "agents", "name": "Universal ~/.agents/skills", "skillsPath": "~/.agents/skills" },
+    { "id": "claude", "name": "Claude Code", "skillsPath": "~/.claude/skills" },
+    { "id": "cursor", "name": "Cursor", "skillsPath": "~/.cursor/skills" },
+    { "id": "kimi-code", "name": "Kimi Code", "skillsPath": "~/.kimi-code/skills" }
+  ]
+}

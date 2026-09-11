@@ -159,13 +159,29 @@ test('tui: 项目模式下渲染项目清单面板，空格勾选写入 .myskill
   await tick();
   assert.match(lastFrame()!, /项目模式/);
   assert.match(lastFrame()!, /项目清单（\.myskills\.json）/);
-  assert.match(lastFrame()!, /→ \.claude\/skills/);
+  assert.match(lastFrame()!, /\[x\] claude → \.claude\/skills/); // 项目级 agent 与注册表相同、路径去 ~/，默认开启
   stdin.write('\t'); // 切到分发面板
   await tick();
   stdin.write(' '); // 勾选 alpha 进项目清单
   await tick();
   const pm = JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8'));
   assert.deepEqual(pm.skills, ['alpha']);
+  unmount();
+});
+
+test('tui: 项目模式下空格切换项目级 agent 开关，写入显式 targets', async () => {
+  const { repo, project } = makeProjectTuiFixture();
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin', project: { root: project } }));
+  await tick();
+  stdin.write('\t'); // 切到分发面板
+  await tick();
+  stdin.write('\x1b[B'); // 下移到 claude 行
+  await tick();
+  stdin.write(' '); // 关闭 claude 目标
+  await tick();
+  assert.match(lastFrame()!, /\[ \] claude → \.claude\/skills/);
+  const pm = JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8'));
+  assert.deepEqual(pm.targets, [], '唯一的 agent 被关闭后 targets 固化为空数组');
   unmount();
 });
 

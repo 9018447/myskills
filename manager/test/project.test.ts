@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { projectCandidateTargets } from '../src/core.ts';
+import { projectCandidateTargets, projectTargetAgents, projectTargetStates, toggleProjectTarget } from '../src/core.ts';
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'cli.ts');
 
@@ -84,15 +84,45 @@ test('项目 link: 显式 targets 优先于探测，目录不存在则创建', (
   assert.ok(!existsSync(join(project, '.claude', 'skills', 'alpha')), '不在 targets 里的目录不建链');
 });
 
-test('项目 link: 无 targets 且无已存在 agent 目录时提示并退出 0', () => {
-  const { repo, runFrom } = makeProjectFixture({
+test('项目 link: 无 targets 时默认开启全部项目级 agent（注册表去 ~/ 派生），目录不存在则创建', () => {
+  const { repo, project, runFrom } = makeProjectFixture({
     skills: ['alpha'],
     projectManifest: { skills: ['alpha'] },
+    // 项目里没有任何已存在的 agent 目录，也应按默认开启的候选全部创建
+    globalAgents: [
+      { id: 'claude', name: 'Claude Code', skillsPath: '~/.claude/skills' },
+      { id: 'kimi', name: 'Kimi Code', skillsPath: '~/.kimi-code/skills' },
+    ],
   });
 
   const r = run(['link'], runFrom, repo);
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /未发现项目内 agent 目录/);
+  assert.ok(lstatSync(join(project, '.claude', 'skills', 'alpha')).isSymbolicLink());
+  assert.ok(lstatSync(join(project, '.kimi-code', 'skills', 'alpha')).isSymbolicLink());
+});
+
+test('项目 link: 显式 targets 为空数组 = 全部关闭，不建链', () => {
+  const { repo, project, runFrom } = makeProjectFixture({
+    skills: ['alpha'],
+    projectManifest: { skills: ['alpha'], targets: [] },
+  });
+
+  const r = run(['link'], runFrom, repo);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /已全部关闭/);
+  assert.ok(!existsSync(join(project, '.claude', 'skills', 'alpha')));
+});
+
+test('项目 link: 注册表没有家目录 agent 时提示并退出 0', () => {
+  const { repo, runFrom } = makeProjectFixture({
+    skills: ['alpha'],
+    projectManifest: { skills: ['alpha'] },
+    globalAgents: [{ id: 'proj', name: 'Project Agent', skillsPath: '/opt/proj/.claude/skills' }],
+  });
+
+  const r = run(['link'], runFrom, repo);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /未派生出项目级 agent/);
 });
 
 test('项目 link: 清单里仓库不存在的技能警告跳过，退出码 0', () => {
@@ -150,6 +180,52 @@ test('projectCandidateTargets: 家目录 agent 的 skillsPath 去 ~/ 得候选�
     { id: 'dup', name: 'Dup', skillsPath: '~/.claude/skills' },
   ]);
   assert.deepEqual(targets, ['.claude/skills', '.agents/skills', '.pi/agent/skills']);
+});
+
+test('projectTargetAgents: 与注册表同一批家目录 agent，路径去 ~/，同一 target 取第一个 agent', () => {
+  const rows = projectTargetAgents([
+    { id: 'claude', name: 'Claude Code', skillsPath: '~/.claude/skills' },
+    { id: 'kimi', name: 'Kimi Code', skillsPath: '~/.kimi-code/skills' },
+    { id: 'proj', name: 'Project Agent', skillsPath: '/opt/proj/.claude/skills' },
+    { id: 'dup', name: 'Dup', skillsPath: '~/.claude/skills' },
+  ]);
+  assert.deepEqual(rows, [
+    { id: 'claude', target: '.claude/skills' },
+    { id: 'kimi', target: '.kimi-code/skills' },
+  ]);
+});
+
+test('toggleProjectTarget: 省略 targets 时默认全开，关闭后固化显式 targets，再开恢复', () => {
+  const { repo, project } = makeProjectFixture({
+    projectManifest: { skills: [] },
+    globalAgents: [
+      { id: 'claude', name: 'Claude Code', skillsPath: '~/.claude/skills' },
+      { id: 'kimi', name: 'Kimi Code', skillsPath: '~/.kimi-code/skills' },
+    ],
+  });
+
+  assert.deepEqual(
+    projectTargetStates(project, repo).map((r) => [r.id, r.enabled]),
+    [['claude', true], ['kimi', true]],
+    '无显式 targets 时全部默认开启',
+  );
+
+  const on = toggleProjectTarget(project, repo, '.kimi-code/skills');
+  assert.equal(on, false);
+  assert.deepEqual(JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8')), {
+    skills: [],
+    targets: ['.claude/skills'],
+  });
+  assert.deepEqual(
+    projectTargetStates(project, repo).map((r) => [r.id, r.enabled]),
+    [['claude', true], ['kimi', false]],
+  );
+
+  assert.equal(toggleProjectTarget(project, repo, '.kimi-code/skills'), true);
+  assert.deepEqual(JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8')).targets, [
+    '.claude/skills',
+    '.kimi-code/skills',
+  ]);
 });
 
 test('项目 init: 默认生成空 skills，并把已存在的候选 agent 目录写入 targets', () => {

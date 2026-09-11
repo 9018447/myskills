@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // myskills 管理 TUI：浏览/搜索技能、勾选分发、分组浏览、预设集、同步状态、机器仪表盘、agent 管理、GitHub 安装
-// 启动目录向上找到 .myskills.json 时进入项目模式（勾选写入项目清单，l 走 linkProject），o 切换项目/全局
+// 启动目录向上找到 .myskills.json 时进入项目模式（勾选写入项目清单；项目级 agent 与注册表相同、路径去 ~/，默认全开，空格切换），o 切换项目/全局
 // 不用 JSX（node 直接运行 TS 不支持），全部 createElement
 import { createElement as h, useState, useMemo, useEffect } from 'react';
 import { render, Box, Text, useApp, useInput } from 'ink';
@@ -93,9 +93,9 @@ function SkillsView({
 
   const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
   const sources = useMemo(() => (groupMode === 'source' ? core.skillSources(root) : {}), [root, tick, groupMode]);
-  // 项目模式的目标目录（显式 targets 或探测结果），仅用于面板展示
-  const projTargets = useMemo(
-    () => (scope === 'project' && project ? core.projectTargets(project.root, root) : []),
+  // 项目级 agent（注册表家目录 agent 去 ~/ 派生）及开启状态；显式 targets 优先，省略时默认全开
+  const projAgentRows = useMemo(
+    () => (scope === 'project' && project ? core.projectTargetStates(project.root, root) : []),
     [scope, project, root, tick],
   );
 
@@ -190,10 +190,20 @@ function SkillsView({
     }
     // focus === 'dist'
     if (scope === 'project') {
-      // 项目清单是单一技能列表，对所有目标目录生效：只有一个勾选项，无需上下移动
-      if (input === ' ' && current && project) {
-        const on = core.toggleProjectSkill(project.root, current);
-        onNotice(`${on ? '勾选' : '取消'} ${current} → 项目清单（按 l 生效）`);
+      // 项目面板：第 0 行勾选技能进项目清单（对所有开启的目标生效），其余行切换各项目级 agent 的开启状态
+      if (key.upArrow) setAgentCursor((c) => Math.max(0, c - 1));
+      if (key.downArrow) setAgentCursor((c) => Math.min(projAgentRows.length, c + 1));
+      if (input === ' ' && project) {
+        if (agentCursor === 0) {
+          if (!current) return;
+          const on = core.toggleProjectSkill(project.root, current);
+          onNotice(`${on ? '勾选' : '取消'} ${current} → 项目清单（按 l 生效）`);
+        } else {
+          const row = projAgentRows[agentCursor - 1];
+          if (!row) return;
+          const on = core.toggleProjectTarget(project.root, root, row.target);
+          onNotice(`${on ? '开启' : '关闭'}项目目标 ${row.id} → ${row.target}（按 l 生效）`);
+        }
         bumpTick();
       }
       return;
@@ -236,12 +246,18 @@ function SkillsView({
         ? [
             h(
               Text,
-              { key: 'proj', color: focus === 'dist' ? 'cyan' : undefined },
-              `${focus === 'dist' ? '❯' : ' '} [${current && projectSkills.has(current) ? 'x' : ' '}] 项目清单（.myskills.json）`,
+              { key: 'proj', color: focus === 'dist' && agentCursor === 0 ? 'cyan' : undefined },
+              `${focus === 'dist' && agentCursor === 0 ? '❯' : ' '} [${current && projectSkills.has(current) ? 'x' : ' '}] 项目清单（.myskills.json）`,
             ),
-            ...(projTargets.length
-              ? projTargets.map((t) => h(Text, { key: t, dimColor: true }, `  → ${t}`))
-              : [h(Text, { key: 'none', dimColor: true }, '  （未发现项目内 agent 目录，可在 .myskills.json 用 targets 指定）')]),
+            ...(projAgentRows.length
+              ? projAgentRows.map((r, i) =>
+                  h(
+                    Text,
+                    { key: r.target, color: focus === 'dist' && agentCursor === i + 1 ? 'cyan' : undefined },
+                    `${focus === 'dist' && agentCursor === i + 1 ? '❯' : ' '} [${r.enabled ? 'x' : ' '}] ${r.id} → ${r.target}`,
+                  ),
+                )
+              : [h(Text, { key: 'none', dimColor: true }, '  （agents.json 中没有 ~/ 开头的家目录 agent，可在 .myskills.json 用 targets 指定）')]),
           ]
         : agents.map((a, i) => {
             const on = current ? (manifest[a.id]?.has(current) ?? false) : false;

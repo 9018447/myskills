@@ -174,7 +174,7 @@ export const PROJECT_MANIFEST_FILE = '.myskills.json';
 export interface ProjectManifest {
   // 要分发进项目的技能名（中心仓库顶层目录名）
   skills: string[];
-  // 项目内 agent 目录的相对路径（如 .claude/skills）；省略时自动探测
+  // 项目内 agent 目录的相对路径（如 .claude/skills）；省略时默认开启全部项目级 agent（注册表家目录 agent 去 ~/ 派生）
   targets?: string[];
 }
 
@@ -214,12 +214,48 @@ export function projectCandidateTargets(agents: AgentDef[]): string[] {
   return [...new Set(agents.filter((a) => a.skillsPath.startsWith('~/')).map((a) => a.skillsPath.slice(2)))];
 }
 
-// 项目模式的实际目标目录：显式 targets 优先，否则探测项目内已存在的候选 agent 目录
+// 项目级 agent：与根目录注册表同一批家目录 agent，路径只是去掉 ~/（同一 target 有多个 agent 时取第一个）
+export function projectTargetAgents(agents: AgentDef[]): { id: string; target: string }[] {
+  const seen = new Set<string>();
+  const rows: { id: string; target: string }[] = [];
+  for (const a of agents) {
+    if (!a.skillsPath.startsWith('~/')) continue;
+    const target = a.skillsPath.slice(2);
+    if (seen.has(target)) continue;
+    seen.add(target);
+    rows.push({ id: a.id, target });
+  }
+  return rows;
+}
+
+// 项目模式的实际目标目录：显式 targets 优先（空数组 = 全部关闭）；省略时默认开启全部项目级 agent（目录由 link 创建）
 export function projectTargets(projectRoot: string, repoRoot: string, pm?: ProjectManifest): string[] {
   const m = pm ?? loadProjectManifest(join(projectRoot, PROJECT_MANIFEST_FILE));
-  return m.targets?.length
-    ? m.targets
-    : projectCandidateTargets(loadAgents(repoRoot)).filter((t) => existsSync(join(projectRoot, t)));
+  return m.targets !== undefined ? m.targets : projectCandidateTargets(loadAgents(repoRoot));
+}
+
+// TUI 用：项目级 agent 及其开启状态（显式 targets 为唯一显式来源；省略时全部默认开启）
+export function projectTargetStates(projectRoot: string, repoRoot: string): { id: string; target: string; enabled: boolean }[] {
+  const pm = loadProjectManifest(join(projectRoot, PROJECT_MANIFEST_FILE));
+  const explicit = pm.targets !== undefined;
+  const enabled = new Set(pm.targets ?? []);
+  return projectTargetAgents(loadAgents(repoRoot)).map(({ id, target }) => ({
+    id,
+    target,
+    enabled: explicit ? enabled.has(target) : true,
+  }));
+}
+
+// 切换某项目级 agent 的开启状态，返回切换后是否开启；结果以显式 targets 固化进项目清单
+export function toggleProjectTarget(projectRoot: string, repoRoot: string, target: string): boolean {
+  const manifestPath = join(projectRoot, PROJECT_MANIFEST_FILE);
+  const pm = loadProjectManifest(manifestPath);
+  const current = new Set(pm.targets ?? projectCandidateTargets(loadAgents(repoRoot)));
+  const on = !current.has(target);
+  if (on) current.add(target);
+  else current.delete(target);
+  writeFileSync(manifestPath, JSON.stringify({ ...pm, targets: [...current].sort() }, null, 2) + '\n');
+  return on;
 }
 
 // 切换项目清单中的技能，返回切换后是否勾选；保留 targets 等其他字段
@@ -240,7 +276,11 @@ export function linkProject(projectRoot: string, repoRoot: string): LinkReport {
   const pm = loadProjectManifest(join(projectRoot, PROJECT_MANIFEST_FILE));
   const targets = projectTargets(projectRoot, repoRoot, pm);
   if (targets.length === 0) {
-    report.lines.push('未发现项目内 agent 目录（可在 .myskills.json 用 targets 显式指定）');
+    report.lines.push(
+      pm.targets !== undefined
+        ? '项目级 agent 已全部关闭（.myskills.json 的 targets 为空数组）'
+        : '未派生出项目级 agent（agents.json 中没有 ~/ 开头的家目录 agent；可在 .myskills.json 用 targets 显式指定）',
+    );
     return report;
   }
   for (const t of targets) {

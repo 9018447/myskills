@@ -1,4 +1,5 @@
-// myskills 核心逻辑：link / status / sync / install / migrate 及清单、注册表读写
+// myskills 核心逻辑：link / init / status / sync / install / migrate 及清单、注册表读写。
+// link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
 // 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
 import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';
 import { homedir, hostname, tmpdir } from 'node:os';
@@ -120,6 +121,34 @@ export interface LinkReport {
   missingSkills: string[];
 }
 
+// 把 wanted 技能同步进一个 skills 目录：建链/重建，并清理指向 repoRoot 的孤儿链接与断链。
+// 全局 link（按 agent）与项目 link（按项目内目标目录）共用同一套"清单即真相"语义。
+function syncSkillsIntoDir(label: string, skillsDir: string, wanted: string[], repoRoot: string, report: LinkReport): void {
+  mkdirSync(skillsDir, { recursive: true });
+  for (const name of wanted) {
+    const target = join(repoRoot, name);
+    if (!existsSync(target)) {
+      report.missingSkills.push(name);
+      report.lines.push(`警告: 清单中的 ${name} 在仓库中不存在，跳过`);
+      continue;
+    }
+    const linkPath = join(skillsDir, name);
+    rmSync(linkPath, { force: true, recursive: false });
+    symlinkSync(target, linkPath, 'dir');
+    report.lines.push(`链接 ${label}/${name}`);
+  }
+  // 清理：指向仓库但已不在清单的孤儿链接、指向仓库的断链
+  for (const entry of readdirSync(skillsDir)) {
+    if (wanted.includes(entry)) continue;
+    const entryPath = join(skillsDir, entry);
+    if (!lstatSync(entryPath).isSymbolicLink()) continue;
+    const target = resolve(skillsDir, readlinkSync(entryPath));
+    if (!target.startsWith(repoRoot + '/')) continue;
+    rmSync(entryPath, { force: true });
+    report.lines.push(`移除 ${label}/${entry}（孤儿或断链）`);
+  }
+}
+
 export function link(repoRoot: string): LinkReport {
   const agents = loadAgents(repoRoot);
   const manifest = loadManifest(repoRoot);
@@ -133,32 +162,86 @@ export function link(repoRoot: string): LinkReport {
       report.lines.push(`跳过 ${agent.id}（未安装）`);
       continue;
     }
-    mkdirSync(skillsPath, { recursive: true });
-    const wanted = manifest.agents[agent.id] ?? [];
-    for (const name of wanted) {
-      const target = join(repoRoot, name);
-      if (!existsSync(target)) {
-        report.missingSkills.push(name);
-        report.lines.push(`警告: 清单中的 ${name} 在仓库中不存在，跳过`);
-        continue;
-      }
-      const linkPath = join(skillsPath, name);
-      rmSync(linkPath, { force: true, recursive: false });
-      symlinkSync(target, linkPath, 'dir');
-      report.lines.push(`链接 ${agent.id}/${name}`);
-    }
-    // 清理：指向仓库但已不在清单的孤儿链接、指向仓库的断链
-    for (const entry of readdirSync(skillsPath)) {
-      if (wanted.includes(entry)) continue;
-      const entryPath = join(skillsPath, entry);
-      if (!lstatSync(entryPath).isSymbolicLink()) continue;
-      const target = resolve(skillsPath, readlinkSync(entryPath));
-      if (!target.startsWith(repoRoot + '/')) continue;
-      rmSync(entryPath, { force: true });
-      report.lines.push(`移除 ${agent.id}/${entry}（孤儿或断链）`);
-    }
+    syncSkillsIntoDir(agent.id, skillsPath, manifest.agents[agent.id] ?? [], repoRoot, report);
   }
   return report;
+}
+
+// ---------- 项目级分发：项目根的 .myskills.json ----------
+
+export const PROJECT_MANIFEST_FILE = '.myskills.json';
+
+export interface ProjectManifest {
+  // 要分发进项目的技能名（中心仓库顶层目录名）
+  skills: string[];
+  // 项目内 agent 目录的相对路径（如 .claude/skills）；省略时自动探测
+  targets?: string[];
+}
+
+// 从 start 向上找最近的 .myskills.json；找不到返回 null
+export function findProjectRoot(start: string = process.cwd()): { root: string; manifestPath: string } | null {
+  let dir = resolve(start);
+  for (;;) {
+    const manifestPath = join(dir, PROJECT_MANIFEST_FILE);
+    if (existsSync(manifestPath)) return { root: dir, manifestPath };
+    const parent = dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+// 校验并读取项目清单；targets 必须是项目内相对路径（禁绝对路径与 ..）
+export function loadProjectManifest(manifestPath: string): ProjectManifest {
+  const raw = readJson<ProjectManifest>(manifestPath);
+  if (!Array.isArray(raw.skills) || raw.skills.some((s) => typeof s !== 'string')) {
+    throw new Error(`${PROJECT_MANIFEST_FILE} 格式错误：skills 必须是字符串数组`);
+  }
+  if (raw.targets !== undefined) {
+    if (!Array.isArray(raw.targets) || raw.targets.some((t) => typeof t !== 'string')) {
+      throw new Error(`${PROJECT_MANIFEST_FILE} 格式错误：targets 必须是字符串数组`);
+    }
+    for (const t of raw.targets) {
+      if (t.startsWith('/') || t.split('/').includes('..')) {
+        throw new Error(`${PROJECT_MANIFEST_FILE} 格式错误：targets 必须是项目内相对路径（不含 .. 与绝对路径）: ${t}`);
+      }
+    }
+  }
+  return raw;
+}
+
+// 项目内目标目录候选：agents.json 中家目录 agent 的 skillsPath 去掉 ~/ 前缀（单一事实源）
+export function projectCandidateTargets(agents: AgentDef[]): string[] {
+  return [...new Set(agents.filter((a) => a.skillsPath.startsWith('~/')).map((a) => a.skillsPath.slice(2)))];
+}
+
+// 项目模式 link：把项目清单的技能链进项目的 agent 目录，语义与全局 link 一致
+export function linkProject(projectRoot: string, repoRoot: string): LinkReport {
+  const report: LinkReport = { lines: [], skippedAgents: [], missingSkills: [] };
+  const pm = loadProjectManifest(join(projectRoot, PROJECT_MANIFEST_FILE));
+  const targets = pm.targets?.length
+    ? pm.targets
+    : projectCandidateTargets(loadAgents(repoRoot)).filter((t) => existsSync(join(projectRoot, t)));
+  if (targets.length === 0) {
+    report.lines.push('未发现项目内 agent 目录（可在 .myskills.json 用 targets 显式指定）');
+    return report;
+  }
+  for (const t of targets) {
+    syncSkillsIntoDir(t, join(projectRoot, t), pm.skills, repoRoot, report);
+  }
+  return report;
+}
+
+// 在项目根生成一次性的项目分发清单；不覆盖已有文件。
+export function initProject(projectRoot: string, repoRoot: string, skills: string[] = []): string[] {
+  const manifestPath = join(projectRoot, PROJECT_MANIFEST_FILE);
+  if (existsSync(manifestPath)) throw new Error(`${PROJECT_MANIFEST_FILE} 已存在，拒绝覆盖`);
+  const projectSkills = [...new Set(skills.filter(Boolean))].sort();
+  const targets = projectCandidateTargets(loadAgents(repoRoot))
+    .filter((target) => existsSync(join(projectRoot, target)));
+  const manifest: ProjectManifest = { skills: projectSkills };
+  if (targets.length > 0) manifest.targets = targets;
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+  return [`已生成 ${manifestPath}`];
 }
 
 export interface MachineStatus {

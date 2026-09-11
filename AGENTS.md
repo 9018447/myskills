@@ -44,3 +44,10 @@ myskills sync              # 拉最新、按清单建链接、上报状态
 ```
 
 安装新技能只在登录了 `gh` 的机器上执行；分发靠 git，其他机器 `sync` 即得。
+
+<!-- handoff:start -->
+## Active handoff
+
+- 交接文档：`/tmp/agent-handoffs/smh--my-skills/handoff.md`
+- 恢复被中断的工作时，先读这份交接文档再继续。
+<!-- handoff:end -->

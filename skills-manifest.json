@@ -4,6 +4,7 @@
       "agent-browser",
       "ask-matt-zh",
       "biosteam",
+      "clapeyronjl-skill",
       "codebase-memory",
       "create-agentsmd",
       "diagnosing-bugs-zh",
@@ -75,6 +76,7 @@
     "kimi-code": [
       "ask-matt-zh",
       "biosteam",
+      "clapeyronjl-skill",
       "codebase-memory",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",

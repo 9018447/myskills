@@ -25,24 +25,24 @@ try {
       await launchTui();
       break;
     case 'link':
-      for (const line of link(findRepoRoot(process.cwd())).lines) console.log(line);
+      for (const line of link(findRepoRoot()).lines) console.log(line);
       break;
     case 'status':
-      status(findRepoRoot(process.cwd()));
+      status(findRepoRoot());
       console.log(`已写入 machines/${hostname()}.json`);
       break;
     case 'sync':
-      for (const line of sync(findRepoRoot(process.cwd()), resolveRemote())) console.log(line);
+      for (const line of sync(findRepoRoot(), resolveRemote())) console.log(line);
       break;
     case 'install': {
       const url = process.argv[3];
       if (!url) throw new Error('用法: myskills install <github-url> [--name <n>] [--remote <r>]');
       const nameIdx = process.argv.indexOf('--name');
-      console.log(install(findRepoRoot(process.cwd()), url, nameIdx > -1 ? process.argv[nameIdx + 1] : undefined, resolveRemote()));
+      console.log(install(findRepoRoot(), url, nameIdx > -1 ? process.argv[nameIdx + 1] : undefined, resolveRemote()));
       break;
     }
     case 'migrate':
-      for (const line of migrate(findRepoRoot(process.cwd()), process.argv.includes('--apply')).lines) console.log(line);
+      for (const line of migrate(findRepoRoot(), process.argv.includes('--apply')).lines) console.log(line);
       break;
     case undefined:
       await launchTui();

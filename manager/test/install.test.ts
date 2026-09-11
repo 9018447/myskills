@@ -66,7 +66,7 @@ test('install: 从 GitHub 整仓抓取技能，入仓、提交并推送', () => 
 
   const r = spawnSync('node', [CLI, 'install', 'o/cool-skill'], {
     cwd: repo,
-    env: { ...process.env, ...GIT_ENV, PATH: `${binDir}:${process.env.PATH}`, FIXTURE_TARBALL: tarball, MYSKILLS_REMOTE: 'origin' },
+    env: { ...process.env, ...GIT_ENV, MYSKILLS_ROOT: repo, PATH: `${binDir}:${process.env.PATH}`, FIXTURE_TARBALL: tarball, MYSKILLS_REMOTE: 'origin' },
     encoding: 'utf8',
   });
   assert.equal(r.status, 0, r.stderr);
@@ -89,7 +89,7 @@ test('install: 支持集合仓的子目录提取（/tree/ref/subdir 形式）', 
 
   const r = spawnSync('node', [CLI, 'install', 'https://github.com/o/skills/tree/main/skills/pdf'], {
     cwd: repo,
-    env: { ...process.env, ...GIT_ENV, PATH: `${binDir}:${process.env.PATH}`, FIXTURE_TARBALL: tarball, MYSKILLS_REMOTE: 'origin' },
+    env: { ...process.env, ...GIT_ENV, MYSKILLS_ROOT: repo, PATH: `${binDir}:${process.env.PATH}`, FIXTURE_TARBALL: tarball, MYSKILLS_REMOTE: 'origin' },
     encoding: 'utf8',
   });
   assert.equal(r.status, 0, r.stderr);
@@ -109,7 +109,7 @@ test('install: 同名技能已存在时拒绝覆盖', () => {
 
   const r = spawnSync('node', [CLI, 'install', 'o/alpha'], {
     cwd: repo,
-    env: { ...process.env, ...GIT_ENV, PATH: `${binDir}:${process.env.PATH}`, FIXTURE_TARBALL: tarball, MYSKILLS_REMOTE: 'origin' },
+    env: { ...process.env, ...GIT_ENV, MYSKILLS_ROOT: repo, PATH: `${binDir}:${process.env.PATH}`, FIXTURE_TARBALL: tarball, MYSKILLS_REMOTE: 'origin' },
     encoding: 'utf8',
   });
   assert.notEqual(r.status, 0, '应拒绝覆盖');

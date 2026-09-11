@@ -41,7 +41,7 @@ function makeFixture() {
 }
 
 function run(args: string[], cwd: string) {
-  return spawnSync('node', [CLI, ...args], { cwd, encoding: 'utf8' });
+  return spawnSync('node', [CLI, ...args], { cwd, env: { ...process.env, MYSKILLS_ROOT: cwd }, encoding: 'utf8' });
 }
 
 test('migrate: 默认 dry-run，只报告计划，不改变任何文件', () => {

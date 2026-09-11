@@ -39,7 +39,7 @@ function makeGitRepo() {
 }
 
 function run(args: string[], cwd: string) {
-  return spawnSync('node', [CLI, ...args], { cwd, env: { ...process.env, ...GIT_ENV }, encoding: 'utf8' });
+  return spawnSync('node', [CLI, ...args], { cwd, env: { ...process.env, ...GIT_ENV, MYSKILLS_ROOT: cwd }, encoding: 'utf8' });
 }
 
 test('status: 写入 machines/<hostname>.json，含当前 sha 与分支', () => {

@@ -47,7 +47,7 @@ function makeRemoteFixture() {
 }
 
 function run(args: string[], cwd: string, env: Record<string, string> = {}) {
-  return spawnSync('node', [CLI, ...args], { cwd, env: { ...process.env, ...GIT_ENV, ...env }, encoding: 'utf8' });
+  return spawnSync('node', [CLI, ...args], { cwd, env: { ...process.env, ...GIT_ENV, MYSKILLS_ROOT: cwd, ...env }, encoding: 'utf8' });
 }
 
 test('sync: pull 远端新提交，重建链接，状态文件提交并推送', () => {

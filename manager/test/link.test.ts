@@ -41,7 +41,7 @@ function makeFixture(opts: {
 function run(args: string[], cwd: string, env: Record<string, string> = {}) {
   return spawnSync('node', [CLI, ...args], {
     cwd,
-    env: { ...process.env, ...env },
+    env: { ...process.env, MYSKILLS_ROOT: cwd, ...env },
     encoding: 'utf8',
   });
 }
@@ -106,6 +106,19 @@ test('link: 移除指向仓库但已不在清单中的孤儿链接和断链，�
   assert.throws(() => lstatSync(join(skillsDir, 'gone')), '断链应被移除');
   assert.ok(lstatSync(join(skillsDir, 'local-only')).isDirectory() && !lstatSync(join(skillsDir, 'local-only')).isSymbolicLink(), '真实目录不动');
   assert.equal(realpathSync(join(skillsDir, 'external')), realpathSync(join(home, 'external-skill')), '外部链接不动');
+});
+
+test('link: 在仓库外的任意目录运行，经 MYSKILLS_ROOT 仍作用于指定仓库', () => {
+  const { tmp, repo, home } = makeFixture({
+    skills: ['alpha'],
+    manifest: { agents: { claude: ['alpha'] } },
+    agents: [{ id: 'claude', name: 'Claude Code', skillsPath: '$HOME/.claude/skills' }],
+    installedAgents: ['claude'],
+  });
+
+  const r = run(['link'], tmp, { MYSKILLS_ROOT: repo });
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(lstatSync(join(home, '.claude', 'skills', 'alpha')).isSymbolicLink());
 });
 
 test('link: 清单中的技能在仓库不存在时警告并跳过，退出码仍为 0', () => {

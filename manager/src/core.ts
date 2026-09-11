@@ -1,8 +1,9 @@
 // myskills 核心逻辑：link / status / sync / install / migrate 及清单、注册表读写
 // 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
-import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';
 import { homedir, hostname, tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 export interface AgentDef {
@@ -25,14 +26,16 @@ export function expandHome(p: string): string {
   return p;
 }
 
-export function findRepoRoot(start: string): string {
-  let dir = resolve(start);
-  for (;;) {
-    if (existsSync(join(dir, 'skills-manifest.json'))) return dir;
-    const parent = dirname(dir);
-    if (parent === dir) throw new Error('未找到 skills-manifest.json，请在 myskills 仓库内运行');
-    dir = parent;
+// 仓库根定位：MYSKILLS_ROOT 优先；否则取本模块真实路径上溯（manager/src/core.ts → 仓库根）。
+// 不看 cwd——命令在任何目录下都作用于安装它的中心仓库，不会误操作别的同名清单仓库。
+export function findRepoRoot(): string {
+  const env = process.env.MYSKILLS_ROOT;
+  if (env) {
+    const root = resolve(env);
+    if (!existsSync(root)) throw new Error(`MYSKILLS_ROOT 指向的目录不存在: ${root}`);
+    return root;
   }
+  return resolve(dirname(realpathSync(fileURLToPath(import.meta.url))), '..', '..');
 }
 
 export function readJson<T>(path: string): T {

@@ -3,7 +3,7 @@
 // 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
 import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';
 import { homedir, hostname, tmpdir } from 'node:os';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -74,12 +74,38 @@ export function listRepoSkills(repoRoot: string): string[] {
 }
 
 // 读技能 frontmatter 的 description（不存在则返回空串）
+// 支持单行值（可带单/双引号）与 YAML 块标量（> 折叠、| 保留换行，含 >- / |+ 等 chomping 变体）
 export function skillDescription(repoRoot: string, name: string): string {
   const text = readFileSync(join(repoRoot, name, 'SKILL.md'), 'utf8');
-  const m = text.match(/^---\n([\s\S]*?)\n---/);
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!m) return '';
-  const d = m[1].match(/^description:\s*["']?([\s\S]*?)["']?\s*$/m);
-  return d ? d[1].trim() : '';
+  const lines = m[1].split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const lm = lines[i].match(/^description:\s*(.*)$/);
+    if (!lm) continue;
+    const rest = lm[1].trim();
+    // 块标量：收集后续的缩进内容行，直到下一个顶级键
+    const block = rest.match(/^([>|])[+-]?$/);
+    if (block) {
+      const content: string[] = [];
+      for (let j = i + 1; j < lines.length; j++) {
+        const l = lines[j];
+        if (l.trim() === '') {
+          content.push('');
+          continue;
+        }
+        if (!/^\s/.test(l)) break;
+        content.push(l.trim());
+      }
+      // > 折叠：段内换行变空格，空行分段；| 保留换行
+      const joined = block[1] === '>' ? content.join('\n').split(/\n{2,}/).map((p) => p.split('\n').filter(Boolean).join(' ')).join('\n') : content.join('\n');
+      return joined.trim();
+    }
+    // 单行：去掉成对的包裹引号
+    const q = rest.match(/^(["'])([\s\S]*)\1$/);
+    return (q ? q[2] : rest).trim();
+  }
+  return '';
 }
 
 // 切换某技能对某 agent 的分发；返回切换后的状态
@@ -325,16 +351,44 @@ export function status(repoRoot: string): MachineStatus {
     agentStats[agent.id] = { linked };
     brokenLinks += broken;
   }
+  // sha 语义：机器状态所对应的内容提交。sync 会把状态文件本身做成提交（chore: ... 同步清单与状态），
+  // 所以 HEAD 恰是上一次 sync 的状态提交时取其父提交——否则每次 sync 记录的 sha 都会因自己的状态提交而变化，
+  // 下次 sync 又会因此产生新提交，永不收敛。这样 sha 可能不等于 HEAD，这是定义而非滞后。
+  let sha = git(repoRoot, ['rev-parse', 'HEAD']);
+  const headSubject = git(repoRoot, ['log', '-1', '--format=%s']);
+  if (/^chore: .+ 同步清单与状态$/.test(headSubject)) {
+    sha = git(repoRoot, ['rev-parse', 'HEAD~1']);
+  }
+  const branch = git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
+  // updatedAt 语义：机器状态最近一次发生实质变化的时间；sha/branch/断链数/各 agent 链接数都没变时
+  // 沿用旧值，使重复 sync 不产生文件差异，也就不会每次都制造一个只改时间戳的提交。
+  const dir = join(repoRoot, 'machines');
+  const file = join(dir, `${hostname()}.json`);
+  let updatedAt = new Date().toISOString();
+  if (existsSync(file)) {
+    try {
+      const prev = readJson<MachineStatus>(file);
+      const unchanged =
+        prev.host === hostname() &&
+        prev.sha === sha &&
+        prev.branch === branch &&
+        prev.brokenLinks === brokenLinks &&
+        JSON.stringify(prev.agents) === JSON.stringify(agentStats);
+      if (unchanged && typeof prev.updatedAt === 'string') updatedAt = prev.updatedAt;
+    } catch {
+      // 旧文件损坏则按全新状态重写
+    }
+  }
   const s: MachineStatus = {
     host: hostname(),
-    updatedAt: new Date().toISOString(),
-    sha: git(repoRoot, ['rev-parse', 'HEAD']),
-    branch: git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']),
+    updatedAt,
+    sha,
+    branch,
     brokenLinks,
     agents: agentStats,
   };
-  mkdirSync(join(repoRoot, 'machines'), { recursive: true });
-  writeFileSync(join(repoRoot, 'machines', `${hostname()}.json`), JSON.stringify(s, null, 2) + '\n');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(file, JSON.stringify(s, null, 2) + '\n');
   return s;
 }
 
@@ -374,9 +428,17 @@ export function parseGitHubUrl(input: string): GitHubSource {
   return { owner: m[1], repo: m[2], ref: m[3], subdir: m[4] };
 }
 
+// 技能名必须是一个安全的单目录段：字母数字开头，只含字母数字与 ._-，杜绝 ../ 逃逸与隐藏目录
+export function validateSkillName(name: string): void {
+  if (!/^[A-Za-z0-9_-][A-Za-z0-9._-]*$/.test(name)) {
+    throw new Error(`非法技能名 "${name}"：只能由字母、数字、点、下划线、连字符组成，且不能以点开头`);
+  }
+}
+
 export function install(repoRoot: string, input: string, nameOverride: string | undefined, remote: string): string {
   const { owner, repo, ref, subdir } = parseGitHubUrl(input);
   const name = nameOverride ?? (subdir ? subdir.replace(/\/+$/, '').split('/').pop()! : repo);
+  validateSkillName(name);
   const dest = join(repoRoot, name);
   if (existsSync(dest)) throw new Error(`仓库中已存在 ${name}，如需更新请先删除或换 --name`);
 
@@ -392,7 +454,13 @@ export function install(repoRoot: string, input: string, nameOverride: string | 
 
   const top = readdirSync(tmp).filter((e) => e !== 'repo.tar.gz');
   if (top.length !== 1) throw new Error(`tarball 结构异常：顶层条目数为 ${top.length}`);
-  const src = subdir ? join(tmp, top[0], subdir) : join(tmp, top[0]);
+  const base = resolve(tmp, top[0]);
+  const src = subdir ? resolve(base, subdir) : base;
+  // subdir 由 URL 传入，可能含 ../：resolve 后必须仍落在 tarball 顶层目录内
+  if (src !== base && !src.startsWith(base + sep)) {
+    rmSync(tmp, { recursive: true, force: true });
+    throw new Error(`子目录越界：${subdir} 逃逸出 tarball 顶层目录`);
+  }
   if (!existsSync(join(src, 'SKILL.md'))) throw new Error(`${subdir ?? '仓库根'} 中没有 SKILL.md，不是一个技能`);
 
   cpSync(src, dest, { recursive: true });
@@ -406,24 +474,41 @@ export function install(repoRoot: string, input: string, nameOverride: string | 
   return `已安装 ${name}（来自 github.com/${owner}/${repo}${subdir ? ` 的 ${subdir}` : ''}），并推送`;
 }
 
-// 递归收集目录内文件的相对路径（排除 .git/node_modules）
-function listFiles(dir: string, base = dir): string[] {
-  const out: string[] = [];
+// 目录条目：普通文件、符号链接（记录 readlink 目标）、其他特殊类型（fifo/socket 等）
+interface DirEntry {
+  rel: string;
+  kind: 'file' | 'symlink' | 'other';
+  target?: string;
+}
+
+// 递归收集目录内条目的相对路径与类型（排除 .git/node_modules；不跟随符号链接）
+function listEntries(dir: string, base = dir): DirEntry[] {
+  const out: DirEntry[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === '.git' || entry.name === 'node_modules') continue;
     const p = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...listFiles(p, base));
-    else if (entry.isFile()) out.push(p.slice(base.length + 1));
+    const rel = p.slice(base.length + 1);
+    if (entry.isDirectory()) out.push(...listEntries(p, base));
+    else if (entry.isFile()) out.push({ rel, kind: 'file' });
+    else if (entry.isSymbolicLink()) out.push({ rel, kind: 'symlink', target: readlinkSync(p) });
+    else out.push({ rel, kind: 'other' });
   }
-  return out.sort();
+  return out.sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
 }
 
-// 两个目录内容是否完全一致（相对路径集合 + 文件内容）
+// 两个目录内容是否完全一致（相对路径集合 + 条目类型 + 文件内容/链接目标）
+// 特殊类型（fifo/socket 等）无法安全比较，保守判为不同，避免 migrate --apply 误判 identical 后删除本地内容
 function dirsIdentical(a: string, b: string): boolean {
-  const fa = listFiles(a);
-  const fb = listFiles(b);
-  if (fa.length !== fb.length || fa.some((f, i) => f !== fb[i])) return false;
-  return fa.every((f) => Buffer.compare(readFileSync(join(a, f)), readFileSync(join(b, f))) === 0);
+  const ea = listEntries(a);
+  const eb = listEntries(b);
+  if (ea.length !== eb.length) return false;
+  return ea.every((x, i) => {
+    const y = eb[i];
+    if (x.rel !== y.rel || x.kind !== y.kind) return false;
+    if (x.kind === 'symlink') return x.target === y.target;
+    if (x.kind === 'other') return false;
+    return Buffer.compare(readFileSync(join(a, x.rel)), readFileSync(join(b, x.rel))) === 0;
+  });
 }
 
 export interface MigrateAction {

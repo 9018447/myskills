@@ -212,3 +212,56 @@ test('tui: o 键在项目与全局模式间切换', async () => {
   assert.match(lastFrame()!, /项目模式/);
   unmount();
 });
+
+test('tui: 分组浏览按行实例导航，初始光标落在第一组的第一个技能行', async () => {
+  const { repo } = makeFixture();
+  // claude 已勾选 beta；分组后行序为：组头、beta、组头（未分发）、alpha
+  writeFileSync(join(repo, 'skills-manifest.json'), JSON.stringify({ agents: { claude: ['beta'] } }, null, 2));
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write('g'); // 分组：按agent
+  await tick();
+  assert.match(lastFrame()!, /❯ beta/, '初始应高亮第一组的 beta，而非平铺列表的第一个 alpha');
+  stdin.write('\x1b[B'); // ↓
+  await tick();
+  assert.match(lastFrame()!, /❯ alpha/, '↓ 应移到下一技能行 alpha');
+  stdin.write('\x1b[A'); // ↑
+  await tick();
+  assert.match(lastFrame()!, /❯ beta/);
+  unmount();
+});
+
+test('tui: 同一技能出现在多个组时，只有光标所在行实例高亮', async () => {
+  const { repo } = makeFixture();
+  writeFileSync(
+    join(repo, 'skills-manifest.json'),
+    JSON.stringify({ agents: {}, presets: { p1: ['alpha'], p2: ['alpha'] } }, null, 2),
+  );
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  for (let i = 0; i < 4; i++) stdin.write('g'); // 切到「按预设集」
+  await tick();
+  const frame = lastFrame()!;
+  assert.match(frame, /预设: p1/);
+  assert.match(frame, /预设: p2/);
+  assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
+  unmount();
+});
+
+test('tui: 编辑 agent 路径清空后保存被拒绝，agents.json 不变', async () => {
+  const { repo } = makeFixture();
+  const original = readFileSync(join(repo, 'agents.json'), 'utf8');
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write('a'); // 进 agent 注册表视图
+  await tick();
+  stdin.write('e'); // 编辑当前 agent 的路径（预填原路径）
+  await tick();
+  stdin.write('\x7f'.repeat(300)); // 清空
+  await tick();
+  stdin.write('\r');
+  await tick();
+  assert.match(lastFrame()!, /路径不能为空/);
+  assert.equal(readFileSync(join(repo, 'agents.json'), 'utf8'), original, '空路径不应写入 agents.json');
+  unmount();
+});

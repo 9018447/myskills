@@ -214,13 +214,31 @@ export function projectCandidateTargets(agents: AgentDef[]): string[] {
   return [...new Set(agents.filter((a) => a.skillsPath.startsWith('~/')).map((a) => a.skillsPath.slice(2)))];
 }
 
+// 项目模式的实际目标目录：显式 targets 优先，否则探测项目内已存在的候选 agent 目录
+export function projectTargets(projectRoot: string, repoRoot: string, pm?: ProjectManifest): string[] {
+  const m = pm ?? loadProjectManifest(join(projectRoot, PROJECT_MANIFEST_FILE));
+  return m.targets?.length
+    ? m.targets
+    : projectCandidateTargets(loadAgents(repoRoot)).filter((t) => existsSync(join(projectRoot, t)));
+}
+
+// 切换项目清单中的技能，返回切换后是否勾选；保留 targets 等其他字段
+export function toggleProjectSkill(projectRoot: string, skill: string): boolean {
+  const manifestPath = join(projectRoot, PROJECT_MANIFEST_FILE);
+  const pm = loadProjectManifest(manifestPath);
+  const set = new Set(pm.skills);
+  const on = !set.has(skill);
+  if (on) set.add(skill);
+  else set.delete(skill);
+  writeFileSync(manifestPath, JSON.stringify({ ...pm, skills: [...set].sort() }, null, 2) + '\n');
+  return on;
+}
+
 // 项目模式 link：把项目清单的技能链进项目的 agent 目录，语义与全局 link 一致
 export function linkProject(projectRoot: string, repoRoot: string): LinkReport {
   const report: LinkReport = { lines: [], skippedAgents: [], missingSkills: [] };
   const pm = loadProjectManifest(join(projectRoot, PROJECT_MANIFEST_FILE));
-  const targets = pm.targets?.length
-    ? pm.targets
-    : projectCandidateTargets(loadAgents(repoRoot)).filter((t) => existsSync(join(projectRoot, t)));
+  const targets = projectTargets(projectRoot, repoRoot, pm);
   if (targets.length === 0) {
     report.lines.push('未发现项目内 agent 目录（可在 .myskills.json 用 targets 显式指定）');
     return report;

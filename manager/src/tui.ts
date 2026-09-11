@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 // myskills 管理 TUI：浏览/搜索技能、勾选分发、分组浏览、预设集、同步状态、机器仪表盘、agent 管理、GitHub 安装
+// 启动目录向上找到 .myskills.json 时进入项目模式（勾选写入项目清单，l 走 linkProject），o 切换项目/全局
 // 不用 JSX（node 直接运行 TS 不支持），全部 createElement
 import { createElement as h, useState, useMemo, useEffect } from 'react';
 import { render, Box, Text, useApp, useInput } from 'ink';
+import { join } from 'node:path';
 import * as core from './core.ts';
 
 type View = 'skills' | 'machines' | 'agents' | 'install' | 'presets';
 type Focus = 'list' | 'dist';
 type GroupMode = 'none' | 'agent' | 'source' | 'project' | 'preset';
+type Scope = 'global' | 'project';
 
 const GROUP_ORDER: GroupMode[] = ['none', 'agent', 'source', 'project', 'preset'];
 const GROUP_LABEL: Record<GroupMode, string> = {
@@ -21,10 +24,12 @@ const GROUP_LABEL: Record<GroupMode, string> = {
 interface AppProps {
   root: string;
   remote: string;
+  // 检测到的项目根（含 .myskills.json）；null/缺省 = 纯全局模式。由 start() 探测传入，测试可显式指定
+  project?: { root: string } | null;
 }
 
 const HELP: Record<View, string> = {
-  skills: '↑↓ 移动  / 搜索  g=分组  Tab 切到分发  空格 勾选  l=link  s=sync  f=fetch  p=预设  m=机器  a=agent  i=安装  q=退出',
+  skills: '↑↓ 移动  / 搜索  g=分组  Tab 切到分发  空格 勾选  l=link  s=sync  f=fetch  o=项目/全局  p=预设  m=机器  a=agent  i=安装  q=退出',
   machines: 'm/esc 返回  q=退出',
   agents: '↑↓ 移动  n=新增  e=改路径  d=删除  esc 返回  q=退出',
   install: '输入 URL 回车安装（集合仓用 /tree/ref/子目录）  esc 返回',
@@ -59,7 +64,7 @@ interface Row {
 }
 
 function SkillsView({
-  root, agents, manifest, onNotice, bumpTick, tick, searching, setSearching,
+  root, agents, manifest, onNotice, bumpTick, tick, searching, setSearching, scope, project, projectSkills,
 }: {
   root: string;
   agents: core.AgentDef[];
@@ -69,6 +74,9 @@ function SkillsView({
   tick: number;
   searching: boolean;
   setSearching: (b: boolean) => void;
+  scope: Scope;
+  project: { root: string } | null;
+  projectSkills: Set<string>;
 }) {
   const [filter, setFilter] = useState('');
   const [cursor, setCursor] = useState(0);
@@ -85,6 +93,11 @@ function SkillsView({
 
   const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
   const sources = useMemo(() => (groupMode === 'source' ? core.skillSources(root) : {}), [root, tick, groupMode]);
+  // 项目模式的目标目录（显式 targets 或探测结果），仅用于面板展示
+  const projTargets = useMemo(
+    () => (scope === 'project' && project ? core.projectTargets(project.root, root) : []),
+    [scope, project, root, tick],
+  );
 
   // 分组浏览：把技能列表渲染成「分组头 + 技能」行序列；同一技能可出现在多个组下
   const rows = useMemo<Row[]>(() => {
@@ -176,6 +189,15 @@ function SkillsView({
       return;
     }
     // focus === 'dist'
+    if (scope === 'project') {
+      // 项目清单是单一技能列表，对所有目标目录生效：只有一个勾选项，无需上下移动
+      if (input === ' ' && current && project) {
+        const on = core.toggleProjectSkill(project.root, current);
+        onNotice(`${on ? '勾选' : '取消'} ${current} → 项目清单（按 l 生效）`);
+        bumpTick();
+      }
+      return;
+    }
     if (key.upArrow) setAgentCursor((c) => Math.max(0, c - 1));
     if (key.downArrow) setAgentCursor((c) => Math.min(agents.length - 1, c + 1));
     if (input === ' ' && current && agents[agentCursor]) {
@@ -209,15 +231,26 @@ function SkillsView({
       Box, { flexDirection: 'column', flexGrow: 1, borderStyle: 'round', borderColor: focus === 'dist' ? 'cyan' : 'gray', paddingX: 1 },
       h(Text, { bold: true }, current ?? '（无匹配）'),
       h(Text, { wrap: 'truncate' }, current ? core.skillDescription(root, current) : ''),
-      h(Text, { dimColor: true }, '分发到：'),
-      ...agents.map((a, i) => {
-        const on = current ? (manifest[a.id]?.has(current) ?? false) : false;
-        const active = focus === 'dist' && i === agentCursor;
-        return h(
-          Text, { key: a.id, color: active ? 'cyan' : undefined },
-          `${active ? '❯' : ' '} [${on ? 'x' : ' '}] ${a.id}${core.agentInstalled(a) ? '' : '（未安装）'}`,
-        );
-      }),
+      h(Text, { dimColor: true }, scope === 'project' ? '分发到项目：' : '分发到：'),
+      ...(scope === 'project'
+        ? [
+            h(
+              Text,
+              { key: 'proj', color: focus === 'dist' ? 'cyan' : undefined },
+              `${focus === 'dist' ? '❯' : ' '} [${current && projectSkills.has(current) ? 'x' : ' '}] 项目清单（.myskills.json）`,
+            ),
+            ...(projTargets.length
+              ? projTargets.map((t) => h(Text, { key: t, dimColor: true }, `  → ${t}`))
+              : [h(Text, { key: 'none', dimColor: true }, '  （未发现项目内 agent 目录，可在 .myskills.json 用 targets 指定）')]),
+          ]
+        : agents.map((a, i) => {
+            const on = current ? (manifest[a.id]?.has(current) ?? false) : false;
+            const active = focus === 'dist' && i === agentCursor;
+            return h(
+              Text, { key: a.id, color: active ? 'cyan' : undefined },
+              `${active ? '❯' : ' '} [${on ? 'x' : ' '}] ${a.id}${core.agentInstalled(a) ? '' : '（未安装）'}`,
+            );
+          })),
     ),
   );
 }
@@ -544,13 +577,15 @@ function InstallView({ root, remote, onNotice, onDone }: { root: string; remote:
   );
 }
 
-export function App({ root, remote }: AppProps) {
+export function App({ root, remote, project = null }: AppProps) {
   const { exit } = useApp();
   const [view, setView] = useState<View>('skills');
   const [notice, setNotice] = useState('');
   const [tick, setTick] = useState(0);
   const [searching, setSearching] = useState(false);
   const [viewBusy, setViewBusy] = useState(false); // 子视图处于表单/多选等子模式时屏蔽全局键
+  const [scope, setScope] = useState<Scope>(project ? 'project' : 'global');
+  const [projectSkills, setProjectSkills] = useState<Set<string>>(new Set());
   const [manifest, setManifest] = useState<Record<string, Set<string>>>(() => {
     const m = core.loadManifest(root);
     return Object.fromEntries(Object.entries(m.agents).map(([k, v]) => [k, new Set(v)]));
@@ -567,6 +602,18 @@ export function App({ root, remote }: AppProps) {
       return [];
     }
   }, [root, tick]);
+  // 项目清单同样以磁盘为准：勾选后 bumpTick 重新加载；清单损坏时降级为空集合
+  useEffect(() => {
+    if (!project) {
+      setProjectSkills(new Set());
+      return;
+    }
+    try {
+      setProjectSkills(new Set(core.loadProjectManifest(join(project.root, core.PROJECT_MANIFEST_FILE)).skills));
+    } catch {
+      setProjectSkills(new Set());
+    }
+  }, [project, tick]);
   const [running, setRunning] = useState(false); // 有耗时操作（link/sync/fetch）在跑时屏蔽全局键
 
   // 耗时操作先渲染「执行中」帧，再异步执行，避免界面卡住让人以为没按上
@@ -590,10 +637,14 @@ export function App({ root, remote }: AppProps) {
       exit();
       return;
     }
-    // l/s/f 全局可用（含预设集等子视图；install 视图是文本输入，除外）
+    // l/s/f/o 全局可用（含预设集等子视图；install 视图是文本输入，除外）
     if (view !== 'install') {
       if (input === 'l') {
         runAction('link', () => {
+          if (scope === 'project' && project) {
+            const r = core.linkProject(project.root, root);
+            return `项目 link 完成：${r.lines.length} 条动作${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
+          }
           const r = core.link(root);
           return `link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
         });
@@ -605,6 +656,12 @@ export function App({ root, remote }: AppProps) {
       }
       if (input === 'f') {
         runAction('fetch', () => (core.fetchRemote(root, remote) ? 'fetch 完成' : 'fetch 失败'));
+        return;
+      }
+      if (input === 'o' && project) {
+        const next: Scope = scope === 'project' ? 'global' : 'project';
+        setScope(next);
+        setNotice(next === 'project' ? `已切到项目模式：${project.root}` : '已切到全局模式');
         return;
       }
     }
@@ -620,9 +677,12 @@ export function App({ root, remote }: AppProps) {
 
   return h(
     Box, { flexDirection: 'column' },
-    h(Text, { bold: true, color: 'magenta' }, 'myskills 管理'),
+    h(
+      Text, { bold: true, color: 'magenta' },
+      scope === 'project' && project ? `myskills 管理（项目模式：${project.root}，o 切回全局）` : 'myskills 管理',
+    ),
     view === 'skills'
-      ? h(SkillsView, { root, agents, manifest, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), tick, searching, setSearching })
+      ? h(SkillsView, { root, agents, manifest, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), tick, searching, setSearching, scope, project, projectSkills })
       : view === 'machines'
         ? h(MachinesView, { root, tick })
         : view === 'agents'
@@ -636,9 +696,9 @@ export function App({ root, remote }: AppProps) {
   );
 }
 
-// 直接运行时渲染；也供 cli.ts 的 tui 子命令调用
+// 直接运行时渲染；也供 cli.ts 的 tui 子命令调用。启动目录向上找到 .myskills.json 时进入项目模式
 export function start(remote: string) {
-  render(h(App, { root: core.findRepoRoot(), remote }));
+  render(h(App, { root: core.findRepoRoot(), remote, project: core.findProjectRoot() }));
 }
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*\//, ''))) {

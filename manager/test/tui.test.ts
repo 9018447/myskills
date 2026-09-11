@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, lstatSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { createElement as h } from 'react';
 import { render } from 'ink-testing-library';
 import { App } from '../src/tui.ts';
@@ -136,5 +136,63 @@ test('tui: agent 表单输入时 l 进入输入框，不触发全局 link', asyn
   await tick();
   assert.match(lastFrame()!, /id（如 claude）: l/);
   assert.doesNotMatch(lastFrame()!, /link 完成/);
+  unmount();
+});
+
+// 项目模式 fixture：中心仓库 + 一个含 .myskills.json 与 .claude/skills 的项目目录
+function makeProjectTuiFixture() {
+  const { repo, home } = makeFixture();
+  // 候选目标由 ~/ 前缀的家目录 agent 派生，重写 agents.json 为字面 ~/ 形式
+  writeFileSync(
+    join(repo, 'agents.json'),
+    JSON.stringify({ agents: [{ id: 'claude', name: 'Claude Code', skillsPath: '~/.claude/skills' }] }, null, 2),
+  );
+  const project = join(dirname(repo), 'project');
+  mkdirSync(join(project, '.claude', 'skills'), { recursive: true });
+  writeFileSync(join(project, '.myskills.json'), JSON.stringify({ skills: [] }, null, 2));
+  return { repo, home, project };
+}
+
+test('tui: 项目模式下渲染项目清单面板，空格勾选写入 .myskills.json', async () => {
+  const { repo, project } = makeProjectTuiFixture();
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin', project: { root: project } }));
+  await tick();
+  assert.match(lastFrame()!, /项目模式/);
+  assert.match(lastFrame()!, /项目清单（\.myskills\.json）/);
+  assert.match(lastFrame()!, /→ \.claude\/skills/);
+  stdin.write('\t'); // 切到分发面板
+  await tick();
+  stdin.write(' '); // 勾选 alpha 进项目清单
+  await tick();
+  const pm = JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8'));
+  assert.deepEqual(pm.skills, ['alpha']);
+  unmount();
+});
+
+test('tui: 项目模式下 l 走 linkProject，在项目目录建链', async () => {
+  const { repo, project } = makeProjectTuiFixture();
+  writeFileSync(join(project, '.myskills.json'), JSON.stringify({ skills: ['alpha'] }, null, 2));
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin', project: { root: project } }));
+  await tick();
+  stdin.write('l');
+  await tick();
+  await tick();
+  assert.match(lastFrame()!, /项目 link 完成/);
+  assert.ok(lstatSync(join(project, '.claude', 'skills', 'alpha')).isSymbolicLink());
+  unmount();
+});
+
+test('tui: o 键在项目与全局模式间切换', async () => {
+  const { repo, project } = makeProjectTuiFixture();
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin', project: { root: project } }));
+  await tick();
+  assert.match(lastFrame()!, /项目模式/);
+  stdin.write('o'); // 切回全局
+  await tick();
+  assert.doesNotMatch(lastFrame()!, /项目模式/);
+  assert.match(lastFrame()!, /\[ \] claude/); // 全局面板回到 agent 列表
+  stdin.write('o'); // 再切回项目
+  await tick();
+  assert.match(lastFrame()!, /项目模式/);
   unmount();
 });

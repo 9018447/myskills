@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // myskills 管理 TUI：浏览/搜索技能、勾选分发、分组浏览、预设集、同步状态、机器仪表盘、agent 管理、GitHub 安装
-// 启动目录向上找到 .myskills.json 时进入项目模式（勾选写入项目清单；项目级 agent 与注册表相同、路径去 ~/，默认全开，空格切换），o 切换项目/全局
+// 启动目录向上找到 .myskills.json 时进入项目模式（勾选写入项目清单；项目级 agent 与注册表相同、路径去 ~/，默认全开，空格切换），o 切换项目/全局；
+// 没有项目清单时按 o 会在启动目录所在的 git 根新建 .myskills.json 并创建目标目录；界面始终标出当前编辑的是用户级还是项目级
 // 不用 JSX（node 直接运行 TS 不支持），全部 createElement
 import { createElement as h, useState, useMemo, useEffect } from 'react';
 import { render, Box, Text, useApp, useInput } from 'ink';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import * as core from './core.ts';
 
 type View = 'skills' | 'machines' | 'agents' | 'install' | 'presets';
@@ -26,10 +27,12 @@ interface AppProps {
   remote: string;
   // 检测到的项目根（含 .myskills.json）；null/缺省 = 纯全局模式。由 start() 探测传入，测试可显式指定
   project?: { root: string } | null;
+  // 启动目录：项目没有 .myskills.json 时按 o 在这里（或其 git 根）建立项目级分发
+  cwd?: string;
 }
 
 const HELP: Record<View, string> = {
-  skills: '↑↓ 移动  / 搜索  g=分组  Tab 切到分发  空格 勾选  l=link  s=sync  f=fetch  o=项目/全局  p=预设  m=机器  a=agent  i=安装  q=退出',
+  skills: '↑↓ 移动  / 搜索  g=分组  Tab 切到分发  空格 勾选  l=link  s=sync  f=fetch  o=切项目/全局（无清单则建）  p=预设  m=机器  a=agent  i=安装  q=退出',
   machines: 'm/esc 返回  q=退出',
   agents: '↑↓ 移动  n=新增  e=改路径  d=删除  esc 返回  q=退出',
   install: '输入 URL 回车安装（集合仓用 /tree/ref/子目录）  esc 返回',
@@ -64,7 +67,7 @@ interface Row {
 }
 
 function SkillsView({
-  root, agents, manifest, onNotice, bumpTick, tick, searching, setSearching, scope, project, projectSkills,
+  root, agents, manifest, onNotice, bumpTick, tick, searching, setSearching, scope, projectRoot, projectSkills,
 }: {
   root: string;
   agents: core.AgentDef[];
@@ -75,7 +78,7 @@ function SkillsView({
   searching: boolean;
   setSearching: (b: boolean) => void;
   scope: Scope;
-  project: { root: string } | null;
+  projectRoot: string | null;
   projectSkills: Set<string>;
 }) {
   const [filter, setFilter] = useState('');
@@ -94,8 +97,8 @@ function SkillsView({
   const sources = useMemo(() => (groupMode === 'source' ? core.skillSources(root) : {}), [root, tick, groupMode]);
   // 项目级 agent（注册表家目录 agent 去 ~/ 派生）及开启状态；显式 targets 优先，省略时默认全开
   const projAgentRows = useMemo(
-    () => (scope === 'project' && project ? core.projectTargetStates(project.root, root) : []),
-    [scope, project, root, tick],
+    () => (scope === 'project' && projectRoot ? core.projectTargetStates(projectRoot, root) : []),
+    [scope, projectRoot, root, tick],
   );
 
   // 分组浏览：把技能列表渲染成「分组头 + 技能」行序列；同一技能可出现在多个组下
@@ -198,16 +201,16 @@ function SkillsView({
       // 项目面板：第 0 行勾选技能进项目清单（对所有开启的目标生效），其余行切换各项目级 agent 的开启状态
       if (key.upArrow) setAgentCursor((c) => Math.max(0, c - 1));
       if (key.downArrow) setAgentCursor((c) => Math.min(projAgentRows.length, c + 1));
-      if (input === ' ' && project) {
+      if (input === ' ' && projectRoot) {
         if (agentCursor === 0) {
           if (!current) return;
-          const on = core.toggleProjectSkill(project.root, current);
-          onNotice(`${on ? '勾选' : '取消'} ${current} → 项目清单（按 l 生效）`);
+          const on = core.toggleProjectSkill(projectRoot, current);
+          onNotice(`${on ? '勾选' : '取消'} ${current} → 项目清单 .myskills.json（项目级；按 l 生效）`);
         } else {
           const row = projAgentRows[agentCursor - 1];
           if (!row) return;
-          const on = core.toggleProjectTarget(project.root, root, row.target);
-          onNotice(`${on ? '开启' : '关闭'}项目目标 ${row.id} → ${row.target}（按 l 生效）`);
+          const on = core.toggleProjectTarget(projectRoot, root, row.target);
+          onNotice(`${on ? '开启' : '关闭'}项目级目标 ${row.id} → ${row.target}（按 l 生效）`);
         }
         bumpTick();
       }
@@ -218,7 +221,7 @@ function SkillsView({
     if (input === ' ' && current && agents[agentCursor]) {
       const agentId = agents[agentCursor].id;
       const on = core.toggleSkill(root, agentId, current);
-      onNotice(`${on ? '勾选' : '取消'} ${current} → ${agentId}（按 l 生效，按 s 提交推送）`);
+      onNotice(`${on ? '勾选' : '取消'} ${current} → ${agentId}（用户级清单；按 l 生效，按 s 提交推送）`);
       bumpTick();
     }
   });
@@ -233,7 +236,7 @@ function SkillsView({
       Box, { flexDirection: 'column', width: 34, borderStyle: 'round', borderColor: focus === 'list' ? 'cyan' : 'gray', paddingX: 1 },
       h(
         Text, { bold: true },
-        `技能（${shown.length}/${skills.length}）${groupMode !== 'none' ? ` [${GROUP_LABEL[groupMode]}]` : ''}${searching ? ` 搜索: ${filter}▌` : filter ? ` 过滤: ${filter}` : ''}`,
+        `技能（${shown.length}/${skills.length}）[${scope === 'project' ? '项目级' : '用户级'}]${groupMode !== 'none' ? ` [${GROUP_LABEL[groupMode]}]` : ''}${searching ? ` 搜索: ${filter}▌` : filter ? ` 过滤: ${filter}` : ''}`,
       ),
       ...windowRows.map((r, i) => {
         if (r.header !== undefined) return h(Text, { key: `h${start + i}`, color: 'yellow', bold: true }, `▸ ${r.header}`);
@@ -245,7 +248,7 @@ function SkillsView({
       Box, { flexDirection: 'column', flexGrow: 1, borderStyle: 'round', borderColor: focus === 'dist' ? 'cyan' : 'gray', paddingX: 1 },
       h(Text, { bold: true }, current ?? '（无匹配）'),
       h(Text, { wrap: 'truncate' }, current ? core.skillDescription(root, current) : ''),
-      h(Text, { dimColor: true }, scope === 'project' ? '分发到项目：' : '分发到：'),
+      h(Text, { dimColor: true }, scope === 'project' ? '分发到项目级（.myskills.json）：' : '分发到用户级（中心仓库 skills-manifest.json）：'),
       ...(scope === 'project'
         ? [
             h(
@@ -603,13 +606,15 @@ function InstallView({ root, remote, onNotice, onDone }: { root: string; remote:
   );
 }
 
-export function App({ root, remote, project = null }: AppProps) {
+export function App({ root, remote, project = null, cwd = process.cwd() }: AppProps) {
   const { exit } = useApp();
   const [view, setView] = useState<View>('skills');
   const [notice, setNotice] = useState('');
   const [tick, setTick] = useState(0);
   const [searching, setSearching] = useState(false);
   const [viewBusy, setViewBusy] = useState(false); // 子视图处于表单/多选等子模式时屏蔽全局键
+  // 作用域：project = 编辑项目根的 .myskills.json（项目级）；global = 编辑中心仓库 skills-manifest.json（用户级）
+  const [projectRoot, setProjectRoot] = useState<string | null>(project?.root ?? null);
   const [scope, setScope] = useState<Scope>(project ? 'project' : 'global');
   const [projectSkills, setProjectSkills] = useState<Set<string>>(new Set());
   const [manifest, setManifest] = useState<Record<string, Set<string>>>(() => {
@@ -630,16 +635,26 @@ export function App({ root, remote, project = null }: AppProps) {
   }, [root, tick]);
   // 项目清单同样以磁盘为准：勾选后 bumpTick 重新加载；清单损坏时降级为空集合
   useEffect(() => {
-    if (!project) {
+    if (!projectRoot) {
       setProjectSkills(new Set());
       return;
     }
     try {
-      setProjectSkills(new Set(core.loadProjectManifest(join(project.root, core.PROJECT_MANIFEST_FILE)).skills));
+      setProjectSkills(new Set(core.loadProjectManifest(join(projectRoot, core.PROJECT_MANIFEST_FILE)).skills));
     } catch {
       setProjectSkills(new Set());
     }
-  }, [project, tick]);
+  }, [projectRoot, tick]);
+
+  // 项目模式：启用中的项目级目标目录不存在就建出来——项目下没有 .claude/skills 之类的目录也不用手工创建
+  useEffect(() => {
+    if (scope !== 'project' || !projectRoot) return;
+    try {
+      core.ensureProjectDirs(projectRoot, core.projectTargets(projectRoot, root));
+    } catch {
+      // 清单损坏等留给具体操作报错，这里不打断界面
+    }
+  }, [scope, projectRoot, root, tick]);
   const [running, setRunning] = useState(false); // 有耗时操作（link/sync/fetch）在跑时屏蔽全局键
 
   // 耗时操作先渲染「执行中」帧，再异步执行，避免界面卡住让人以为没按上
@@ -667,12 +682,12 @@ export function App({ root, remote, project = null }: AppProps) {
     if (view !== 'install') {
       if (input === 'l') {
         runAction('link', () => {
-          if (scope === 'project' && project) {
-            const r = core.linkProject(project.root, root);
+          if (scope === 'project' && projectRoot) {
+            const r = core.linkProject(projectRoot, root);
             return `项目 link 完成：${r.lines.length} 条动作${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
           }
           const r = core.link(root);
-          return `link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
+          return `用户级 link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
         });
         return;
       }
@@ -684,10 +699,30 @@ export function App({ root, remote, project = null }: AppProps) {
         runAction('fetch', () => (core.fetchRemote(root, remote) ? 'fetch 完成' : 'fetch 失败'));
         return;
       }
-      if (input === 'o' && project) {
-        const next: Scope = scope === 'project' ? 'global' : 'project';
-        setScope(next);
-        setNotice(next === 'project' ? `已切到项目模式：${project.root}` : '已切到全局模式');
+      if (input === 'o') {
+        if (scope === 'project') {
+          setScope('global');
+          setNotice('已切到全局（用户级）：编辑中心仓库 skills-manifest.json');
+          return;
+        }
+        // 全局 → 项目：已有清单就用它；没有就在启动目录所在项目（git 根）新建 .myskills.json 并创建目标目录
+        const target = projectRoot ?? core.findProjectRoot(cwd)?.root ?? core.findProjectRootForInit(cwd);
+        if (resolve(target) === resolve(root)) {
+          setNotice('这里是中心仓库本身，不是项目目录；请在项目目录里按 o 建立项目级分发');
+          return;
+        }
+        try {
+          const r = core.ensureProjectManifest(target, root);
+          setProjectRoot(target);
+          setScope('project');
+          setNotice(
+            `${r.created ? `已在 ${target} 新建 .myskills.json，` : ''}已切到项目模式（项目级）：${target}` +
+              (r.createdDirs.length > 0 ? `；已创建目录 ${r.createdDirs.join(', ')}` : ''),
+          );
+          setTick((t) => t + 1);
+        } catch (err) {
+          setNotice(`建立项目级分发失败: ${(err as Error).message}`);
+        }
         return;
       }
     }
@@ -701,14 +736,22 @@ export function App({ root, remote, project = null }: AppProps) {
     if (input === 'p') setView('presets');
   });
 
+  // 作用域随时可见：正在编辑的是哪个清单文件、当前算用户级还是项目级
+  const scopeLine =
+    scope === 'project' && projectRoot
+      ? '当前作用域：项目级 · ' + join(projectRoot, core.PROJECT_MANIFEST_FILE)
+      : '当前作用域：用户级 · ' + join(root, 'skills-manifest.json') + '（' + (projectRoot ? 'o 切到项目级' : 'o 在本项目建立项目级') + '）';
   return h(
     Box, { flexDirection: 'column' },
     h(
       Text, { bold: true, color: 'magenta' },
-      scope === 'project' && project ? `myskills 管理（项目模式：${project.root}，o 切回全局）` : 'myskills 管理',
+      scope === 'project' && projectRoot
+        ? `myskills 管理｜项目模式：${projectRoot}（编辑项目级 .myskills.json）`
+        : 'myskills 管理｜全局（编辑用户级 skills-manifest.json）',
     ),
+    h(Text, { dimColor: true }, scopeLine),
     view === 'skills'
-      ? h(SkillsView, { root, agents, manifest, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), tick, searching, setSearching, scope, project, projectSkills })
+      ? h(SkillsView, { root, agents, manifest, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), tick, searching, setSearching, scope, projectRoot, projectSkills })
       : view === 'machines'
         ? h(MachinesView, { root, tick })
         : view === 'agents'
@@ -724,7 +767,8 @@ export function App({ root, remote, project = null }: AppProps) {
 
 // 直接运行时渲染；也供 cli.ts 的 tui 子命令调用。启动目录向上找到 .myskills.json 时进入项目模式
 export function start(remote: string) {
-  render(h(App, { root: core.findRepoRoot(), remote, project: core.findProjectRoot() }));
+  const cwd = process.cwd();
+  render(h(App, { root: core.findRepoRoot(), remote, project: core.findProjectRoot(cwd), cwd }));
 }
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*\//, ''))) {

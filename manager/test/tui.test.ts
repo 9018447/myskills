@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, lstatSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, lstatSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createElement as h } from 'react';
@@ -140,16 +140,17 @@ test('tui: agent 表单输入时 l 进入输入框，不触发全局 link', asyn
 });
 
 // 项目模式 fixture：中心仓库 + 一个含 .myskills.json 与 .claude/skills 的项目目录
-function makeProjectTuiFixture() {
+function makeProjectTuiFixture(opts: { agents?: { id: string; target: string }[]; manifest?: object } = {}) {
   const { repo, home } = makeFixture();
   // 候选目标由 ~/ 前缀的家目录 agent 派生，重写 agents.json 为字面 ~/ 形式
+  const rows = opts.agents ?? [{ id: 'claude', target: '.claude/skills' }];
   writeFileSync(
     join(repo, 'agents.json'),
-    JSON.stringify({ agents: [{ id: 'claude', name: 'Claude Code', skillsPath: '~/.claude/skills' }] }, null, 2),
+    JSON.stringify({ agents: rows.map((r) => ({ id: r.id, name: r.id, skillsPath: `~/${r.target}` })) }, null, 2),
   );
   const project = join(dirname(repo), 'project');
   mkdirSync(join(project, '.claude', 'skills'), { recursive: true });
-  writeFileSync(join(project, '.myskills.json'), JSON.stringify({ skills: [] }, null, 2));
+  writeFileSync(join(project, '.myskills.json'), JSON.stringify(opts.manifest ?? { skills: [] }, null, 2));
   return { repo, home, project };
 }
 
@@ -210,6 +211,102 @@ test('tui: o 键在项目与全局模式间切换', async () => {
   stdin.write('o'); // 再切回项目
   await tick();
   assert.match(lastFrame()!, /项目模式/);
+  unmount();
+});
+
+test('tui: 全局模式标出用户级作用域与清单文件，提示可切/建项目级', async () => {
+  const { repo } = makeFixture();
+  const { lastFrame, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  const frame = lastFrame()!;
+  assert.match(frame, /当前作用域：用户级/);
+  assert.match(frame, /skills-manifest\.json/);
+  assert.match(frame, /技能（2\/2）\[用户级\]/);
+  assert.match(frame, /分发到用户级/);
+  assert.match(frame, /在本项目建立项目级/);
+  unmount();
+});
+
+test('tui: 项目模式标出项目级作用域与 .myskills.json', async () => {
+  const { repo, project } = makeProjectTuiFixture();
+  const { lastFrame, unmount } = render(h(App, { root: repo, remote: 'origin', project: { root: project } }));
+  await tick();
+  const frame = lastFrame()!;
+  assert.match(frame, /项目模式/);
+  assert.match(frame, /当前作用域：项目级/);
+  assert.match(frame, /\.myskills\.json/);
+  assert.match(frame, /技能（2\/2）\[项目级\]/);
+  assert.match(frame, /分发到项目级/);
+  unmount();
+});
+
+test('tui: 项目目录没有 .myskills.json 时按 o 建立项目级分发并创建目标目录', async () => {
+  const { repo } = makeFixture();
+  writeFileSync(
+    join(repo, 'agents.json'),
+    JSON.stringify({ agents: [{ id: 'claude', name: 'Claude Code', skillsPath: '~/.claude/skills' }] }, null, 2),
+  );
+  const project = join(dirname(repo), 'fresh-project');
+  const runFrom = join(project, 'src');
+  mkdirSync(runFrom, { recursive: true });
+  mkdirSync(join(project, '.git'));
+
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin', project: null, cwd: runFrom }));
+  await tick();
+  assert.match(lastFrame()!, /在本项目建立项目级/);
+  assert.ok(!existsSync(join(project, '.myskills.json')), '未按 o 前不写清单');
+
+  stdin.write('o');
+  await tick();
+  await tick();
+  assert.match(lastFrame()!, /项目模式/);
+  assert.match(lastFrame()!, /已创建目录[\s\S]*\.claude\/skills/); // 提示可能被窄终端折行
+  assert.deepEqual(JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8')), {
+    skills: [],
+    targets: ['.claude/skills'],
+  });
+  assert.ok(lstatSync(join(project, '.claude', 'skills')).isDirectory(), '项目级目标目录应由 o 创建');
+  unmount();
+});
+
+test('tui: 在中心仓库里按 o 不会把中心仓库当项目', async () => {
+  const { repo } = makeFixture();
+  mkdirSync(join(repo, '.git'));
+  const sub = join(repo, 'sub');
+  mkdirSync(sub);
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin', project: null, cwd: sub }));
+  await tick();
+  stdin.write('o');
+  await tick();
+  assert.match(lastFrame()!, /中心仓库本身/);
+  assert.ok(!existsSync(join(repo, '.myskills.json')), '不应在中心仓库建 .myskills.json');
+  assert.match(lastFrame()!, /当前作用域：用户级/);
+  unmount();
+});
+
+test('tui: 项目模式下开启已关闭的目标，立即创建对应目录', async () => {
+  const { repo, project } = makeProjectTuiFixture({
+    agents: [
+      { id: 'claude', target: '.claude/skills' },
+      { id: 'kimi', target: '.kimi-code/skills' },
+    ],
+    manifest: { skills: [], targets: ['.claude/skills'] },
+  });
+  assert.ok(!existsSync(join(project, '.kimi-code', 'skills')), '关闭的目标不应预先建目录');
+
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin', project: { root: project } }));
+  await tick();
+  assert.match(lastFrame()!, /\[ \] kimi → \.kimi-code\/skills/);
+  stdin.write('\t'); // 切到分发面板
+  await tick();
+  stdin.write('\x1b[B'); // 第 0 行是项目清单，下移到 claude
+  await tick();
+  stdin.write('\x1b[B'); // 下移到 kimi
+  await tick();
+  stdin.write(' ');
+  await tick();
+  assert.match(lastFrame()!, /\[x\] kimi → \.kimi-code\/skills/);
+  assert.ok(lstatSync(join(project, '.kimi-code', 'skills')).isDirectory(), '开启目标应立即建目录');
   unmount();
 });
 

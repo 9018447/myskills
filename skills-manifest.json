@@ -3,7 +3,6 @@
     "agents": [
       "agent-browser",
       "ask-matt-zh",
-      "clapeyronjl-skill",
       "codebase-memory",
       "create-agentsmd",
       "diagnosing-bugs-zh",
@@ -34,7 +33,6 @@
       "writing-for-agents-zh"
     ],
     "claude": [
-      "claude-handoff-zh",
       "codebase-memory",
       "domain-modeling-zh",
       "grill-with-docs-zh",
@@ -74,7 +72,6 @@
     ],
     "kimi-code": [
       "ask-matt-zh",
-      "clapeyronjl-skill",
       "codebase-memory",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",
@@ -104,7 +101,6 @@
     ],
     "codex": [
       "ask-matt-zh",
-      "claude-handoff-zh",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",
       "grill-me-zh",
@@ -128,7 +124,6 @@
     ],
     "pi": [
       "ask-matt-zh",
-      "claude-handoff-zh",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",
       "grill-me-zh",

@@ -5,7 +5,14 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { projectCandidateTargets, projectTargetAgents, projectTargetStates, toggleProjectTarget } from '../src/core.ts';
+import {
+  projectCandidateTargets,
+  projectTargetAgents,
+  projectTargetStates,
+  toggleProjectTarget,
+  ensureProjectManifest,
+  findProjectRootForInit,
+} from '../src/core.ts';
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'cli.ts');
 
@@ -228,10 +235,13 @@ test('toggleProjectTarget: 省略 targets 时默认全开，关闭后固化显�
   ]);
 });
 
-test('项目 init: 默认生成空 skills，并把已存在的候选 agent 目录写入 targets', () => {
-  const { repo, project, runFrom } = makeProjectFixture({
+test('项目 init: 默认生成空 skills，项目级目标全部开启，项目里没有的目录一并创建', () => {
+  const { repo, project } = makeProjectFixture({
     projectManifest: {},
-    installedAgentDirs: ['.claude/skills'],
+    globalAgents: [
+      { id: 'claude', name: 'Claude Code', skillsPath: '~/.claude/skills' },
+      { id: 'kimi', name: 'Kimi Code', skillsPath: '~/.kimi-code/skills' },
+    ],
   });
   rmSync(join(project, '.myskills.json'));
 
@@ -239,19 +249,96 @@ test('项目 init: 默认生成空 skills，并把已存在的候选 agent 目�
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8')), {
     skills: [],
-    targets: ['.claude/skills'],
+    targets: ['.claude/skills', '.kimi-code/skills'],
   });
+  assert.ok(lstatSync(join(project, '.claude', 'skills')).isDirectory(), '.claude/skills 应自动创建');
+  assert.ok(lstatSync(join(project, '.kimi-code', 'skills')).isDirectory(), '.kimi-code/skills 应自动创建');
+  assert.match(r.stdout, /新建目录/);
 });
 
-test('项目 init: --skills 去重排序；没有候选目录时省略 targets', () => {
-  const { repo, project, runFrom } = makeProjectFixture({ projectManifest: {} });
+test('项目 init: --skills 去重排序；候选目标写入 targets 并自动建目录', () => {
+  const { repo, project } = makeProjectFixture({ projectManifest: {} });
   rmSync(join(project, '.myskills.json'));
 
   const r = run(['init', '--skills', 'zeta, alpha, zeta, beta'], project, repo);
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8')), {
     skills: ['alpha', 'beta', 'zeta'],
+    targets: ['.claude/skills'],
   });
+  assert.ok(lstatSync(join(project, '.claude', 'skills')).isDirectory());
+});
+
+test('项目 init: 在项目子目录运行时清单落在 git 根', () => {
+  const { repo, project, runFrom } = makeProjectFixture({ projectManifest: {} });
+  rmSync(join(project, '.myskills.json'));
+  mkdirSync(join(project, '.git'));
+
+  const r = run(['init'], runFrom, repo);
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(existsSync(join(project, '.myskills.json')), '清单应落在 git 根');
+  assert.ok(!existsSync(join(runFrom, '.myskills.json')), '不应落在子目录');
+});
+
+test('ensureProjectManifest: 已有清单不覆盖只补目录；没有清单则新建并默认全开', () => {
+  const { repo, project } = makeProjectFixture({
+    projectManifest: { skills: ['alpha'] },
+    globalAgents: [
+      { id: 'claude', name: 'Claude Code', skillsPath: '~/.claude/skills' },
+      { id: 'kimi', name: 'Kimi Code', skillsPath: '~/.kimi-code/skills' },
+    ],
+  });
+
+  const kept = ensureProjectManifest(project, repo);
+  assert.equal(kept.created, false, '已有清单不应被覆盖');
+  assert.deepEqual(kept.createdDirs, ['.claude/skills', '.kimi-code/skills']);
+  assert.deepEqual(JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8')), { skills: ['alpha'] });
+  assert.ok(lstatSync(join(project, '.claude', 'skills')).isDirectory());
+
+  rmSync(join(project, '.myskills.json'));
+  const made = ensureProjectManifest(project, repo);
+  assert.equal(made.created, true);
+  assert.deepEqual(made.createdDirs, [], '上一轮已补建过目录，不重复计入');
+  assert.deepEqual(JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8')), {
+    skills: [],
+    targets: ['.claude/skills', '.kimi-code/skills'],
+  });
+});
+
+test('toggleProjectTarget: 重新开启目标时补建目录', () => {
+  const { repo, project } = makeProjectFixture({
+    projectManifest: { skills: [], targets: ['.claude/skills'] },
+    globalAgents: [
+      { id: 'claude', name: 'Claude Code', skillsPath: '~/.claude/skills' },
+      { id: 'kimi', name: 'Kimi Code', skillsPath: '~/.kimi-code/skills' },
+    ],
+  });
+  assert.ok(!existsSync(join(project, '.kimi-code', 'skills')), '关闭的目标不应有目录');
+
+  assert.equal(toggleProjectTarget(project, repo, '.kimi-code/skills'), true);
+  assert.ok(lstatSync(join(project, '.kimi-code', 'skills')).isDirectory(), '开启目标应自动创建目录');
+  assert.deepEqual(JSON.parse(readFileSync(join(project, '.myskills.json'), 'utf8')), {
+    skills: [],
+    targets: ['.claude/skills', '.kimi-code/skills'],
+  });
+});
+
+test('findProjectRootForInit: 找到最近的 git 仓库根（含 worktree 的 .git 文件）；不在仓库内用起点', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'myskills-init-'));
+  const gitRoot = join(tmp, 'proj');
+  const nested = join(gitRoot, 'a', 'b');
+  mkdirSync(nested, { recursive: true });
+  mkdirSync(join(gitRoot, '.git'));
+  assert.equal(findProjectRootForInit(nested), gitRoot);
+
+  const worktree = join(tmp, 'wt');
+  mkdirSync(join(worktree, 'sub'), { recursive: true });
+  writeFileSync(join(worktree, '.git'), 'gitdir: /somewhere/.git/worktrees/wt\n');
+  assert.equal(findProjectRootForInit(join(worktree, 'sub')), worktree, 'worktree 的 .git 文件也算仓库根');
+
+  const plain = join(tmp, 'plain', 'deep');
+  mkdirSync(plain, { recursive: true });
+  assert.equal(findProjectRootForInit(plain), plain, '不在仓库内时用起点本身');
 });
 
 test('项目 init: 已存在 .myskills.json 时拒绝覆盖', () => {

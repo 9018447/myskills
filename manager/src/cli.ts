@@ -2,7 +2,7 @@
 // myskills 管理 CLI：link / status / sync / install / init / migrate（薄封装，逻辑在 core.ts）
 // link 在含 .myskills.json 的目录下自动切项目模式，--global 强制全局
 import { hostname } from 'node:os';
-import { findRepoRoot, findProjectRoot, link, linkProject, initProject, status, sync, install, migrate } from './core.ts';
+import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate } from './core.ts';
 
 function resolveRemote(): string {
   const idx = process.argv.indexOf('--remote');
@@ -40,7 +40,8 @@ try {
       const repoRoot = findRepoRoot();
       const skillsArg = process.argv.indexOf('--skills');
       const skills = skillsArg > -1 ? (process.argv[skillsArg + 1] ?? '').split(',').map((s) => s.trim()) : [];
-      for (const line of initProject(process.cwd(), repoRoot, skills)) console.log(line);
+      // 与 TUI 的 o 一致：清单落在启动目录所在的 git 根，不在仓库里则用当前目录
+      for (const line of initProject(findProjectRootForInit(process.cwd()), repoRoot, skills)) console.log(line);
       break;
     }
     case 'status':

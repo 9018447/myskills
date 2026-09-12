@@ -216,6 +216,19 @@ export function findProjectRoot(start: string = process.cwd()): { root: string; 
   }
 }
 
+// 项目清单的落点（TUI 首次建立项目级分发时用）：从 start 向上找最近的 git 仓库根（.git 目录或 worktree 的 .git 文件）；
+// 不在任何仓库里时退回 start 本身。与 findProjectRoot 不同——后者只认已存在的 .myskills.json
+export function findProjectRootForInit(start: string = process.cwd()): string {
+  const origin = resolve(start);
+  let dir = origin;
+  for (;;) {
+    if (existsSync(join(dir, '.git'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return origin;
+    dir = parent;
+  }
+}
+
 // 校验并读取项目清单；targets 必须是项目内相对路径（禁绝对路径与 ..）
 export function loadProjectManifest(manifestPath: string): ProjectManifest {
   const raw = readJson<ProjectManifest>(manifestPath);
@@ -260,6 +273,43 @@ export function projectTargets(projectRoot: string, repoRoot: string, pm?: Proje
   return m.targets !== undefined ? m.targets : projectCandidateTargets(loadAgents(repoRoot));
 }
 
+// 确保项目内这些目标目录存在（mkdir -p），返回本次真正新建的目录。
+// 项目级分发不要求用户预先建好 .claude/skills 之类的目录
+export function ensureProjectDirs(projectRoot: string, targets: string[]): string[] {
+  const created: string[] = [];
+  for (const target of targets) {
+    const dir = join(projectRoot, target);
+    if (existsSync(dir)) continue;
+    mkdirSync(dir, { recursive: true });
+    created.push(target);
+  }
+  return created;
+}
+
+export interface EnsureProjectResult {
+  root: string;
+  manifestPath: string;
+  created: boolean; // 本次是否新建了 .myskills.json
+  targets: string[]; // 当前启用中的项目级目标
+  createdDirs: string[]; // 本次新建的目标目录
+}
+
+// 进入项目模式前的准备：没有 .myskills.json 就在项目根新建（skills 为空、项目级目标全开），
+// 并确保启用中的目标目录存在。已存在时不覆盖清单，只补齐目录
+export function ensureProjectManifest(projectRoot: string, repoRoot: string): EnsureProjectResult {
+  const manifestPath = join(projectRoot, PROJECT_MANIFEST_FILE);
+  const created = !existsSync(manifestPath);
+  if (created) {
+    const targets = projectCandidateTargets(loadAgents(repoRoot));
+    const manifest: ProjectManifest = { skills: [] };
+    if (targets.length > 0) manifest.targets = targets;
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+  }
+  const targets = projectTargets(projectRoot, repoRoot);
+  const createdDirs = ensureProjectDirs(projectRoot, targets);
+  return { root: projectRoot, manifestPath, created, targets, createdDirs };
+}
+
 // TUI 用：项目级 agent 及其开启状态（显式 targets 为唯一显式来源；省略时全部默认开启）
 export function projectTargetStates(projectRoot: string, repoRoot: string): { id: string; target: string; enabled: boolean }[] {
   const pm = loadProjectManifest(join(projectRoot, PROJECT_MANIFEST_FILE));
@@ -278,8 +328,10 @@ export function toggleProjectTarget(projectRoot: string, repoRoot: string, targe
   const pm = loadProjectManifest(manifestPath);
   const current = new Set(pm.targets ?? projectCandidateTargets(loadAgents(repoRoot)));
   const on = !current.has(target);
-  if (on) current.add(target);
-  else current.delete(target);
+  if (on) {
+    current.add(target);
+    ensureProjectDirs(projectRoot, [target]); // 重新开启时目录可能已被清理，补建
+  } else current.delete(target);
   writeFileSync(manifestPath, JSON.stringify({ ...pm, targets: [...current].sort() }, null, 2) + '\n');
   return on;
 }
@@ -320,12 +372,18 @@ export function initProject(projectRoot: string, repoRoot: string, skills: strin
   const manifestPath = join(projectRoot, PROJECT_MANIFEST_FILE);
   if (existsSync(manifestPath)) throw new Error(`${PROJECT_MANIFEST_FILE} 已存在，拒绝覆盖`);
   const projectSkills = [...new Set(skills.filter(Boolean))].sort();
-  const targets = projectCandidateTargets(loadAgents(repoRoot))
-    .filter((target) => existsSync(join(projectRoot, target)));
+  // 项目级目标默认全部开启（与 TUI 一致）；没有的家目录 agent 目录在这里一并建出来
+  const targets = projectCandidateTargets(loadAgents(repoRoot));
   const manifest: ProjectManifest = { skills: projectSkills };
   if (targets.length > 0) manifest.targets = targets;
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
-  return [`已生成 ${manifestPath}`];
+  const createdDirs = ensureProjectDirs(projectRoot, targets);
+  return [
+    `已生成 ${manifestPath}`,
+    targets.length > 0
+      ? `项目级目标全部开启：${targets.join(', ')}${createdDirs.length > 0 ? `（新建目录 ${createdDirs.join(', ')}）` : ''}`
+      : 'agents.json 中没有 ~/ 开头的家目录 agent，未开启任何项目级目标（可在 .myskills.json 用 targets 指定）',
+  ];
 }
 
 export interface MachineStatus {

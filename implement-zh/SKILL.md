@@ -11,7 +11,7 @@ disable-model-invocation: true
 
 定期运行类型检查，定期运行单个测试文件
 
-每完成一个ticket, 提交一次jj或git commit,并使用 /open-code-review-delegate 审查这次提交。
+每完成一个ticket, 提交一次jj或git commit,并使用 /open-code-review 审查这次提交。
 
 最后运行一次完整测试套件。
 

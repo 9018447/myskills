@@ -22,16 +22,16 @@
 首次使用在 `manager/` 下跑一次 `npm link`，之后全局可用：
 
 ```bash
-myskills                 # 进管理 TUI：浏览/搜索技能、勾选分发、分组浏览（g：按agent/来源/项目路径/预设集）、预设集（p）、机器状态、agent 注册表、GitHub 安装；项目目录下自动进项目模式（o 切项目/全局）
+myskills                 # 进管理 TUI：浏览/搜索技能、勾选分发、分组浏览（g：按agent/来源/项目路径/预设集）、预设集（p）、机器状态、agent 注册表、GitHub 安装；标题与面板常驻标出作用域（用户级/项目级），项目目录下自动进项目模式，o 切项目/全局（项目没有 .myskills.json 时按 o 就地新建并创建目标目录）
 myskills link            # 按清单重建各 agent 目录的符号链接（清理孤儿/断链）
-myskills init [--skills a,b] # 在当前项目生成 .myskills.json（不覆盖已有文件）
+myskills init [--skills a,b] # 在项目 git 根生成 .myskills.json：项目级目标默认全开并创建对应目录（不覆盖已有文件）
 myskills status          # 写入 machines/<hostname>.json
 myskills sync            # pull --ff-only → link → status → 提交并推送清单（skills-manifest.json、agents.json）与状态
 myskills install <github-url> [--name n]   # 从 GitHub 安装技能入仓并推送（走 gh，支持 /tree/ref/subdir 集合仓子目录）
 myskills migrate         # 存量收敛 dry-run；加 --apply 执行
 ```
 
-`myskills` 可从任意目录运行：默认按命令安装位置定位中心仓库，也可用 `MYSKILLS_ROOT` 指定仓库根。`link` 在当前目录或其子目录向上找到 `.myskills.json` 时进入项目模式，把项目清单中的技能链接到项目内 agent 目录；`link --global` 强制按中心仓库的全局清单操作。项目级分发的目标 agent 与 `agents.json` 注册表相同，路径去掉 `~/` 前缀（如 `~/.claude/skills` → 项目内 `.claude/skills`），默认全部开启；`.myskills.json` 写了显式 `targets`（含空数组）则以它为准。项目级分发可先在项目根运行 `myskills init --skills skill-a,skill-b`，再在项目内任意子目录运行 `myskills link`；也可以在项目目录下直接进 TUI，勾选技能与切换目标 agent 都会写入 `.myskills.json`，`l` 走项目 link。
+`myskills` 可从任意目录运行：默认按命令安装位置定位中心仓库，也可用 `MYSKILLS_ROOT` 指定仓库根。`link` 在当前目录或其子目录向上找到 `.myskills.json` 时进入项目模式，把项目清单中的技能链接到项目内 agent 目录；`link --global` 强制按中心仓库的全局清单操作。项目级分发的目标 agent 与 `agents.json` 注册表相同，路径去掉 `~/` 前缀（如 `~/.claude/skills` → 项目内 `.claude/skills`），默认全部开启；`.myskills.json` 写了显式 `targets`（含空数组）则以它为准。目标目录不需要预先存在：`init`、TUI 按 `o` 建立项目级分发或重新开启某个目标、以及 `link` 都会自动创建（如 `.claude/skills`）。项目级分发可先在项目根运行 `myskills init --skills skill-a,skill-b`，再在项目内任意子目录运行 `myskills link`；也可以在项目目录下直接进 TUI——标题与面板常驻标出当前编辑的是用户级（`skills-manifest.json`）还是项目级（`.myskills.json`），项目里还没有清单时按 `o` 会新建（落在 git 根）并切进项目模式，勾选技能与切换目标 agent 都会写入 `.myskills.json`，`l` 走项目 link。
 
 没跑过 `npm link` 的环境用 `node manager/src/cli.ts <子命令>` 等价替代；TUI 对应 `node manager/src/tui.ts`。
 

@@ -48,13 +48,14 @@ myskills sync
 - `myskills sync` —— 拉取远程改动并重建链接（有更新就跑）
 - `myskills install <github-url>` —— 从 GitHub 装新技能（需 `gh` 已登录），其他机器 sync 即得
 - `myskills link` —— 只按清单重建符号链接
-- `myskills init [--skills a,b]` —— 在当前项目生成 `.myskills.json`，作为项目级分发清单
+- `myskills init [--skills a,b]` —— 在项目 git 根生成 `.myskills.json` 作为项目级分发清单，项目级目标目录（如 `.claude/skills`）不存在时自动创建
 - 项目级分发：在项目根运行 `myskills init`（可用 `--skills` 指定技能），再在项目内任意子目录运行 `myskills link`；如需操作中心仓库全局清单，使用 `myskills link --global`
+- 也可以直接进 TUI：界面常驻标出当前是用户级还是项目级，`o` 在两者间切换；项目还没有 `.myskills.json` 时按 `o` 就地新建（落 git 根）并创建目标目录
 - 所有命令都可从任意目录运行；必要时用 `MYSKILLS_ROOT=/path/to/my-skills` 指定中心仓库
 
 ## 注意
 
 - 不要手工在各 agent 的 skills 目录里建目录或链接，一律改 `skills-manifest.json` 后 `myskills link`（或在 TUI 里勾选后按 l）
-- 项目级分发只通过项目根 `.myskills.json` 的 `skills`/`targets` 配置，并用项目内 `myskills link` 建链
+- 项目级分发只通过项目根 `.myskills.json` 的 `skills`/`targets` 配置，并用项目内 `myskills link` 建链；目标目录由 init/link/TUI 自动创建，不要手工建
 - 首次 clone 较慢（历史里有约 435MB 的快照提交），属正常
 - 改了技能内容就当场 `git add && git commit && git push aliyun`，不要堆积

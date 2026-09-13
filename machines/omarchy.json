@@ -1,7 +1,7 @@
 {
   "host": "omarchy",
-  "updatedAt": "2026-09-10T15:26:34.441Z",
-  "sha": "80d48103e26ba686cfeffd9e0790c5504e691d57",
+  "updatedAt": "2026-09-13T05:16:35.890Z",
+  "sha": "0741926e0dd078cf5caa1a26936fbe8d78201fad",
   "branch": "main",
   "brokenLinks": 0,
   "agents": {
@@ -9,7 +9,7 @@
       "linked": 31
     },
     "claude": {
-      "linked": 19
+      "linked": 18
     },
     "cursor": {
       "skipped": true
@@ -18,10 +18,10 @@
       "linked": 28
     },
     "codex": {
-      "linked": 23
+      "linked": 22
     },
     "pi": {
-      "linked": 22
+      "linked": 20
     },
     "omp": {
       "skipped": true

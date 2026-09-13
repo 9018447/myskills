@@ -1,6 +1,6 @@
 {
   "host": "omarchy",
-  "updatedAt": "2026-09-13T05:16:35.890Z",
+  "updatedAt": "2026-09-13T16:56:30.745Z",
   "sha": "0741926e0dd078cf5caa1a26936fbe8d78201fad",
   "branch": "main",
   "brokenLinks": 0,
@@ -9,19 +9,19 @@
       "linked": 31
     },
     "claude": {
-      "linked": 18
+      "linked": 19
     },
     "cursor": {
       "skipped": true
     },
     "kimi-code": {
-      "linked": 28
+      "linked": 29
     },
     "codex": {
-      "linked": 22
+      "linked": 23
     },
     "pi": {
-      "linked": 20
+      "linked": 21
     },
     "omp": {
       "skipped": true

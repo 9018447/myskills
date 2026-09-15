@@ -21,7 +21,6 @@
       "myskills-bootstrap",
       "open-code-review",
       "open-code-review-delegate",
-      "orchestration",
       "resolving-merge-conflicts-zh",
       "session-reflection",
       "setup-matt-pocock-skills-zh",
@@ -35,7 +34,9 @@
     ],
     "claude": [
       "codebase-memory",
+      "crest-nci-cluster",
       "domain-modeling-zh",
+      "evolve-setup",
       "grill-with-docs-zh",
       "grilling-zh",
       "handoff-for-mattpocock",

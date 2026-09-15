@@ -1,0 +1,15 @@
+# CREST >= 3.0 NCI cluster-search input template
+# Run:  crest input_nci.toml --dry     (check settings first)
+#       crest input_nci.toml           (production run)
+
+input   = "struc.xyz"        # assembled aggregate, XYZ in Angstrom
+runtype = "nci-mtd"          # NCI mode: ellipsoid wall + specialized MTD
+threads = 24
+
+[calculation]
+[[calculation.level]]
+method = "gfn2"              # gfn2 (default) | gfn1 | gfn0 | gfnff
+# charge = 0                 # uncomment for charged clusters
+# uhf    = 0                 # uncomment for open-shell (Nalpha-Nbeta)
+# solvent = "alpb"           # implicit solvent: "alpb" or "gbsa"
+# solvent_solvent = "water"  # solvent name, e.g. water

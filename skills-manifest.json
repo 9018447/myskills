@@ -1,6 +1,7 @@
 {
   "agents": {
     "agents": [
+      "acpx",
       "agent-browser",
       "ask-matt-zh",
       "clapeyronjl-skill",
@@ -33,6 +34,7 @@
       "writing-for-agents-zh"
     ],
     "claude": [
+      "acpx",
       "codebase-memory",
       "crest-nci-cluster",
       "domain-modeling-zh",
@@ -74,6 +76,7 @@
       "wait-what-zh"
     ],
     "kimi-code": [
+      "acpx",
       "ask-matt-zh",
       "clapeyronjl-skill",
       "codebase-memory",
@@ -105,6 +108,7 @@
       "writing-for-agents-zh"
     ],
     "codex": [
+      "acpx",
       "ask-matt-zh",
       "clapeyronjl-skill",
       "diagnosing-bugs-zh",
@@ -130,6 +134,7 @@
       "writing-for-agents-zh"
     ],
     "pi": [
+      "acpx",
       "ask-matt-zh",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",

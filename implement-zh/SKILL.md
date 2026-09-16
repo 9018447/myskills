@@ -27,6 +27,14 @@ disable-model-invocation: true
 
 Tickets 原则上依次执行。每票单独使用 `/acpx` 开启新的 Agent 会话，一票一次，不要把多个 Tickets 堆进同一个会话，避免阻塞、上下文污染和上下文膨胀。
 
+## 派发与等待
+
+派发与收尾按 `/acpx` 的 **headless dispatch pattern** 执行（该节是派发机制的单一事实源）：
+
+- 每票先写派发 prompt 到文件（包含下述 6 点告知事项），再后台启动 acpx，日志落到文件。
+- **不阻塞轮询**：启动后结束当前回合，靠任务完成通知或日志里的 `[done] end_turn` 标记判断完成；查看进度用对日志文件的短非阻塞读取。
+- 看到 `[done] end_turn` 后，若 acpx 包装进程仍存活，按记录的 PID 清掉（用 `ps -p <pid>` 确认，不用会自匹配的 `pgrep -f` 模式），然后才进入复核环节。
+
 派发每个 Ticket 时，必须告诉实现 Agent：
 
 1. 当前整个任务的目标和主要矛盾；

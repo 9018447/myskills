@@ -9,6 +9,23 @@ Use `acpx` when another coding agent should inspect, implement, review, test, or
 
 `acpx` is a headless ACP client. Prefer it over PTY/terminal scraping when the target agent supports ACP.
 
+## Headless dispatch pattern (scripted / orchestrator use)
+
+When an orchestrator agent dispatches work to acpx, follow this pattern — the two failure modes it prevents are blocking waits and zombie wrappers:
+
+1. **Write the prompt to a file** and pass it with `-f`; never inline long prompts into shell quoting.
+2. **Launch in a background shell with a log file**, with an explicit idle TTL so the wrapper exits on its own:
+
+   ```bash
+   acpx --cwd <repo> --approve-all --ttl 60 --timeout 3600 <agent> exec -f prompt.md > /tmp/acpx-<label>.log 2>&1
+   ```
+
+   `--timeout` caps one prompt's wait; `--ttl` governs idle shutdown after completion. Both are needed — one does not imply the other.
+3. **Do not block-poll.** End the turn; act when the completion notification arrives (or the user pings). To check interim progress, `tail` the log file in a short non-blocking call.
+4. **Turn completion = the `[done] end_turn` marker** at the end of the log. That marker, not the background task's exit status, is the completion criterion: the acpx wrapper process can linger after the turn ends even past its TTL.
+5. **Reap the wrapper by PID.** Record the launcher PID (or find it once with `pgrep -af` when nothing else matches); when the marker is present and the process lives, `kill <pid>`. Never verify with `pgrep -f <pattern>` whose pattern appears in your own check command — it self-matches and reports a dead task as alive; confirm with `ps -p <pid>`.
+6. Read the delivered result from the tail of the log; `--format quiet` when only the final answer line is needed.
+
 ## Core usage
 
 ### One-shot task

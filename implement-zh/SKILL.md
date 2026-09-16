@@ -27,6 +27,8 @@ disable-model-invocation: true
 
 Tickets 原则上依次执行。每票单独使用 `/acpx` 开启新的 Agent 会话，一票一次，不要把多个 Tickets 堆进同一个会话，避免阻塞、上下文污染和上下文膨胀。
 
+指定AGENT额度用完/Agent不工作/未指定Agent时:按照此顺序分发 zcode -> kimi -> claude(工作时间)/dsh(非工作时间),非工作时间:下午18:00以后,凌晨8:00以前,即指派dsh必须查询时间,只有下午18:00以后才能分发dsh
+
 ## 派发与等待
 
 派发与收尾按 `/acpx` 的 **headless dispatch pattern** 执行（该节是派发机制的单一事实源）：

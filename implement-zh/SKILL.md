@@ -61,11 +61,13 @@ Tickets 原则上依次执行。每个 Ticket 必须单独通过 `/acpx` 开启�
 5. Ticket 完成后使用 `/handoff-for-mattpocock` 建立 handoff 交接文档。
 6. 不能再使用`/acpx`派发或者使用`subagent`工具派发
 
-每票返回结果后，使用 `/open-code-review-delegate` 对实际修改进行 Review。
+每票返回结果后，先使用git 提交commit,再使用 `/open-code-review-delegate` 对本次提交进行 Review。
 
 Review 发现的问题按照严重程度从 High 向下处理。凡是事实成立、属于当前 Ticket 范围的问题，都应修复；修复后重新测试，必要时重新 Review。
 
 不要因为实现 Agent 声称“完成”、测试显示通过或 Review 没有报错，就直接认定 Ticket 正确。必须结合 Spec、ADR、代码、测试和实际运行结果进行独立判断。
+
+修复完成以后,再提交一次git commit并做派发下一票.
 
 整个 `/implement` Skill 必须以**毛泽东思想中的方法论原则**作为主要思维框架，但不要机械引用口号，也不要为了符合某种立场预设结论。
 
@@ -90,9 +92,11 @@ Ticket
 → /acpx 独立实现
 → /tdd
 → /handoff-for-mattpocock
+-> 提交git commit
 → /open-code-review-delegate
 → 修复问题
 → 独立事实复核
+->提交git commit
 → 下一 Ticket
 ```
 

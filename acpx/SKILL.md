@@ -22,7 +22,9 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
 
    `--timeout` caps one prompt's wait; `--ttl` governs idle shutdown after completion. Both are needed — one does not imply the other.
 
-   **A process detached with `nohup ... &` from an ordinary foreground Bash call is NOT tracked: no completion notification will ever arrive.**
+   **A process detached with `nohup ... &` from an ordinary foreground Bash command is NOT tracked: no completion notification will ever arrive.**
+
+   **The two dispatch forms are mutually exclusive.** The `acpx <agent> exec -f prompt.md` form is for built-in agents only. Overlay agents dispatched via `acpx --agent '<command>' exec -f prompt.md` must NOT also carry a positional agent name before `exec` — writing `--agent 'zcode-acp-server' ... zcode exec -f ...` shifts parsing and fails with `error: unknown option '-f'`.
 
 4. **Verify within ~1 minute of launch that the task actually runs as a harness-tracked background task** (the launch call returned a background task ID, and a short check shows the process alive with the log advancing). If the dispatch accidentally went out detached (`nohup ... &`), catch it HERE and fix immediately — attach a waiter via the harness's background mechanism (`bash -c 'while kill -0 <pid> 2>/dev/null; do sleep 15; done'`, `run_in_background: true`; pure push on exit, the sleep loop lives in the subprocess) or relaunch tracked. With tracking confirmed, no ETA reminders, one-shots, or polling are needed.
 5. **Do not block-poll.** End the turn; act when the completion notification arrives (tracked background task, or its waiter), or the user pings. To check interim progress, `tail` the log file in a short non-blocking call.
@@ -113,7 +115,13 @@ For ZCode (via the `zcode-acp` bridge):
 acpx --agent 'zcode-acp-server' exec '<prompt>'
 ```
 
-ZCode drives the real `zcode app-server`. The `zcode` CLI must be discoverable; if it is only bundled inside the desktop app, set `ZCODE_BIN` to its `zcode.cjs` entry (e.g. `ZCODE_BIN=/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs`). Credentials live in `~/.zcode/v2/config.json`; no API key is passed on the acpx side.
+ZCode drives the real `zcode app-server`. The `zcode` CLI must be discoverable; if it is only bundled inside the desktop app, set `ZCODE_BIN` to its `zcode.cjs` entry. On Linux, the desktop app mounts itself under a versioned `/tmp` mount whose name changes per launch — discover it with `ls /tmp/.mount_ZCode-*/resources/glm/zcode.cjs` (macOS example: `ZCODE_BIN=/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs`). Credentials live in `~/.zcode/v2/config.json`; no API key is passed on the acpx side.
+
+Full headless-dispatch one-liner for zcode (no positional agent name; run as a tracked background task):
+
+```bash
+ZCODE_BIN=$(ls /tmp/.mount_ZCode-*/resources/glm/zcode.cjs | head -1) acpx --cwd <repo> --approve-all --ttl 60 --timeout <budget> --agent 'zcode-acp-server' exec -f prompt.md > /tmp/acpx-<label>.log 2>&1
+```
 
 For Oh My Pi (omp) — only when the user explicitly names omp:
 

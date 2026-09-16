@@ -1,6 +1,6 @@
 ---
 name: acpx
-description: Use acpx as a headless ACP CLI for agent-to-agent communication, including installed-agent inspection, prompt/exec/sessions workflows, session scoping, queueing, permissions, output formats, system-prompt overrides, multi-agent flows authored with defineFlow/decision/decisionEdge, and DeepSeek Harness (dsh), ZCode (zcode-acp bridge), and Oh My Pi (omp) ACP support via the raw agent escape hatch.
+description: Use acpx as a headless ACP CLI for agent-to-agent communication, including installed-agent inspection, prompt/exec/sessions workflows, session scoping, queueing, permissions, output formats, system-prompt overrides, multi-agent flows authored with defineFlow/decision/decisionEdge. Built-in agents include pi. Overlay commands (dsh, zcode-acp bridge, omp) are only for users who name them explicitly.
 ---
 
 # acpx
@@ -14,16 +14,20 @@ Use `acpx` when another coding agent should inspect, implement, review, test, or
 When an orchestrator agent dispatches work to acpx, follow this pattern — the two failure modes it prevents are blocking waits and zombie wrappers:
 
 1. **Write the prompt to a file** and pass it with `-f`; never inline long prompts into shell quoting.
-2. **Launch in a background shell with a log file**, with an explicit idle TTL so the wrapper exits on its own:
+2. **Launch through the harness's own background mechanism (e.g. the Bash tool's `run_in_background: true`) with a log file**, with an explicit idle TTL so the wrapper exits on its own:
 
    ```bash
    acpx --cwd <repo> --approve-all --ttl 60 --timeout 3600 <agent> exec -f prompt.md > /tmp/acpx-<label>.log 2>&1
    ```
 
    `--timeout` caps one prompt's wait; `--ttl` governs idle shutdown after completion. Both are needed — one does not imply the other.
-3. **Do not block-poll.** End the turn; act when the completion notification arrives (or the user pings). To check interim progress, `tail` the log file in a short non-blocking call.
-4. **Turn completion = the `[done] end_turn` marker** at the end of the log. That marker, not the background task's exit status, is the completion criterion: the acpx wrapper process can linger after the turn ends even past its TTL.
-5. **Reap the wrapper by PID.** Record the launcher PID (or find it once with `pgrep -af` when nothing else matches); when the marker is present and the process lives, `kill <pid>`. Never verify with `pgrep -f <pattern>` whose pattern appears in your own check command — it self-matches and reports a dead task as alive; confirm with `ps -p <pid>`.
+
+   **A process detached with `nohup ... &` from an ordinary foreground Bash call is NOT tracked: no completion notification will ever arrive.**
+
+4. **Verify within ~1 minute of launch that the task actually runs as a harness-tracked background task** (the launch call returned a background task ID, and a short check shows the process alive with the log advancing). If the dispatch accidentally went out detached (`nohup ... &`), catch it HERE and fix immediately — attach a waiter via the harness's background mechanism (`bash -c 'while kill -0 <pid> 2>/dev/null; do sleep 15; done'`, `run_in_background: true`; pure push on exit, the sleep loop lives in the subprocess) or relaunch tracked. With tracking confirmed, no ETA reminders, one-shots, or polling are needed.
+5. **Do not block-poll.** End the turn; act when the completion notification arrives (tracked background task, or its waiter), or the user pings. To check interim progress, `tail` the log file in a short non-blocking call.
+6. **Turn completion = the `[done] end_turn` marker** at the end of the log. That marker, not the background task's exit status, is the completion criterion: the acpx wrapper process can linger after the turn ends even past its TTL.
+7. **Reap the wrapper by PID.** Record the launcher PID (or find it once with `pgrep -af` when nothing else matches); when the marker is present and the process lives, `kill <pid>`. Never verify with `pgrep -f <pattern>` whose pattern appears in your own check command — it self-matches and reports a dead task as alive; confirm with `ps -p <pid>`.
 6. Read the delivered result from the tail of the log; `--format quiet` when only the final answer line is needed.
 
 ## Core usage
@@ -81,7 +85,15 @@ cursor
 copilot
 droid
 opencode
+pi
 ```
+
+**A bare agent name the user gives means the built-in `acpx <name>` form.** Do not
+map a bare name onto an overlay/bridge command from this file — if the user says
+"pi", dispatch `acpx pi ...`, never `--agent 'omp acp'`. Overlays below are only
+for commands the user names explicitly as such. Verify a bare name is built-in
+with `acpx --help` before dispatching; if it is not listed, ask the user rather
+than substituting a lookalike overlay.
 
 For another ACP-compatible command, use:
 
@@ -103,7 +115,7 @@ acpx --agent 'zcode-acp-server' exec '<prompt>'
 
 ZCode drives the real `zcode app-server`. The `zcode` CLI must be discoverable; if it is only bundled inside the desktop app, set `ZCODE_BIN` to its `zcode.cjs` entry (e.g. `ZCODE_BIN=/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs`). Credentials live in `~/.zcode/v2/config.json`; no API key is passed on the acpx side.
 
-For Oh My Pi (omp):
+For Oh My Pi (omp) — only when the user explicitly names omp:
 
 ```bash
 acpx --agent 'omp acp' exec '<prompt>'

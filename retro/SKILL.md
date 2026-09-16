@@ -8,7 +8,7 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 
 ## Steps
 
-1. Call the Skill tool with `writing-for-agents` for the writing style guide.
+1. Call the Skill tool with `writing-for-agents-zh` for the writing style guide. (If that name is not in the available-skills list, look for an installed variant named `writing-for-agents` and use it; if neither exists, proceed without it — the retro's own categories below carry the substance.)
 
 2. Read the primary sources for the session the user specifies. This may mean searching through session logs on this machine. If the user doesn't specify a session, default to the current one.
 

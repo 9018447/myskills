@@ -17,8 +17,10 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
 2. **Launch through the harness's own background mechanism (e.g. the Bash tool's `run_in_background: true`) with a log file**, with an explicit idle TTL so the wrapper exits on its own:
 
    ```bash
-   acpx --cwd <repo> --approve-all --ttl 60 --timeout 3600 <agent> exec -f prompt.md > /tmp/acpx-<label>.log 2>&1
+   acpx --cwd <repo> --approve-all --ttl 60 --timeout 3600 <agent> exec -f prompt.md > .agent-results/<agentname>-<label>.log 2>&1
    ```
+
+   Logs go to `.agent-results/` (relative to the launch directory), not `/tmp/` — create the directory if it is missing: `mkdir -p .agent-results`.
 
    `--timeout` caps one prompt's wait; `--ttl` governs idle shutdown after completion. Both are needed — one does not imply the other.
 
@@ -46,6 +48,20 @@ Example:
 
 ```bash
 acpx codex exec 'review the current changes'
+```
+
+### Codex proxy
+
+When dispatching to `codex` and network access needs to go through a proxy, set the proxy env vars on the acpx launch (port `7890`):
+
+```bash
+HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 acpx codex exec '<prompt>'
+```
+
+Scope the vars to the single command as above — do not export them in the shell. When the task is done (or if the dispatch was persistent), clear them so later work is unaffected:
+
+```bash
+unset HTTP_PROXY HTTPS_PROXY
 ```
 
 ### Persistent session
@@ -120,7 +136,7 @@ ZCode drives the real `zcode app-server`. The `zcode` CLI must be discoverable; 
 Full headless-dispatch one-liner for zcode (no positional agent name; run as a tracked background task):
 
 ```bash
-ZCODE_BIN=$(ls /tmp/.mount_ZCode-*/resources/glm/zcode.cjs | head -1) acpx --cwd <repo> --approve-all --ttl 60 --timeout <budget> --agent 'zcode-acp-server' exec -f prompt.md > /tmp/acpx-<label>.log 2>&1
+ZCODE_BIN=$(ls /tmp/.mount_ZCode-*/resources/glm/zcode.cjs | head -1) acpx --cwd <repo> --approve-all --ttl 60 --timeout <budget> --agent 'zcode-acp-server' exec -f prompt.md > .agent-results/zcode-<label>.log 2>&1
 ```
 
 For Oh My Pi (omp) — only when the user explicitly names omp:

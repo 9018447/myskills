@@ -65,7 +65,8 @@
       "wait-what-zh",
       "wayfinder-zh",
       "wizard-zh",
-      "writing-for-agents-zh"
+      "writing-for-agents-zh",
+      "pueue"
     ],
     "cursor": [
       "codebase-memory",
@@ -212,7 +213,8 @@
       "to-tickets-zh",
       "wait-what-zh",
       "wayfinder-zh",
-      "writing-for-agents-zh"
+      "writing-for-agents-zh",
+      "pueue"
     ]
   },
   "presets": {

@@ -54,6 +54,15 @@ If both markers already exist, replace only the content between them.
 
 If the markers do not exist, append the managed section to `AGENTS.md`.
 
+The managed section carries exactly three things: the absolute handoff path, a
+one-line read instruction, and a `pointer updated <date>` line.  **No state
+claims inside the pointer** — HEAD hashes, ticket statuses and "latest:"
+summaries rot within a session and mislead the next agent; the handoff file
+owns all state.  After replacing the section, reread it and confirm the path
+matches the file just written before declaring completion (2026-09-18: a
+stale pointer summarised two-generations-old ticket state and cost the next
+session a re-orientation round).
+
 Do not modify any other content in `AGENTS.md`.
 
 If `AGENTS.md` does not exist, create it containing only the managed handoff section.

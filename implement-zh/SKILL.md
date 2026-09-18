@@ -21,7 +21,7 @@ disable-model-invocation: true
 Agent 选择规则：
 
 1. 用户明确指定 → 使用用户指定；
-2. 用户未指定，但票面标注 `含 N 次真实运行` 或预计真实运行总时长 ≥20 分钟 → 默认 `claude`；
+2. 用户未指定，但票面标注 `含 N 次真实运行` 或预计真实运行总时长 ≥20 分钟 → 默认 `codex`, `model` 指定`gpt-5.6-luna`；
 3. 其他情况用户未指定 → 必须询问，不得自行选择。
 
 当前 Agent 只有在额度耗尽、不可用、启动/执行失败时才进入候补链。代码有 bug、测试失败或 Review 发现问题不属于 Agent 不可用，应继续本票修复。
@@ -29,13 +29,15 @@ Agent 选择规则：
 候补链：
 
 ```text
-08:00–18:00：kimi → claude
-18:00–08:00：zcode → claude → dsh
+08:00–18:00：kimi → omp
+18:00–08:00：zcode → omp → dsh
 ```
 
 调用 `zcode` 或 `dsh` 前必须查询当前真实时间，不得依赖上下文时间推断。
 
 如果运行预算超过当前执行环境允许的上限，停止并报告，不得擅自拆 Ticket 或无限增大 timeout。
+
+
 
 ## 一票一闭环
 
@@ -64,10 +66,18 @@ Tickets 原则上依次执行。每个 Ticket 单独开启一个新的 `/acpx` �
 * 派发 Prompt 写入文件后后台启动，日志写入文件；
 * `--timeout` 按 Ticket 运行预算设置；
 * 不阻塞轮询，只通过任务完成通知或日志中的 `[done] end_turn` 判断结束；
+* **完成判据 = `[done] end_turn` 且日志尾部无错误块**：`AccountQuotaExceeded`、`RUNTIME:`、`error` 等出现时标记是假完成——agent 视为不可用，按候补链降级重派，并先审计盘上现状保留成果（半成品不是交付）；
 * 查看进度仅短暂读取日志；
 * `[done] end_turn` 后若包装进程仍存在，用已记录 PID 经 `ps -p <pid>` 确认后清理，不用 `pgrep -f`。
+* 进程存活核查一律用 `pgrep -fa 'patter[n]'`（尾字符加括号防自匹配）或直读 `/proc/<pid>/cmdline`；本环境 `ps` 输出可能被 rtk 包装丢 CMD 列，禁止 `ps aux | grep` 判存活——2026-09-18 曾因此误判存活进程已死。
 
 任务中断后续作时，先审计盘上现状，保留符合 Ticket 的已有成果，再补完剩余验收，不得默认推倒重来。handoff 中记录中断和续作事实。
+
+### 运行票派发
+
+票面标注 `含 N 次真实运行` 或预计真实运行总时长 ≥20 分钟 → 默认 `codex`, `model` 指定`gpt-5.6-luna`； 
+
+* 派发运行票时 prompts必须告诉实现agent(默认为codex gpt-5.6-lua) 使用`/pueue`skill 执行真实运行任务-> 后台运行,避免codex shell终止导致任务停止
 
 ## 固定闭环
 
@@ -92,6 +102,8 @@ Ticket
 Agent 交付后直接提交第一次 commit，不在 commit 前插入额外实现步骤。
 
 Review 中凡是事实成立且属于当前 Ticket 范围的问题都应修复；范围外问题记录但不顺手扩展本票。
+
+纯文档 / 纯 tracker / 纯 markdown 提交（staged diff 无代码路径）可豁免 `/open-code-review-delegate` 轮；豁免必须在 commit message 或会话记录中显式声明，不得静默跳过。
 
 修复后重新验证受影响部分。有修复才提交第二次 commit，不创建空 commit。
 

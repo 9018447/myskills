@@ -42,6 +42,7 @@
     ],
     "claude": [
       "acpx",
+      "cc-send",
       "codebase-memory",
       "crest-nci-cluster",
       "domain-modeling-zh",
@@ -97,6 +98,7 @@
     "kimi-code": [
       "acpx",
       "ask-matt-zh",
+      "cc-send",
       "clapeyronjl-skill",
       "codebase-memory",
       "diagnosing-bugs-zh",
@@ -136,6 +138,7 @@
     "codex": [
       "acpx",
       "ask-matt-zh",
+      "cc-send",
       "clapeyronjl-skill",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",
@@ -199,6 +202,7 @@
     ],
     "omp": [
       "ask-matt-zh",
+      "cc-send",
       "diagnosing-bugs-zh",
       "domain-modeling-zh",
       "graph-risk-review",

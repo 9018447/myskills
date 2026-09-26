@@ -51,6 +51,17 @@
       "grilling-zh",
       "handoff-for-mattpocock",
       "implement-zh",
+      "jev",
+      "jev-code-review",
+      "jev-context",
+      "jev-documents",
+      "jev-find-code",
+      "jev-redteam",
+      "jev-route",
+      "jev-setup",
+      "jev-simulation",
+      "jev-triage",
+      "jev-ui",
       "lavish",
       "myskills-bootstrap",
       "open-code-review-delegate",
@@ -92,7 +103,8 @@
       "to-spec-zh",
       "to-tickets-zh",
       "wait-what-zh",
-      "wayfinder-zh"
+      "wayfinder-zh",
+      "writing-for-agents-zh"
     ],
     "kimi-code": [
       "acpx",

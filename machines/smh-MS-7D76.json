@@ -1,18 +1,18 @@
 {
   "host": "smh-MS-7D76",
-  "updatedAt": "2026-09-26T06:40:32.325Z",
-  "sha": "f67cd2008f712b14e3734d2add753fdc39b977be",
+  "updatedAt": "2026-10-01T08:33:18.450Z",
+  "sha": "e0485dcfe586bb726f07321611723759d68dfc59",
   "branch": "main",
   "brokenLinks": 0,
   "agents": {
     "agents": {
-      "skipped": true
+      "linked": 38
     },
     "claude": {
-      "linked": 41
+      "linked": 43
     },
     "cursor": {
-      "linked": 21
+      "linked": 22
     },
     "kimi-code": {
       "linked": 37
@@ -21,7 +21,7 @@
       "linked": 31
     },
     "pi": {
-      "linked": 28
+      "linked": 29
     },
     "omp": {
       "linked": 31

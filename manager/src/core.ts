@@ -40,7 +40,11 @@ export function findRepoRoot(): string {
 }
 
 export function readJson<T>(path: string): T {
-  return JSON.parse(readFileSync(path, 'utf8')) as T;
+  try {
+    return JSON.parse(readFileSync(path, 'utf8')) as T;
+  } catch (e) {
+    throw new Error(`读取 ${path} 失败: ${(e as Error).message}`);
+  }
 }
 
 export function git(repoRoot: string, args: string[]): string {
@@ -159,7 +163,12 @@ function syncSkillsIntoDir(label: string, skillsDir: string, wanted: string[], r
       continue;
     }
     const linkPath = join(skillsDir, name);
-    rmSync(linkPath, { force: true, recursive: false });
+    if (existsSync(linkPath) && lstatSync(linkPath).isDirectory() && !lstatSync(linkPath).isSymbolicLink()) {
+      // 真实目录挡路是 migrate 的职责（conflict 需人工取舍），跳过并提示，不让整个 link 中断
+      report.lines.push(`跳过 ${label}/${name}（真实目录挡路，先跑 myskills migrate --apply）`);
+      continue;
+    }
+    rmSync(linkPath, { force: true });
     symlinkSync(target, linkPath, 'dir');
     report.lines.push(`链接 ${label}/${name}`);
   }

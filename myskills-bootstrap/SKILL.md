@@ -17,10 +17,18 @@ description: 在新机器上初始化 myskills 技能分发体系：克隆中心
 
 ## 初始化步骤
 
+一条命令（推荐）：
+
+```bash
+git clone git@codeup.aliyun.com:69b3a6855523c716219ff9a9/myskills.git ~/myskills && ~/myskills/bootstrap.sh
+```
+
+脚本做的事 = 下面手动步骤 2–4；仓库固定放 `~/myskills`：
+
 ```bash
 # 1. 克隆中心仓库
-git clone git@codeup.aliyun.com:69b3a6855523c716219ff9a9/myskills.git ~/my-skills
-cd ~/my-skills
+git clone git@codeup.aliyun.com:69b3a6855523c716219ff9a9/myskills.git ~/myskills
+cd ~/myskills
 
 # 2. 注册全局命令（以后直接敲 myskills）
 cd manager && npm install && npm link && cd ..

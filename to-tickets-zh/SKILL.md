@@ -2,7 +2,7 @@
 name: to-tickets
 description: 将计划、规范或当前对话拆分为一组 tracer-bullet ticket，每个 ticket 声明其阻塞边（blocking edges），发布到已配置的跟踪器——本地文件中每个 ticket 一个文件以文本表示边，真实跟踪器上以原生阻塞链接表示。
 tags: [user]
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # 拆分为 Ticket

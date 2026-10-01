@@ -7,6 +7,10 @@ description: 用 pueue 把长任务/批量任务丢进后台队列：不占当�
 
 pueue = 后台守护进程 + 命令队列。`pueue add` 立即返回，任务由 `pueued` 在后台执行，输出落盘、随时可查。
 
+**核心用途（2026-09-27 重申设计意图）**：运行票里的真实运行任务（benchmark、批量求解等长命令）**必须走 pueue**——派发 agent 的进程被杀/会话中断时，已进队的运行任务不受连坐，继续跑完。这是它相对 `run_in_background` 的不可替代之处：后者的任务挂在 agent 自己的进程树上，agent 死任务也死。
+
+**例外（2026-09-27 实测）**：交互式 agent 进程（pi、经 pi 的 codex 派单）**不要放进 pueue**——同一命令直跑 9 秒成功，pueue 里 120 秒零输出、strace 零网络连接，静默卡死在启动阶段（根因未查）。agent 的**派发**走 acpx，不走 pueue。
+
 ## 已验证的事实（pueue 4.0.4 实测）
 
 - 命令**经系统 shell 执行**，`&&`、重定向、管道可用；整条命令用单引号包裹避免转义问题：`pueue add 'cmd1 && cmd2'`
@@ -79,7 +83,7 @@ pueue clean -g <组> && pueue group remove <组>
 
 ## 禁止事项
 
-- **禁止 `pueue reset`**：会杀掉并清空用户所有任务
+- **禁止把 pi / 交互式 agent 进程提交进 pueue**（启动卡死，见顶部例外）；**禁止 `pueue reset`**：会杀掉并清空用户所有任务
 - 禁止 kill / remove / restart 不是自己提交的任务 id
 - 用户的 default 组和既有组（如有）只读不动；自己只用第 2 步建的组
 - `wait` 超时后不要盲目加时长重试：先 `pueue status` 看任务是在跑、排队还是卡死，再决定

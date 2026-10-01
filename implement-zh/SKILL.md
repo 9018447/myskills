@@ -20,8 +20,8 @@ disable-model-invocation: true
 
 Agent 选择规则：
 
-1. 用户明确指定 → 使用用户指定；
-2. 用户未指定，但票面标注 `含 N 次真实运行` 或预计真实运行总时长 ≥20 分钟 → 默认 `codex`, `model` 指定`gpt-5.6-luna`；
+1. 用户明确指定 → 离线票使用用户指定；
+2. 真实运行票一律默认 `codex`, `model` 指定`gpt-6-luna`；
 3. 其他情况用户未指定 → 必须询问，不得自行选择。
 
 当前 Agent 只有在额度耗尽、不可用、启动/执行失败时才进入候补链。代码有 bug、测试失败或 Review 发现问题不属于 Agent 不可用，应继续本票修复。
@@ -29,15 +29,8 @@ Agent 选择规则：
 候补链：
 
 ```text
-08:00–18:00：kimi → omp
-18:00–08:00：zcode → omp → dsh
+zcode -> kimi -> claude -> dsh
 ```
-
-调用 `zcode` 或 `dsh` 前必须查询当前真实时间，不得依赖上下文时间推断。
-
-如果运行预算超过当前执行环境允许的上限，停止并报告，不得擅自拆 Ticket 或无限增大 timeout。
-
-
 
 ## 一票一闭环
 
@@ -45,7 +38,7 @@ Tickets 原则上依次执行。每个 Ticket 单独开启一个新的 `/acpx` �
 
 当前 Ticket 未完成闭环，不得派发下一 Ticket。
 
-派发前记录当前 `HEAD` 和 `git status --short`，用于区分本票改动与已有未提交内容。不得顺手提交无关改动。
+派发前记录当前 `HEAD` 和 `git status --short`，用于区分本票改动与已有未提交内容。不得顺手提交无关改动。基线 status 拿不到时（工具被拦、无权限），显式记录"status 未知"，并请用户或实现 agent 补一次真实 status——不得以"刚提交过所以干净"推断（2026-09-26 曾因推断基线漏掉 39 个已删跟踪文件）。
 
 派发 Prompt 必须告诉实现 Agent：
 
@@ -55,7 +48,9 @@ Tickets 原则上依次执行。每个 Ticket 单独开启一个新的 `/acpx` �
 4. 使用 `/tdd` 完成实现；
 5. 不扩大范围，不做无关重构和过度设计；
 6. 完成后使用 `/handoff-for-mattpocock`；
-7. 不得再次使用 `/acpx` 或 `subagent` 向下派发。
+7. 不得再次使用 `/acpx` 或 `subagent` 向下派发；
+8. 不跑 code-review（`/jev-code-review`、`ocr` `/code-review` 命令都不执行）——jev 评审轮由编排者在其提交后进行；
+9. 提示词中的文件路径必须先在盘上验证存在（ls/grep）；验证不了就让实现 agent 自行定位，不得断言未验证的路径（2026-09-26 票 22 提示词写错 CLI 路径，靠 agent 自行 glob 纠正）。
 
 如果 Spec、ADR、Ticket 存在无法解释的实质冲突，停止本票并报告，不得自行改写设计。
 
@@ -64,7 +59,8 @@ Tickets 原则上依次执行。每个 Ticket 单独开启一个新的 `/acpx` �
 按 `/acpx` headless dispatch pattern 执行：
 
 * 派发 Prompt 写入文件后后台启动，日志写入文件；
-* `--timeout` 按 Ticket 运行预算设置；
+* **不设 `--timeout`**（总时限会杀死仍在健康工作的 agent——2026-09-30 票 04 codex 即被
+  4h 总时限截断）。会话活性由 `--ttl`（空闲时限，默认 300s，长票传 1800+）与日志监视兜底；
 * 不阻塞轮询，只通过任务完成通知或日志中的 `[done] end_turn` 判断结束；
 * **完成判据 = `[done] end_turn` 且日志尾部无错误块**：`AccountQuotaExceeded`、`RUNTIME:`、`error` 等出现时标记是假完成——agent 视为不可用，按候补链降级重派，并先审计盘上现状保留成果（半成品不是交付）；
 * 查看进度仅短暂读取日志；
@@ -73,11 +69,54 @@ Tickets 原则上依次执行。每个 Ticket 单独开启一个新的 `/acpx` �
 
 任务中断后续作时，先审计盘上现状，保留符合 Ticket 的已有成果，再补完剩余验收，不得默认推倒重来。handoff 中记录中断和续作事实。
 
+**续作分工（2026-09-30 票 04 定案）**：预算耗尽/中断后的续作，编排者只做审计、
+环境排障、冻结成果清点；票内实现、长计算、数据回填、提交一律通过**新的派发**回到
+实现 agent。编排者不得以"上下文在手"为由自行实现——2026-09-30 票 04 编排者接手
+实现与计算后被用户纠正。
+
+### zcode 派发前置（2026-09-23 排障定案）
+
+zcode（overlay `zcode-acp-server`）派发前必须过 preflight，三个已踩过的失败模式：
+AppImage 没开（backend dead）、mount 点每次启动都变、`zcode` 不在 PATH。
+
+1. 派发前跑 `~/.claude/scripts/zcode-preflight.sh`：确保 app 存活（不在则以
+   `DISPLAY=:0` 拉起 AppImage）、glob 当前 mount、验证 `.cjs --version` 可执行；
+2. 派发命令显式带 `ZCODE_BIN=<脚本输出>`（如 `ZCODE_BIN=$(~/.claude/scripts/zcode-preflight.sh)`）；
+3. **每次派发重新 glob**，禁止复用上一次的 mount 路径；
+4. 日志目录 `mkdir -p .agent-results` 必须在**前台独立完成**，不得与派发命令同
+   compound 甩后台——2026-09-23 曾因行尾 `&` 让 mkdir 竞态失败、日志重定向直接报错。
+
 ### 运行票派发
 
-票面标注 `含 N 次真实运行` 或预计真实运行总时长 ≥20 分钟 → 默认 `codex`, `model` 指定`gpt-5.6-luna`； 
+票面标注 `含 N 次真实运行` 或预计真实运行总时长 ≥20 分钟 → 默认 `codex`, `model` 指定`gpt-6-luna`； 
 
-* 派发运行票时 prompts必须告诉实现agent(默认为codex gpt-5.6-lua) 使用`/pueue`skill 执行真实运行任务-> 后台运行,避免codex shell终止导致任务停止
+* 派发运行票时 prompts 必须告诉实现 agent（默认 codex gpt-6-luna）用 `/pueue` skill 执行**票内真实运行任务**——运行任务进 pueue 后台跑，agent 进程被杀/会话中断不会连坐运行任务（这是 pueue 的设计用途，勿用 run_in_background 替代）。pueue 可能不在 agent shell 的 PATH 里——用 `which pueue` 定位（通常 `~/.cargo/bin/pueue`），拿到路径即可用。
+* 边界（2026-09-27 定案）：进 pueue 的是**运行任务**（julia 跑 benchmark、批量求解等），不是 **agent 进程本身**——pi/交互式 agent 在 pueue 环境下启动会静默卡死；agent 的派发走 `/acpx`，两者不可混。
+
+### 离线票内长求解的启动纪律（2026-09-29 定案；2026-09-30 按"去 timeout + 证据判据"修正）
+
+离线票内的长计算（julia 求解等数分钟到数小时的运行）按以下方式启动：
+
+1. 允许的启动方式：**pueue**、**tmux 分离会话**、**受追踪后台任务**。禁止裸 nohup、
+   setsid（2026-09-29 静默死亡）。**不设 `timeout`**——盲限时杀死的都是健康计算
+   （2026-09-30 codex 的 3h UNIFAC 即被 timeout 杀在中途）；失控由停摆监视判据处置（第 5 条）；
+2. **pueue 启动前提**：确认没有其他 julia 进程在跑（孤儿 julia 持预编译锁会让新任务
+   0 输出挂死——2026-09-29 任务 17 即此形态）；
+3. **单写者日志**：同一日志文件禁止两个进程同时写；
+4. **长运行脚本必须增量落盘**：每阶段完成即把结果写盘/打印（而非只在结尾输出）——
+   任何中断只损失时间不损失成果（2026-09-30 定案）；脚本内辅助打印函数必须在首次
+   调用前定义；
+5. **失控判据 = 证据组合，不设盲限时**：阶段打印停摆超过该阶段历史耗时的 2 倍、
+   或加载窗口（2–8 分钟）内零输出、或精确匹配的 julia 本体 CPU 时间为零 → 唤醒
+   编排者凭证据处置；单条证据不杀进程。**前置事实（2026-09-30 铁证）：Julia 的
+   stderr 重定向到文件是块缓冲，运行中"0 字节"读数无意义（打印堆在缓冲区、退出才
+   刷出）**——脚本必须每条进度打印后显式 `flush(stderr)`，或只以 `flush(stdout)`
+   的结果行作为进度信号；未 flush 的进程一律不得据"零输出"判死；
+6. **进程体检必须精确匹配 julia 可执行路径**（`pgrep -f 'bin/julia.*<脚本名>'`）——
+   `timeout`/`sh -c` 包装进程与 julia 同含脚本名、天生 0 CPU，读它会得到假挂死
+   （2026-09-30 三次误判、误杀健康进程皆因此）；
+7. Julia/MTK 冷加载 2–8 分钟属正常，勿据此判死；长计算放在会话重启也不受影响的层
+   （pueue/tmux），等待用监视器盯日志关键字，不盯进程。
 
 ## 固定闭环
 
@@ -90,7 +129,7 @@ Ticket
 → Agent 跑绿本票要求的检查
 → /handoff-for-mattpocock
 → git commit
-→ /open-code-review-delegate
+→ 编排者跑 /jev-code-review
 → 独立事实核验
 → 修复有效问题
 → 定向测试
@@ -99,13 +138,16 @@ Ticket
 → 下一 Ticket
 ```
 
-Agent 交付后直接提交第一次 commit，不在 commit 前插入额外实现步骤。
+闭环中的 `git commit` 由实现 agent 在其会话内完成：显式路径 add，禁止 `git add -A` / `git add .`（仓库常有未跟踪杂项）。编排者的 git 被 worktree 守卫或权限拦截时不得代提交，只做核验与 jev 评审（2026-09-26 定案：本机 worktree 会话里编排者的 git 写操作全部被 rtk 拦截，实现 agent 提交是唯一可行分工）。
 
-Review 中凡是事实成立且属于当前 Ticket 范围的问题都应修复；范围外问题记录但不顺手扩展本票。
+Agent 交付后跑一轮 `/jev-code-review`：把提交 diff、验收标准、测试回执（真实运行日志摘录）打包成请求，经 `jev-decide decide <req.json> --provider openrouter` 调用（OPENROUTER_API_KEY 在环境即用——jev 是 OpenRouter 禁用规则的豁免项；无 key 时按 `/jev-code-review` 的 B 路线用当前 agent 模拟，显式标注非真 Jev）。退出码 0=通过；2=含 needs_review 项，由编排者用确定性证据解决并在会话记录里写明裁定；1=错误。Review 中凡是事实成立且属于当前 Ticket 范围的问题都应修复；范围外问题记录但不顺手扩展本票。Jev 判定本身不是缺陷证明，每条 findings 仍须落盘验证。
 
-纯文档 / 纯 tracker / 纯 markdown 提交（staged diff 无代码路径）可豁免 `/open-code-review-delegate` 轮；豁免必须在 commit message 或会话记录中显式声明，不得静默跳过。
+纯文档 / 纯 tracker / 纯 markdown 提交（staged diff 无代码路径）可豁免 `/jev-code-review` 轮；豁免必须在 commit message 或会话记录中显式声明，不得静默跳过。
 
 修复后重新验证受影响部分。有修复才提交第二次 commit，不创建空 commit。
+
+编排者的 jev 评审修复无法自行提交时（工具拦截/无权限），作为下一票派发提示词的**第 0 步**落独立提交（`票 N-1 jev 评审修复: <一句话>`），不与下一票改动混——2026-09-26 票 22 的 docstring 修复即按此路径落地。同一位置的 Low 级发现**第二次复发**时，编排者直接自修（Edit），仍随下一票第 0 步独立提交，不再递回实现 agent——2026-09-26 hanna_state 文档串 Low 连续两票复发后改此法。
+
 
 ## 事实核验
 
@@ -120,6 +162,8 @@ Agent 声称的关键测试/运行结果
 ```
 
 必要时检查 Spec、ADR、日志、测试、生成物和 handoff。自述与盘上证据冲突时，以盘上证据为准。
+
+编排者无法跑 `git diff` / `git show` 时（worktree 守卫拦截），关键 diff 以「直读文件 + 对照派发前记录的基线」替代——前提是基线已在派发前记录（见一票一闭环的基线条款）。
 
 实现 Agent 负责把 `pnpm run check` 或项目等价检查跑绿。编排者默认不重复跑完整 check；只有结果可疑、发生修复、缺少验收证据或 Ticket 明确要求时才定向复跑。
 

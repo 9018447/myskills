@@ -26,9 +26,9 @@ becomes:
 
 Save the handoff outside the workspace at:
 
-`<temp>/agent-handoffs/<project-id>/handoff.md`
+`<temp>/agent-handoffs/<project-id>/handoff-NNN.md`
 
-Use the operating system's temporary directory. Create the required directories if they do not already exist. Overwrite the previous handoff for the same project.
+Use the operating system's temporary directory. Create the required directories if they do not already exist. Never overwrite a previous handoff: each handoff is a new file numbered one higher than the highest existing `handoff-*.md` in the same project directory, zero-padded to three digits (first handoff is `handoff-001.md`). The sequence preserves handoff history per project; the `AGENTS.md` pointer below always points at the newest file.
 
 Include the absolute project root near the top of the handoff.
 

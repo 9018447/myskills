@@ -131,12 +131,14 @@ For ZCode (via the `zcode-acp` bridge):
 acpx --agent 'zcode-acp-server' exec '<prompt>'
 ```
 
-ZCode drives the real `zcode app-server`. The `zcode` CLI must be discoverable; if it is only bundled inside the desktop app, set `ZCODE_BIN` to its `zcode.cjs` entry. On Linux, the desktop app mounts itself under a versioned `/tmp` mount whose name changes per launch — discover it with `ls /tmp/.mount_ZCode-*/resources/glm/zcode.cjs` (macOS example: `ZCODE_BIN=/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs`). Credentials live in `~/.zcode/v2/config.json`; no API key is passed on the acpx side.
+ZCode drives the real `zcode app-server`. The `zcode` CLI must be discoverable; if it is only bundled inside the desktop app, set `ZCODE_BIN` to its `zcode.cjs` entry. On Linux the desktop app mounts a versioned `/tmp/.mount_ZCode-*/` at launch. If no mount exists, **just launch the AppImage and wait for the mount** (`~/桌面/ZCode-*.AppImage`), then glob it (macOS example: `ZCODE_BIN=/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs`). Credentials live in `~/.zcode/v2/config.json`; no API key is passed on the acpx side.
 
-Full headless-dispatch one-liner for zcode (no positional agent name; run as a tracked background task):
+Full headless-dispatch one-liner for zcode (no positional agent name; run as a tracked background task). Launch the app first if no mount exists, then dispatch:
 
 ```bash
-ZCODE_BIN=$(ls /tmp/.mount_ZCode-*/resources/glm/zcode.cjs | head -1) acpx --cwd <repo> --approve-all --ttl 60 --timeout <budget> --agent 'zcode-acp-server' exec -f prompt.md > .agent-results/zcode-<label>.log 2>&1
+pgrep -fa 'zcod[e]' >/dev/null 2>&1 || setsid ~/桌面/ZCode-*.AppImage >/dev/null 2>&1 &
+for i in $(seq 30); do ZCODE_BIN=$(ls /tmp/.mount_ZCode-*/resources/glm/zcode.cjs 2>/dev/null) && [ -n "$ZCODE_BIN" ] && break; sleep 2; done
+acpx --cwd <repo> --approve-all --ttl 60 --timeout <budget> --agent 'zcode-acp-server' exec -f prompt.md > .agent-results/zcode-<label>.log 2>&1
 ```
 
 For Oh My Pi (omp) — only when the user explicitly names omp:
@@ -209,6 +211,14 @@ acpx <agent> set reasoning_effort <level>
 
 Adapter capabilities differ. If a model, mode, or configuration is rejected, inspect the agent's advertised capabilities instead of guessing.
 
+### Provider/model verification (2026-09-26 定案)
+
+The adapter's configured default provider/model is **not** proof of what actually served the run — an adapter may ignore its settings default and fall back to another provider family (2026-09-26: dsh's settings pinned `arkcli-coding-plan`, runtime billed the DeepSeek official endpoint). When the billing endpoint matters:
+
+- Verify the actual provider from **runtime evidence** (provider console usage, session records) — never from config files alone.
+- To pin one, pass the model id **exactly as the ACP agent advertises it**. 2026-09-26 (dsh): advertised `modelId` strings are JSON-array literals like `["arkcli-coding-plan","deepseek-v4-1-flash"]`, and acpx matches `--model` by exact string equality — both `provider/model-id` and bare ids fail with a self-contradictory "did not advertise" error whose printed "available list" is actually each raw modelId and *does* contain the requested model. Read the failing error literally and pass one entry verbatim: `acpx --model '["arkcli-coding-plan","deepseek-v4-1-flash"]' ...`. Success signal: the log shows `session/set_config_option` instead of the apply error.
+- Confirm the pin took effect with a cheap probe dispatch before routing real work through it.
+
 ## Operational rules
 
 1. Use `exec` for isolated tasks and persistent sessions only when context must continue.
@@ -220,6 +230,7 @@ Adapter capabilities differ. If a model, mode, or configuration is rejected, ins
 7. Use the minimum permissions required.
 8. Do not assume adapter-specific features are universal.
 9. For unfamiliar or advanced commands, consult `acpx --help` or the upstream acpx documentation instead of relying on this skill as a complete CLI reference.
+10. Verify a dispatch actually started within the first minute — the log must reach `session/new` / `session/set_config_option` with no apply error — using a `run_in_background` until-loop watcher (`until grep -qE 'session/new \(ok\)|Cannot apply|error' <log>; do sleep 3; done`). Chained `sleep N && tail` compounds are blocked by the harness.
 
 ## Multi-agent flows
 

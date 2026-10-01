@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 Help the user understand the current topic of conversation visually. Skip the preamble and keep prose brief. Pick the smallest view that makes the key point clear.
 
+**Output is consumed in a terminal. Mermaid does not render there — NEVER emit Mermaid.** Show component interaction, control flow, and data flow as arrowed text trees / ASCII diagrams instead. (HTML artifacts are the one exception: they open in a browser, so rich rendering is fine *inside* them.)
+
 - Show logic or an algorithm as pseudocode:
 
 ```text
@@ -44,16 +46,20 @@ src/
 └── transport/      # sends API requests
 ```
 
-- Show component interaction, control flow, or data flow with Mermaid:
+- Show component interaction, control flow, or data flow as an arrowed text tree (NOT Mermaid — it doesn't render in the terminal):
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant UI
-    participant Daemon
-    User->>UI: choose command
-    UI->>Daemon: send expanded prompt
-    Daemon-->>UI: stream result
+```text
+User → UI → Daemon
+  choose command      send expanded prompt      stream result back
+```
+
+Multi-branch flows, one hop per line:
+
+```text
+SMILES → AMS QSPR ──成功──▶ cache ──▶ phase gate
+             │ 失败：记录原因
+             ▼
+        Fusion-Cycle ──双失败──▶ fail-closed 拒绝
 ```
 
 - Use `diff` when the point is what changes and the surrounding shape already exists. Match the diff shape to the topic.
@@ -115,7 +121,7 @@ function expandSkill(command: string): string {
 }
 ```
 
-- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one focused HTML file — a diagram, an infographic, or a short slide deck, whichever fits the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Then open it for the user:
+- For a visual UI, layout, state comparison, or concept too dense for text trees, write one focused HTML file — a diagram, an infographic, or a short slide deck, whichever fits the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Then open it for the user:
 
 ```
 Bash(open path/to/show-me-{description}.html)

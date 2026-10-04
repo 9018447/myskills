@@ -773,6 +773,6 @@ export function start(remote: string) {
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*\//, ''))) {
   const remoteIdx = process.argv.indexOf('--remote');
-  const remote = remoteIdx > -1 ? process.argv[remoteIdx + 1] : (process.env.MYSKILLS_REMOTE ?? 'aliyun');
+  const remote = remoteIdx > -1 ? process.argv[remoteIdx + 1] : (process.env.MYSKILLS_REMOTE ?? 'origin');
   start(remote);
 }

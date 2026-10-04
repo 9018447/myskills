@@ -1,6 +1,6 @@
 # AGENTS.md — myskills 仓库约定
 
-这个仓库是个人技能库的中心仓库。中心远程是 Codeup（`aliyun`），`git push aliyun` 会同时推送到 GitHub 和 Gitee 镜像。
+这个仓库是个人技能库的中心仓库。中心远程是 GitHub（`origin`），`git push origin` 会同时推送到 Gitee 镜像。GitHub SSH 走 443 端口（`~/.ssh/config` 里已把 `github.com` 指到 `ssh.github.com:443`），因为 22 端口不通。
 
 ## 目录布局
 
@@ -12,7 +12,7 @@
 
 ## 行为约定
 
-1. **改了技能就当场 `git add` + `commit` + `git push aliyun`**，不要堆积未提交的改动。
+1. **改了技能就当场 `git add` + `commit` + `git push origin`**，不要堆积未提交的改动。
 2. **不要手工**在各 agent 的 skills 目录（`~/.claude/skills` 等）里创建实体目录或符号链接。分发只通过 `skills-manifest.json` + `link` 完成。
 3. 不要把密钥、机器特定路径写进技能。`.secret.key` 已被 gitignore，保持如此。
 4. 集合目录里的子技能参与分发时，清单里写集合内的相对路径形式目前不支持——需要分发的技能应放在顶层。
@@ -40,7 +40,7 @@ myskills migrate         # 存量收敛 dry-run；加 --apply 执行
 ## 新机器 bootstrap
 
 ```bash
-git clone git@codeup.aliyun.com:69b3a6855523c716219ff9a9/myskills.git ~/my-skills
+git clone git@github.com:9018447/myskills.git ~/my-skills
 cd ~/my-skills/manager && npm link && cd ..
 myskills migrate --apply   # 若本机有存量技能目录；否则跳过
 myskills sync              # 拉最新、按清单建链接、上报状态

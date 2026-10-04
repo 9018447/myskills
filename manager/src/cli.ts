@@ -6,7 +6,7 @@ import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProjec
 
 function resolveRemote(): string {
   const idx = process.argv.indexOf('--remote');
-  return idx > -1 ? process.argv[idx + 1] : (process.env.MYSKILLS_REMOTE ?? 'aliyun');
+  return idx > -1 ? process.argv[idx + 1] : (process.env.MYSKILLS_REMOTE ?? 'origin');
 }
 
 const command = process.argv[2];

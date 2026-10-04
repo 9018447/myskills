@@ -1,8 +1,6 @@
 ---
 name: writing-for-agents
-description: 编写智能体使用的文档。
-tags: [user]
-disable-model-invocation: true
+description: 编写智能体使用的文档。当用户要创建或修改 skill、AGENTS.md、CLAUDE.md、spec、prompt 或其他给 agent 读的文档时使用。
 ---
 # Writing for Agents
 

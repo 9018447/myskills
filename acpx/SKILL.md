@@ -13,8 +13,24 @@ Use `acpx` when another coding agent should inspect, implement, review, test, or
 
 When an orchestrator agent dispatches work to acpx, follow this pattern — the two failure modes it prevents are blocking waits and zombie wrappers:
 
+0. **Dispatch through a herdr pane when the session runs inside herdr (`HERDR_ENV=1`)**; the harness's own background Bash (`run_in_background: true`) is the fallback when herdr is unavailable. Pane dispatch runs the task in a real terminal the user can `herdr session attach` into, and completion notification is bridged by wrapping `pane wait-output` in a background Bash:
+
 1. **Write the prompt to a file** and pass it with `-f`; never inline long prompts into shell quoting.
-2. **Launch through the harness's own background mechanism (e.g. the Bash tool's `run_in_background: true`) with a log file**, with an explicit idle TTL so the wrapper exits on its own:
+
+1b. **Every dispatch goes into a dispatch tab named by ADR.** One tab per ADR of the work being dispatched (fallback: the feature slug when the work has no ADR), max **8 panes** per tab. Check first whether a tab with that label already exists and reuse it instead of creating a new one; when it already holds 8 panes, open the next tab of the series (`<adr>-2`, `<adr>-3`, …). Create:
+
+   ```bash
+   herdr tab create --cwd "$PWD" --label "<adr-slug>" --no-focus
+   ```
+
+   Read `tab_id` / `root_pane.pane_id` from the response; never guess IDs. `--cwd "$PWD"`, `--label`, `--no-focus` are mandatory. Reuse `herdr tab list` (or the equivalent listing) to find an existing dispatch tab before creating one.
+2. **Launch with a log file and an explicit idle TTL so the wrapper exits on its own.** Primary form (herdr pane from the dispatch tab; output tee'd to the log so both the pane and the file have it):
+
+   ```bash
+   herdr pane run <pane-id> "acpx --cwd <repo> --approve-all --ttl 60 --timeout 3600 <agent> exec -f prompt.md 2>&1 | tee .agent-results/<agentname>-<label>.log"
+   ```
+
+   Fallback form (no herdr — Bash `run_in_background: true` carries the completion notification):
 
    ```bash
    acpx --cwd <repo> --approve-all --ttl 60 --timeout 3600 <agent> exec -f prompt.md > .agent-results/<agentname>-<label>.log 2>&1
@@ -26,9 +42,17 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
 
    **A process detached with `nohup ... &` from an ordinary foreground Bash command is NOT tracked: no completion notification will ever arrive.**
 
+   **The harness's own background time limit kills tracked tasks too** (2026-10-01: a healthy dsh ticket dispatch was killed at the ~30-min default, log ended `[done] cancelled`). The implement-zh rule "no `--timeout`" does not cover this. Always pass an explicit `timeout` on the `run_in_background` launch (max 7200000 ms = 2 h); for expected >2 h work use a tmux detached session plus a waiter instead.
+
    **The two dispatch forms are mutually exclusive.** The `acpx <agent> exec -f prompt.md` form is for built-in agents only. Overlay agents dispatched via `acpx --agent '<command>' exec -f prompt.md` must NOT also carry a positional agent name before `exec` — writing `--agent 'zcode-acp-server' ... zcode exec -f ...` shifts parsing and fails with `error: unknown option '-f'`.
 
-4. **Verify within ~1 minute of launch that the task actually runs as a harness-tracked background task** (the launch call returned a background task ID, and a short check shows the process alive with the log advancing). If the dispatch accidentally went out detached (`nohup ... &`), catch it HERE and fix immediately — attach a waiter via the harness's background mechanism (`bash -c 'while kill -0 <pid> 2>/dev/null; do sleep 15; done'`, `run_in_background: true`; pure push on exit, the sleep loop lives in the subprocess) or relaunch tracked. With tracking confirmed, no ETA reminders, one-shots, or polling are needed.
+4. **Verify within ~1 minute of launch that the task actually started** (the log reaches `session/new` / `session/set_config_option` with no apply error, and is advancing). For the herdr form, arm the completion callback the same way the fallback gets one — wrap `pane wait-output` in a background Bash so its exit wakes the session:
+
+   ```bash
+   herdr pane wait-output <pane-id> --match "end_turn" --timeout 3600000  # via run_in_background: true
+   ```
+
+   The match string must not appear in the dispatched command text, or the shell's echo of that command triggers `wait-output` instantly (fake completion). Pick a marker that exists only in real output (`[done] end_turn` qualifies as long as the command text itself does not contain it). On timeout, `pane read` first to see actual state — never blindly re-dispatch.
 5. **Do not block-poll.** End the turn; act when the completion notification arrives (tracked background task, or its waiter), or the user pings. To check interim progress, `tail` the log file in a short non-blocking call.
 6. **Turn completion = the `[done] end_turn` marker** at the end of the log. That marker, not the background task's exit status, is the completion criterion: the acpx wrapper process can linger after the turn ends even past its TTL.
 7. **Reap the wrapper by PID.** Record the launcher PID (or find it once with `pgrep -af` when nothing else matches); when the marker is present and the process lives, `kill <pid>`. Never verify with `pgrep -f <pattern>` whose pattern appears in your own check command — it self-matches and reports a dead task as alive; confirm with `ps -p <pid>`.

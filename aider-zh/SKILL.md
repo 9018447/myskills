@@ -1,5 +1,5 @@
 ---
-name: aider-tdd-zh
+name: aider-zh
 description: 用 aider headless 快速派发单文件和零碎编码请求。网关配置由脚本从 Claude Code 的 settings.json 一次性提取（密钥不进对话），一条命令派发，完成后看日志和 git diff 验证。不写正式 SPEC，要求快速完成。
 tags: [user]
 ---
@@ -10,7 +10,8 @@ tags: [user]
 
 ## 事实（已确认）
 
-- **网关配置走脚本**：`~/.claude/skills/aider-tdd-zh/aider-env.sh`（仓库内为 `aider-tdd-zh/aider-env.sh`）。它从 `~/.claude/settings.json` 的 `env` 块一次提取 `ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_MODEL`，导出成 litellm 认的变量（`ANTHROPIC_API_BASE` / `ANTHROPIC_API_KEY`），并自动加 `--model anthropic/<模型>`。密钥只落在环境变量里，**Agent 不需要也不应该读 settings.json**。
+- **网关配置走脚本**：`~/.claude/skills/aider-zh/aider-env.sh`（仓库内为 `aider-zh/aider-env.sh`）。它从 `~/.claude/settings.json` 的 `env` 块一次提取 `ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_MODEL`，导出成 litellm 认的变量（`ANTHROPIC_API_BASE` / `ANTHROPIC_API_KEY`），并自动加 `--model anthropic/<模型>`。密钥只落在环境变量里，**Agent 不需要也不应该读 settings.json**。
+- **`.env` 是另一种配置方式**：aider 默认读 git 仓库根目录的 `.env`（或用 `--env-file <路径>` 指定），变量名见技能目录下的 `.env.example`——网关用 `ANTHROPIC_API_BASE` + `ANTHROPIC_API_KEY`，aider 选项用 `AIDER_` 前缀（如 `AIDER_MODEL`）。适合按项目固定网关配置；`.env` 含密钥，必须进 `.gitignore`。两种方式都在时，环境变量（脚本导出的）优先。
 - 原 `~/.aider.conf.yml` 指向的 glm 网关已弃用（2026-10-05 实测连不上），一律通过脚本派发，不要直接调 `aider`。
 - `aider -f <prompt.md> --yes-always` 是无状态一次调用：读 prompt 文件 → 改文件 → 退出。
 - **`~/.aider.conf.yml` 设了 `auto-commits: false`，aider 不会自己 commit**。何时提交、怎么提交由编排者自己把握，技能不做规定。
@@ -33,7 +34,7 @@ tags: [user]
 3. **派发**（在仓库根目录）：
 
 ```bash
-~/.claude/skills/aider-tdd-zh/aider-env.sh \
+~/.claude/skills/aider-zh/aider-env.sh \
   --yes-always \
   --test-cmd "<TEST_CMD>" --auto-test \
   -f .aider-prompts/<任务名>.md \

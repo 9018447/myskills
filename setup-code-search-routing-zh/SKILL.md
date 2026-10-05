@@ -25,7 +25,7 @@ disable-model-invocation: true
 
 - 仓库根目录的 `CLAUDE.md` 和 `AGENTS.md` — 存在吗？里面是否已有 `## Tool Routing` 块？
 - `.claude/rules/` 目录 — 是否存在？里面是否已有 `code-search.md` 或 `coding-principle.md`？内容是否与模板不同？
-- 工具可用性 — 运行本技能目录下的 `check-tools.sh`（`bash <技能目录>/check-tools.sh`），得到 `rg`、`zg`、`ast-grep`、`gitnexus`、`acpx` 五个命令各自的存在状态。
+- 工具可用性 — 运行本技能目录下的 `check-tools.sh`（`bash <技能目录>/check-tools.sh`），得到 `rg`、`zg`、`ast-grep`、`gitnexus`、`aider`、`acpx` 六个命令各自的存在状态。
 
 ### 2. 展示写入内容并确认
 

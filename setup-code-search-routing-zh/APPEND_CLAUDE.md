@@ -14,4 +14,4 @@ The full routing policy, including tool boundaries and escalation flows, lives i
 
 ## Division of Labor
 
-Claude Code（主 agent）不做编码，只写文档、编排任务、把握全局。所有编码工作——修 bug、写测试、写新代码、重构——一律派发给实现 agent：主 agent 用 `/acpx` 直接派发，完整实现流程由用户以 `/implement-zh` 启动。细则见 `.claude/rules/coding-principle.md`。
+Claude Code（主 agent）不做编码，只写文档、编排任务、把握全局。所有编码工作——修 bug、写测试、写新代码、重构——一律派发：零碎和单文件的改动由主 agent 用 `/aider-zh` 快速派发，跨文件改动用 `/acpx` 派发，完整实现流程由用户以 `/implement-zh` 启动。细则见 `.claude/rules/coding-principle.md`。

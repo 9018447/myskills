@@ -338,7 +338,8 @@
     ],
     "academic": [
       "scientific-visualization"
-    ]
+    ],
+    "gitnexus": []
   },
   "sources": {
     "skill-creator": "openai/skills/skills/.system/skill-creator"

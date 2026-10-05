@@ -1,0 +1,5 @@
+{
+  "anthropic/glm-5.3-flash[1m]": { "max_input_tokens": 1000000, "max_chat_tokens": 1000000, "max_output_tokens": 32768 },
+  "glm-5.3-flash[1m]": { "max_input_tokens": 1000000, "max_chat_tokens": 1000000, "max_output_tokens": 32768 },
+  "glm-5.3-flash": { "max_input_tokens": 128000, "max_chat_tokens": 128000, "max_output_tokens": 32768 }
+}

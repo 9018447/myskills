@@ -19,6 +19,8 @@ export interface Manifest {
   sources?: Record<string, string>;
   // 预设集：名字 → 技能列表；应用到 agent 时并集追加
   presets?: Record<string, string[]>;
+  // 预设应用记录：预设名 → 已应用到的 agent id；link 时把这些 agent 的清单与预设技能重新取并集
+  presetApplied?: Record<string, string[]>;
 }
 
 export function expandHome(p: string): string {
@@ -197,7 +199,13 @@ export function link(repoRoot: string): LinkReport {
       report.lines.push(`跳过 ${agent.id}（未安装）`);
       continue;
     }
-    syncSkillsIntoDir(agent.id, skillsPath, manifest.agents[agent.id] ?? [], repoRoot, report);
+    // 预设集传播：agent 应用过某预设，则把该预设的当前成员并入其清单（并集），预设改动随 link/sync 生效
+    const presetSkills = new Set<string>();
+    for (const [preset, ids] of Object.entries(manifest.presetApplied ?? {})) {
+      if (ids.includes(agent.id)) for (const s of manifest.presets?.[preset] ?? []) presetSkills.add(s);
+    }
+    const wanted = [...new Set([...(manifest.agents[agent.id] ?? []), ...presetSkills])];
+    syncSkillsIntoDir(agent.id, skillsPath, wanted, repoRoot, report);
   }
   return report;
 }
@@ -755,6 +763,7 @@ export function setPreset(repoRoot: string, name: string, skills: string[]): voi
 export function deletePreset(repoRoot: string, name: string): void {
   const manifest = loadManifest(repoRoot);
   if (manifest.presets) delete manifest.presets[name];
+  if (manifest.presetApplied) delete manifest.presetApplied[name];
   saveManifest(repoRoot, manifest);
 }
 
@@ -776,6 +785,7 @@ export function applyPreset(repoRoot: string, name: string, agentIds: string[]):
     const before = list.length;
     manifest.agents[id] = [...new Set([...list, ...valid])].sort();
     added[id] = manifest.agents[id].length - before;
+    (manifest.presetApplied ??= {})[name] = [...new Set([...(manifest.presetApplied[name] ?? []), id])].sort();
   }
   saveManifest(repoRoot, manifest);
   return { added, missing };

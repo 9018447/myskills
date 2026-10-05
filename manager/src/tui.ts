@@ -317,6 +317,7 @@ function PresetsView({
   const [mSearching, setMSearching] = useState(false);
 
   const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
+  const applied = useMemo(() => core.loadManifest(root).presetApplied ?? {}, [root, tick]);
   const names = useMemo(() => Object.keys(presets).sort(), [presets]);
   const skills = useMemo(() => core.listRepoSkills(root), [root]);
   const mShown = useMemo(
@@ -376,7 +377,7 @@ function PresetsView({
       }
       if (key.return) {
         core.setPreset(root, editing, [...sel]);
-        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能；应用到 agent 后按 l 生效，按 s 提交推送）`);
+        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能；已应用的 agent 按 l 或 myskills sync 后生效）`);
         bumpTick();
         setMode('list');
       }
@@ -403,7 +404,7 @@ function PresetsView({
         }
         const r = core.applyPreset(root, editing, [...applySel]);
         const parts = Object.entries(r.added).map(([id, n]) => `${id}+${n}`);
-        onNotice(`已应用预设 ${editing}：${parts.join('  ')}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}（按 l 生效，按 s 提交推送）`);
+        onNotice(`已应用预设 ${editing}：${parts.join('  ')}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}（按 l 生效，按 s 提交推送；之后改动预设会随 link/sync 传播）`);
         bumpTick();
         setMode('list');
       }
@@ -426,7 +427,7 @@ function PresetsView({
     }
     if (input === 'a' && names[cursor]) {
       setEditing(names[cursor]);
-      setApplySel(new Set());
+      setApplySel(new Set(applied[names[cursor]] ?? []));
       setMCursor(0);
       setMode('apply');
     }
@@ -464,12 +465,13 @@ function PresetsView({
     Box, { flexDirection: 'column', borderStyle: 'round', paddingX: 1 },
     h(Text, { bold: true }, `预设集（${names.length}）`),
     names.length === 0 && mode === 'list' ? h(Text, { dimColor: true }, '暂无预设，按 n 新建') : null,
-    ...names.map((n, i) =>
-      h(
+    ...names.map((n, i) => {
+      const ap = applied[n] ?? [];
+      return h(
         Text, { key: n, color: i === cursor ? 'cyan' : undefined },
-        `${i === cursor ? '❯' : ' '} ${n}（${presets[n].length}）: ${presets[n].join(', ')}`,
-      ),
-    ),
+        `${i === cursor ? '❯' : ' '} ${n}（${presets[n].length}）: ${presets[n].join(', ')}${ap.length ? `  → 已应用: ${ap.join(', ')}` : '  → 未应用'}`,
+      );
+    }),
     mode === 'new' ? h(Text, { color: 'yellow' }, `预设名: ${buffer}▌`) : null,
   );
 }

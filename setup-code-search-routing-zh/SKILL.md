@@ -24,11 +24,13 @@ disable-model-invocation: true
 
 - 仓库根目录的 `CLAUDE.md` 和 `AGENTS.md` — 存在吗？里面是否已有 `## Tool Routing` 块？
 - `.claude/rules/` 目录 — 是否存在？里面是否已有 `code-search.md` 或内容不同的路由规则？
+- 工具可用性 — 运行本技能目录下的 `check-tools.sh`（`bash <技能目录>/check-tools.sh`），得到 `rg`、`zg`、`ast-grep`、`gitnexus` 四个命令各自的存在状态。
 
 ### 2. 展示写入内容并确认
 
-向用户展示三样东西：
+向用户展示四样东西：
 
+- 工具检查结果。有 `MISSING` 时明确告诉用户缺了哪个，并说明：规则文件会照常写入（缺工具不阻断），但 agent 执行时会遇到不存在的命令；用户也可以选择先装工具再重跑本技能
 - 将写入 `.claude/rules/code-search.md` 的内容（[ADD_RULES.md](./ADD_RULES.md) 原文）
 - 将追加的 `## Tool Routing` 块内容（[APPEND_CLAUDE.md](./APPEND_CLAUDE.md) 原文）
 - 块会落在哪个文件里（选择规则见步骤 3）

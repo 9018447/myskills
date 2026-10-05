@@ -12,6 +12,7 @@ disable-model-invocation: true
 - **Issue 跟踪器** — issue 放在哪里（默认 GitHub；本地 markdown 也开箱即用）
 - **分类标签** — 五个规范分类角色所用的标签字符串
 - **领域文档** — `CONTEXT.md` 和 ADR 放在哪里，以及读取它们的消费规则
+- **代码搜索路由** — 细则写进 `.claude/rules/code-search.md`，概要写进 `CLAUDE.md`（或 `AGENTS.md`）的 `## Tool Routing` 块
 
 这是一个提示驱动的技能，不是确定性的脚本。探索、呈现你的发现、与用户确认，然后写入。
 
@@ -22,7 +23,8 @@ disable-model-invocation: true
 查看当前仓库，了解它的起始状态。读一切存在的东西；不要假设：
 
 - `git remote -v` 和 `.git/config` — 这是 GitHub 仓库吗？是哪一个？
-- 仓库根目录的 `AGENTS.md` 和 `CLAUDE.md` — 存在吗？里面是否已有 `## Agent skills` 章节？
+- 仓库根目录的 `AGENTS.md` 和 `CLAUDE.md` — 存在吗？里面是否已有 `## Agent skills` 或 `## Tool Routing` 章节？
+- `.claude/rules/` 目录 — 是否存在？里面是否已有代码搜索路由规则？
 - 仓库根目录的 `CONTEXT.md` 和 `CONTEXT-MAP.md`
 - `docs/adr/` 和任何 `src/*/docs/adr/` 目录
 - `docs/agents/` — 这个技能之前的产出是否已存在？
@@ -61,12 +63,15 @@ disable-model-invocation: true
 
 只有当探索发现 monorepo 信号时，才提供**多上下文**——一个指向各上下文 `CONTEXT.md` 文件的根级 `CONTEXT-MAP.md`。然后确认他们想要哪种布局。
 
+**D 节 — 代码搜索路由。** 默认执行，不提供选项：把搜索路由细则写进 `.claude/rules/code-search.md`，概要写进 `CLAUDE.md`（或 `AGENTS.md`）的 `## Tool Routing` 块。这一节不需要用户做任何决定，只在确认稿里照常展示两个文件的写入内容；用户明确说不要时才整节跳过。
+
 ### 3. 确认并编辑
 
 向用户展示草稿：
 
 - 要加进 `CLAUDE.md` / `AGENTS.md` 中正在编辑的那个文件的 `## Agent skills` 块（选择规则见步骤 4）
 - `docs/agents/issue-tracker.md`、`docs/agents/domain.md` 和 `docs/agents/triage-labels.md` 的内容（最后一个仅在 `triage` 已安装时）
+- `## Tool Routing` 块和 `.claude/rules/code-search.md` 的内容（D 节）
 
 写入前让他们编辑。
 
@@ -112,6 +117,13 @@ disable-model-invocation: true
 
 对于"其他" issue 跟踪器，用用户的描述从头写 `docs/agents/issue-tracker.md`。
 
+**写入搜索路由（D 节，与上面的文件选择同时进行）：**
+
+1. 写 `.claude/rules/code-search.md`，内容用 [ADD_RULES.md](./ADD_RULES.md) 原文；目录不存在就先创建。该文件已存在且内容与模板不同时，问用户是覆盖还是保留。
+2. 在本步骤选定的文件（有 `CLAUDE.md` 就用它，否则 `AGENTS.md`）末尾追加 `## Tool Routing` 块，内容用 [APPEND_CLAUDE.md](./APPEND_CLAUDE.md) 原文。该文件里已有 `## Tool Routing` 块时就地更新其内容，不追加重复的；不要动用户对周围章节的编辑。
+
+两处都写。宁可概要与细则在仓库里重复出现，也不要缺任何一处。
+
 ### 5. 完成
 
-告诉用户设置已完成，以及哪些工程技能现在会读取这些文件。提及他们之后可以直接编辑 `docs/agents/*.md`——只有想切换 issue 跟踪器或从头重来时才需要重跑本技能。
+告诉用户设置已完成，以及哪些工程技能现在会读取这些文件。搜索路由已同时落在 `.claude/rules/code-search.md`（细则）和 `CLAUDE.md`/`AGENTS.md` 的 `## Tool Routing` 块（概要）。提及他们之后可以直接编辑 `docs/agents/*.md` 和这两个路由文件——只有想切换 issue 跟踪器或从头重来时才需要重跑本技能。

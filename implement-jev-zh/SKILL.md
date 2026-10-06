@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 ```text
 implement.sh check  [--repo R]              前置检查，先跑这个
-implement.sh status [--repo R] [--dry-run]  总览所有 feature 状态（Jev 给阶段意见 + 下一步建议）
+implement.sh status [--repo R] [--dry-run] [--zg]  总览所有 feature 状态；--zg 用语义索引检索实现痕迹
 implement.sh <feature> [--repo R] [--agent AGENT[:MODEL]] [--retries N]
                         [--ttl SEC] [--dry-run] [--resume] [--skip-judge]
 implement.sh --help                         用法
@@ -23,6 +23,15 @@ implement.sh --help                         用法
 合进**一次** Jev 请求：对每个 feature 让 Jev 从离散状态里挑（从未开始 / 推进中 / 中途暂停 /
 接近完成 / 已完成待验收 / 维护中停滞），并给出"下一步优先推进哪一个"的整体建议。低置信或
 `needs_review` 的 feature（比如有 `review_pack` 卡住）会主动标出来让你人工再判，不武断替你做决定。
+
+为了判断"该 feature 到底实现到哪了"，status 会用 zg 检索代码里的真实实现痕迹喂给 Jev，避免只看
+新驱动的状态文件（旧流程/历史仓库常一条都不写，导致 Jev 拿到空白证据误判"从未开始"）。默认走词表层
+`--rg`（无需索引、随处可用）；`--zg` 则用**语义索引**——缺索引时用本地嵌入模型 `potion-code-16m-v2`
+自动构建一次（首次需联网下载 16M 模型 + 磁盘），语义对自动提取的泛词（validation/loop 这类）更抗噪声，
+该 feature 自己的实现文件能顶到前列，共享脚手架不再抢镜。
+**坑（已经踩过）**：zg 语义查询的索引按**运行目录（cwd）**解析，不认尾随路径参数，且 `-e`/`-m` 只对
+`--rg` 管用——所以语义分支必须在仓库根内 `cd` 后再调 zg，词表层仍用路径参数；`--semantic` 旧标志因把
+`|` 正则串直接喂语义、又用了 rg 专属的 `-m`/行格式解析而根本跑不通，已合并进 `--zg`。
 
 `<feature>` 对应 `<repo>/.scratch/<feature>/issues/NN-<slug>.md` 与 `spec.md`。脚本逐票执行，
 把每票作为一个独立闭环：**前置检查 → 基线记录 → agent 选择 → prompt+GitNexus impact →

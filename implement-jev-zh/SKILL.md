@@ -14,7 +14,8 @@ disable-model-invocation: true
 implement.sh check  [--repo R]              前置检查，先跑这个
 implement.sh status [--repo R] [--dry-run] [--zg]  总览所有 feature 状态；--zg 用语义索引检索实现痕迹
 implement.sh list   [--repo R] [<feature>]  列出 feature 的 tickets（拓扑序 + 每票状态/标题/依赖）
-implement.sh <feature> [--repo R] [--agent AGENT[:MODEL]|'A->B->C'] [--retries N]
+implement.sh menu   [--repo R]                交互模式：列全部 feature；选 1-N 派发该 feature
+implement.sh <feature> [--repo R] [--agent AGENT[:MODEL]|'A->B->C'|'1:A,2:B'] [--retries N]
                         [--ttl SEC] [--dry-run] [--resume] [--skip-judge]
 implement.sh --help                         用法
 ```
@@ -45,7 +46,8 @@ headless 派发 → 完成判据 → 确定性核验 → 一个 Jev 判断门 �
 缺 `spec.md`（用 ticket 标题兜底）、拓扑有环/悬空、已有上次运行状态。`--repo` 未给时自动取
 当前目录 git 根；`<feature>` 未给且 `.scratch` 下唯一子目录时自动取，多个会列出并停在 BLOCK。
 
-- `--agent` 显式指定实现 agent（如 `codex:gpt-6-luna`、`kimi`）。未指定且非运行票时，驱动停止询问，不自行选择。也支持链式 `'A->B->C'`：按拓扑顺序给每张**真实**票（doc/跳过票不占位）分配下一个 agent，用尽后从头轮转，适合"交错的 agent 分工"。
+- `--agent` 显式指定实现 agent（如 `codex:gpt-6-luna`、`kimi`）。未指定且非运行票时，驱动停止询问，不自行选择。支持三种链式写法，统一归一成一串按拓扑顺序分配：`'A->B->C'`（依次轮转）、`'A,B,C'`（逗号等价）、`'1:A,2:B'`（按票位置指定）。每张**真实**票（doc/跳过票不占位）取链上下一个 agent，用尽后从头轮转，适合"交错的 agent 分工"。
+- `menu` 子命令（交互模式）：列出当前 repo 全部 feature；输入 `1-N` 选择要派发的 feature（选完提示输入 agent 链，回车默认 `kimi->dsh`），输入 `0` 先跑一次 `status --zg`（Jev 判断哪些 feature 还有未完成 tickets，给你焦点），`q`/`Q` 退出。裸跑 `<feature>` 但当前 `.scratch/` 有多个 feature 时也会回退进菜单让你选。
 - `list` 子命令：只读列出某 feature 的 tickets——按拓扑顺序，含每票状态（todo/done/blocked）、标题与 `Blocked by`。`<feature>` 省略时自动发现，多 feature 则列出可用项。不开前置检查（不要求 jev-decide/herdr）。
 - `--dry-run` 只建 prompt/基线/证据桩，不派发真实 agent、不调 Jev，用于接线自检（也过前置检查）。
 - `--skip-judge` 跑到证据步停止，不调 Jev。

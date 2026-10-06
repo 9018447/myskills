@@ -41,6 +41,7 @@ while [[ $i -lt ${#args[@]} ]]; do
     check|--check) MODE="check" ;;
     status|--status) MODE="status" ;;
     list|--list) MODE="list" ;;
+    menu|--menu) MODE="menu" ;;
     -h|--help) MODE="help" ;;
     --repo) REPO="${args[$((i+1))]}"; i=$((i+1));;
     --agent) AGENT_OVERRIDE="${args[$((i+1))]}"; i=$((i+1));;
@@ -97,17 +98,28 @@ if [[ "$MODE" == "status" ]]; then
   bash "$SCRIPT_DIR/status.sh" "${sa[@]}"; exit $?
 fi
 
-# --agent 'A->B->C': assign agents per ticket in topo order, cycling across real tickets
-# (doc-only/skipped tickets don't consume a slot). A plain 'A' keeps single-agent pinning.
-CHAIN=(); CHAIN_TAKEN=0
-if [[ "$AGENT_OVERRIDE" == *"->"* ]]; then
-  _cs=$'\x1f'          # unit separator — split only on the literal "->", never on '-' inside names
-  _cs_in="${AGENT_OVERRIDE//->/$_cs}"
-  IFS="$_cs" read -ra CHAIN <<< "$_cs_in"
-  _tmp=(); for _c in "${CHAIN[@]}"; do [[ -n "$_c" ]] && _tmp+=("$_c"); done
+# --agent '<spec>': ordered agent list, cycling real tickets in topo order (doc/skipped don't
+# consume a slot). Accepted forms: 'kimi->dsh', 'kimi,dsh', '1:kimi,2:dsh' (N: is a positional
+# label, dropped; the list order is what rotates). A single agent (even plain 'codex:gpt-6-luna')
+# becomes a 1-element chain, so pick_agent's chain branch covers single + chained alike.
+parse_agent_spec() { # parse $1 (agent spec) -> fills global CHAIN[]
+  CHAIN=()
+  local spec="$1" _a _toks _tmp _spec
+  [[ -z "$spec" ]] && return 0
+  _spec="${spec//->/;}"    # never split on the '-' inside names like gpt-6-luna
+  _spec="${_spec//,/;}"
+  IFS=';' read -ra _toks <<< "$_spec"
+  _tmp=()
+  for _a in "${_toks[@]}"; do
+    _a="${_a// }"; [[ -z "$_a" ]] && continue
+    [[ "$_a" =~ ^[0-9]+:(.+)$ ]] && _a="${BASH_REMATCH[1]}"   # drop the N: positional label
+    _tmp+=("$_a")
+  done
   CHAIN=("${_tmp[@]}")
-  log "agent chain: ${CHAIN[*]:-<empty>} — 按拓扑顺序逐票轮转"
-fi
+  [[ ${#CHAIN[@]} -gt 0 ]] && log "agent chain: ${CHAIN[*]} — 按拓扑顺序逐票轮转"
+}
+CHAIN=(); CHAIN_TAKEN=0
+parse_agent_spec "$AGENT_OVERRIDE"
 
 FALLBACK_CHAIN=(zcode kimi claude dsh)
 RUN_MODEL="codex:gpt-6-luna"
@@ -212,6 +224,39 @@ list_tickets() {
   done
   echo
   echo "run: implement.sh $FEATURE [--resume] [--agent 'a->b']"
+}
+
+run_menu() { # interactive: list features; 0=Jev focus (status.sh); 1..N=pick a feature & dispatch
+  [[ -n "$REPO" ]] || REPO="$(git rev-parse --show-toplevel 2>/dev/null)"
+  if [[ -z "$REPO" ]]; then echo "implement: 无 --repo 且当前目录不在 git 里"; return 3; fi
+  local -a feats=() d
+  for d in "$REPO"/.scratch/*/; do [[ -d "$d" ]] && feats+=("$(basename "$d")"); done
+  if [[ ${#feats[@]} -eq 0 ]]; then echo "没有 feature（$REPO/.scratch/ 为空）"; return 3; fi
+  echo
+  echo "=== implement 交互菜单 (repo: $REPO) ==="
+  echo "   0   Jev 判断：哪些 feature 有未完成 tickets / 下一步优先哪个"
+  local i=1 f
+  for f in "${feats[@]}"; do printf '   %-3d %s\n' "$i" "$f"; i=$((i+1)); done
+  echo
+  printf '选择 (0=Jev, 退出=q, 或 1-%d 选择要派发的 feature): ' "${#feats[@]}"
+  IFS= read -r choice || { echo; return 3; }
+  [[ "$choice" == "q" || "$choice" == "Q" ]] && { echo "bye"; return 3; }
+  if [[ "$choice" == "0" ]]; then
+    echo; bash "$SCRIPT_DIR/status.sh" --repo "$REPO"
+    echo; echo "（上面是 Jev 对各 feature 的未完成/阶段判断。可再选一个 feature 派发。）"
+    run_menu; return $?
+  fi
+  if ! [[ "$choice" =~ ^[0-9]+$ ]] || [[ "$choice" -lt 1 || "$choice" -gt "${#feats[@]}" ]]; then
+    echo "无效选择：$choice"; return 3
+  fi
+  FEATURE="${feats[$((choice-1))]}"
+  printf '派发 %s — 派发顺序 [回车默认 kimi->dsh；或 1:kimi,2:dsh / kimi->dsh / 逗号分隔]: ' "$FEATURE"
+  IFS= read -r spec || spec=""
+  [[ -z "$spec" ]] && spec="kimi->dsh"
+  AGENT_OVERRIDE="$spec"
+  parse_agent_spec "$AGENT_OVERRIDE"
+  echo "-> 已选 feature=$FEATURE  agent=$AGENT_OVERRIDE（随后进入真实派发）"
+  return 0
 }
 
 escalate() { # escalate <ticket> <reason> <pack-extra...>
@@ -601,12 +646,25 @@ preflight() {  # preflight <mode=run|check>
 
 # ================= MAIN =================
 setup_paths
+# interactive menu: explicit `menu`/`--menu`, OR a bare `implement` that lands on multiple features
+if [[ "$MODE" == "menu" ]]; then
+  run_menu; mrc=$?
+  [[ $mrc -ne 0 ]] && exit 3
+  MODE="run"
+fi
 if [[ "$MODE" == "list" ]]; then preflight "$MODE" >/dev/null 2>&1; else preflight "$MODE"; fi; pf=$?
 if [[ "$MODE" == "list" ]]; then list_tickets; exit 0; fi
 if [[ "$MODE" == "check" ]]; then exit "$pf"; fi
 if [[ "$pf" -ne 0 ]]; then
-  log "前置检查未通过——先解决 [BLOCK] 项（可再跑 implement.sh check），或用 --repo / 显式 <feature>"
-  exit 1
+  if [[ "$MODE" == "run" && -z "$FEATURE" && -n "$REPO" ]]; then
+    run_menu; mrc=$?
+    [[ $mrc -ne 0 ]] && exit 3
+    preflight "$MODE"; pf=$?
+  fi
+  if [[ "$pf" -ne 0 ]]; then
+    log "前置检查未通过——先解决 [BLOCK] 项（可再跑 implement.sh check），或用 --repo / 显式 <feature>"
+    exit 1
+  fi
 fi
 export IMPL_OUT_DIR="$LOG_DIR"
 log "implement.sh feature=$FEATURE repo=$REPO dry_run=$DRY_RUN resume=$RESUME"

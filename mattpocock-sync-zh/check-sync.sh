@@ -7,7 +7,8 @@ set -euo pipefail
 #
 # 依赖: gh + jq（git 分发靠 git）。零新增依赖。
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_REAL="$(readlink -f "${BASH_SOURCE[0]}")"
+REPO_ROOT="$(cd "$(dirname "$SCRIPT_REAL")/.." && pwd)"
 MIRROR="$REPO_ROOT/mattpocock-skills-zh"
 BASELINE="$MIRROR/.sync-baseline.json"
 STAGING="$MIRROR/.sync-staging"

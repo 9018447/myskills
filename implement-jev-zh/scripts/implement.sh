@@ -36,6 +36,7 @@ args=("$@"); i=0
 while [[ $i -lt ${#args[@]} ]]; do
   case "${args[$i]}" in
     check|--check) MODE="check" ;;
+    status|--status) MODE="status" ;;
     -h|--help) MODE="help" ;;
     --repo) REPO="${args[$((i+1))]}"; i=$((i+1));;
     --agent) AGENT_OVERRIDE="${args[$((i+1))]}"; i=$((i+1));;
@@ -60,6 +61,7 @@ implement.sh — 确定性实现驱动。代码由 acpx→外部实现 agent 写
 
 用法:
   implement.sh check [--repo PATH]        前置检查（不派发；报告 [BLOCK]/[WARN]）
+  implement.sh status [--repo PATH]       总览所有 feature 状态（Jev 给阶段意见 + 下一步建议）
   implement.sh <feature> [选项]           逐票实现
   implement.sh -h | --help                本帮助
 
@@ -82,6 +84,12 @@ USAGE
 }
 
 if [[ "$MODE" == "help" ]]; then print_usage; exit 0; fi
+if [[ "$MODE" == "status" ]]; then
+  sa=()
+  [[ -n "$REPO" ]] && sa+=(--repo "$REPO")
+  [[ "$DRY_RUN" -eq 1 ]] && sa+=(--dry-run)
+  bash "$SCRIPT_DIR/status.sh" "${sa[@]}"; exit $?
+fi
 
 FALLBACK_CHAIN=(zcode kimi claude dsh)
 RUN_MODEL="codex:gpt-6-luna"

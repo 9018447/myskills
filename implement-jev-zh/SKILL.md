@@ -12,10 +12,17 @@ disable-model-invocation: true
 
 ```text
 implement.sh check  [--repo R]              前置检查，先跑这个
+implement.sh status [--repo R] [--dry-run]  总览所有 feature 状态（Jev 给阶段意见 + 下一步建议）
 implement.sh <feature> [--repo R] [--agent AGENT[:MODEL]] [--retries N]
                         [--ttl SEC] [--dry-run] [--resume] [--skip-judge]
 implement.sh --help                         用法
 ```
+
+**总览状态（`implement.sh status`）**：扫 `<repo>/.scratch/*/` 全部 feature，读每个的实现证据
+（票数、跑过/卡住/完成的票、有无 `spec`、是否被状态文件接管），打一张确定性表格，再把这些证据
+合进**一次** Jev 请求：对每个 feature 让 Jev 从离散状态里挑（从未开始 / 推进中 / 中途暂停 /
+接近完成 / 已完成待验收 / 维护中停滞），并给出"下一步优先推进哪一个"的整体建议。低置信或
+`needs_review` 的 feature（比如有 `review_pack` 卡住）会主动标出来让你人工再判，不武断替你做决定。
 
 `<feature>` 对应 `<repo>/.scratch/<feature>/issues/NN-<slug>.md` 与 `spec.md`。脚本逐票执行，
 把每票作为一个独立闭环：**前置检查 → 基线记录 → agent 选择 → prompt+GitNexus impact →

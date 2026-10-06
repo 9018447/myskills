@@ -1,0 +1,28 @@
+{
+  "model": "typesafe/jev-1.13",
+  "state": {
+    "ticket": "",
+    "goal": "",
+    "agent_claim": "",
+    "receipts": []
+  },
+  "questions": {
+    "claim_supported": {
+      "type": "noul",
+      "instructions": "Do the execution receipts establish that this ticket is genuinely finished on disk? A successful fallback-chain hit, an end_turn marker, or an empty diff is NOT completion. Trust disk evidence (a new commit, real diffs, a handoff artifact, a passed check) over the agent's self-report.",
+      "criteria": {
+        "true": "The supplied receipts establish that the ticket's goal is complete.",
+        "false": "The supplied receipts do not establish completion."
+      }
+    },
+    "next_step": {
+      "type": "choice",
+      "instructions": "Given the completion evidence, what should happen next?",
+      "criteria": {
+        "review": "Proceed to code review and acceptance on the produced diff.",
+        "re_dispatch": "Completion is not established: re-dispatch this ticket with the relevant evidence attached.",
+        "ask_user": "Ambiguous completion, missing evidence, or a decision outside deterministic reach."
+      }
+    }
+  }
+}

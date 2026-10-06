@@ -1,0 +1,39 @@
+{
+  "model": "typesafe/jev-1.13",
+  "state": {
+    "feature": "",
+    "spec": "",
+    "tickets_done": [],
+    "deferred_findings": [],
+    "overall_diff": "",
+    "gitnexus_evidence": {}
+  },
+  "questions": {
+    "spec_satisfied": {
+      "type": "noul",
+      "instructions": "Across all tickets' diffs, test receipts, and the gitnexus structural risk summary, is the feature's spec genuinely satisfied with no unresolved findings smuggled as deferred?",
+      "criteria": {
+        "true": "The whole-change evidence establishes that the spec is met.",
+        "false": "The evidence does not establish that the spec is met, or a deferred finding still matters."
+      }
+    },
+    "accept": {
+      "type": "choice",
+      "instructions": "What is the final disposition of this feature?",
+      "criteria": {
+        "accept": "Spec satisfied, structural checks clean, deferred findings are acceptable; report and hand off.",
+        "rework": "Not satisfied: open a follow-up and re-dispatch the specific tickets that failed.",
+        "ask_user": "Borderline acceptance, a critical deferred finding, or a new import cycle requires the owner."
+      }
+    },
+    "structural_risk": {
+      "type": "score",
+      "instructions": "How risky is the overall change set given the gitnexus structural evidence (affected flows, risk summary, import cycles)?",
+      "criteria": [
+        "No structural concern; changes are localized and self-contained.",
+        "Moderate spread across a few flows; acceptable but worth a note in the handoff.",
+        "Broad impact, new import cycles, or a risk summary that conflicts with acceptance."
+      ]
+    }
+  }
+}

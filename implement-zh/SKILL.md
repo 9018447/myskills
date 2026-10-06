@@ -62,6 +62,8 @@ Tickets 原则上依次执行。每个 Ticket 单独开启一个新的 `/acpx` �
 * **不设 `--timeout`**（总时限会杀死仍在健康工作的 agent——2026-09-30 票 04 codex 即被
   4h 总时限截断）。会话活性由 `--ttl`（空闲时限，默认 300s，长票传 1800+）与日志监视兜底；
 * 不阻塞轮询，只通过任务完成通知或日志中的 `[done] end_turn` 判断结束；
+* **派发前先验证 pane 存活**：`herdr pane get <pane-id>` 或 `herdr pane list`。票与票之间 pane 会被回收（agent 会话结束后 pane 随之消失）——2026-10-05 票 T1 结束后 `w1E:p26` 即被回收，向它派发 T3 直接 `pane_not_found`，浪费一次派发。pane 不存在时先 `herdr tab create` 重建（同 label 则复用标签新建 tab），拿到新 pane-id 再派发，不得把命令发进未验证的 pane；
+* **派发的同一步里立即布完成 watcher**：一个后台 shell（`run_in_background`，长超时）盯日志直到 `[done] end_turn` 或错误标记出现。launcher（herdr pane run 包装）退出只代表命令已送进 pane，不代表任务完成——2026-10-05 票 T1/T2 都是用户追问"后台 shell 呢"之后才补的 watcher，属反应式补漏，以后派发与布 watcher 必须同一步完成；
 * **完成判据 = `[done] end_turn` 且日志尾部无错误块**：`AccountQuotaExceeded`、`RUNTIME:`、`error` 等出现时标记是假完成——agent 视为不可用，按候补链降级重派，并先审计盘上现状保留成果（半成品不是交付）；
 * 查看进度仅短暂读取日志；
 * `[done] end_turn` 后若包装进程仍存在，用已记录 PID 经 `ps -p <pid>` 确认后清理，不用 `pgrep -f`。

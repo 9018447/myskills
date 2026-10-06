@@ -28,3 +28,4 @@ __pycache__/
 
 # node
 node_modules/
+.aider*

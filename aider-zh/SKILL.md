@@ -1,60 +1,45 @@
 ---
-name: aider-zh
-description: 用 aider headless 快速派发单文件和零碎编码请求。网关配置由脚本从 Claude Code 的 settings.json 一次性提取（密钥不进对话），一条命令派发，完成后看日志和 git diff 验证。不写正式 SPEC，要求快速完成。
+name: aider-rs
+description: 用 aider-rs（Claude Code 插件的 MCP 工具）快速派发单文件和零碎编码请求。一次 `aider_task` 调一轮 LLM、改文件、自动提交，回来后看工具返回的 diff 和 git stat 验收。不写正式 SPEC，要求快速完成。
 tags: [user]
 ---
 
-# aider 快速派发（单文件 / 零碎编码）
+# aider-rs 快速派发（单文件 / 零碎编码）
 
-把 aider 当成一个无状态的写文件工头：一条命令派出去，它改文件、退出；回来后看日志和 diff 验收。目标是快——零碎编码请求不设确认门槛、不写正式 SPEC。
+aider-rs 是已安装的 Claude Code 插件，以 MCP 工具形式暴露在会话里，直接当无状态写文件工头用：一条 `aider_task` 派出去，它自己调 LLM、改文件、自动提交、退出；回来后看 diff 验收。目标是快——零碎编码请求不设确认门槛、不写正式 SPEC。
 
 ## 事实（已确认）
 
-- **网关配置走脚本**：`~/.claude/skills/aider-zh/aider-env.sh`（仓库内为 `aider-zh/aider-env.sh`）。它从 `~/.claude/settings.json` 的 `env` 块一次提取 `ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_MODEL`，导出成 litellm 认的变量（`ANTHROPIC_API_BASE` / `ANTHROPIC_API_KEY`），并自动加 `--model anthropic/<模型>`。密钥只落在环境变量里，**Agent 不需要也不应该读 settings.json**。
-- **`.env` 是另一种配置方式**：aider 默认读 git 仓库根目录的 `.env`（或用 `--env-file <路径>` 指定），变量名见技能目录下的 `.env.example`——网关用 `ANTHROPIC_API_BASE` + `ANTHROPIC_API_KEY`，aider 选项用 `AIDER_` 前缀（如 `AIDER_MODEL`）。适合按项目固定网关配置；`.env` 含密钥，必须进 `.gitignore`。两种方式都在时，环境变量（脚本导出的）优先。
-- 原 `~/.aider.conf.yml` 指向的 glm 网关已弃用（2026-10-05 实测连不上），一律通过脚本派发，不要直接调 `aider`。
-- `aider -f <prompt.md> --yes-always` 是无状态一次调用：读 prompt 文件 → 改文件 → 退出。
-- **`~/.aider.conf.yml` 设了 `auto-commits: false`，aider 不会自己 commit**。何时提交、怎么提交由编排者自己把握，技能不做规定。
-- 模型是自建网关的 `glm-5.3-flash[1m]`，litellm 不认识这个名字，脚本已通过 `aider-model-metadata.json` 补上真实上限（输入 1M、输出 32K）。换模型名时同步改这个文件。
-- **网关会截断过长回复**：一次产出大文件时文件可能被写一半（表现为测试文件只剩函数名、pytest 0 collected）。修复方式是补一条"文件被截断了，重写完整文件"的 fix 派发；prompt 里写明"回复保持简短"能显著降低截断概率。
-- **模型可能把闲聊文本当成文件名**：曾出现 aider 创建了名为"完成后请执行提交："的杂物文件。验收时 `git status` 扫一眼，发现无关文件直接删。
-- `--read <file>` 把文件标为只读；有现成的长上下文文件（接口文档、已有 SPEC）就用它加载，没有就不加。
+- **调用走 MCP 工具，不是 CLI/脚本**：`mcp__plugin_aider-rs_aider-rs__aider_task` 派发（参数 `task` 自然语言、`files` 目标文件数组、`reset_context` 布尔）；`aider_status` 看会话状态；`aider_undo` 回滚上一次改动。不再需要旧 aide-zh 的 `aider-env.sh`、`.env`、`aider-model-metadata.json`——那些是 headless aider 的脚手架，已闲置，见技能目录 `_legacy/`。
+- **自动提交**：aider-rs 每轮成功编辑后就 auto-commit（工具返回 commit hash）。和旧 aider 的 `auto-commits: false` 相反——提交时机由它自己把握，编排者只负责验收，不再自己决定何时 commit。
+- **上下文默认累积**：同一会话里多次 `aider_task` 默认共享累积上下文，直到某次传 `reset_context: true` 才清空。与旧 aider"每次调用都是新鲜上下文"相反。补丁型小任务用累积省来回成本；想要无状态就用 `reset_context: true`。
+- **`files` 参数锁改动范围**：把目标文件放进 `files` 数组，aider-rs 只在这些文件里改。单文件范围由编排者通过只传目标文件控制。
+- **验收看工具返回的 diff**：`aider_task` 直接在返回里给出 diff、commit hash 和 token 用量。不再写 `.agent-results/` 日志。
+- **模型是网关的 `glm-5.3-flash[1m]`，配置在 `~/.config/aider-rs/`**（env 前缀 `AIDER_RS_`）。aider-rs 自己直连网关，没有旧 aider 的 litellm 不识别模型名问题，也不需要 model-metadata 补上限。
+- **系统 prompt 会追加 `~/.config/aider-rs/AGENTS.md`**：文件非空时，其内容作为额外指令叠进每轮任务。曾实测带来超出请求的输出（要加一行注释却多写了一节 README）。验收时留意，发现无关改动按需回滚（`aider_undo`）或补修正任务。
+- **SEARCH 块匹配失败会重试**：默认 `max_edit_retries` 为 1，改不到目标会再试一轮；两轮仍不对就停（见停止条件）。
 
 ## 硬约束（违反即任务错误）
 
-- **只派发，不代写**。本技能的产出方式是 aider 改文件、你验收；发现自己在直接写目标文件的代码，就是走错了流程（除非 aider 不可用，此时直接普通编码并告知用户）。
-- **单文件范围**。一次派发只允许动一个生产文件（外加最多一个测试文件）。`git show --stat HEAD` 看到其他生产文件被改就是越界，回滚重派。
-- **prompt 必须自足**。aider 每次调用都是新鲜上下文，看不到本对话——prompt 里要写清目标文件路径、要做什么、期望值（用字面量）、不要做什么。
-- **验证靠日志和 diff**。派发后看两样：日志末尾有没有测试/报错输出；`git show --stat HEAD` 动了哪些文件。仓库有测试入口就传 `--test-cmd "<命令>" --auto-test` 让 aider 自己迭代到绿。
+- **只派发，不代写**。产出方式是 `aider_task` 改文件、你验收；发现自己在直接写目标文件的代码，就是走错了流程（除非 aider-rs 不可用，此时直接普通编码并告知用户）。
+- **单文件范围**。一次派发只允许动一个生产文件（外加最多一个测试文件）。做法是在 `files` 里只传目标文件；`git show --stat HEAD` 看到其他生产文件被改就是越界，`aider_undo` 回滚重派。
+- **task 描述必须自足**。`task` 字符串要写清目标文件路径、要做什么、期望值（用字面量）、不要做什么。不要假定 aider-rs 看过本对话之外的内容。
+- **验证靠返回 diff 和 git stat**。派发后看两样：工具返回的 diff/commit；`git show --stat HEAD` 动了哪些文件。
 
 ## 快速流程
 
 1. **判范围**：请求是否落在一个文件里？不是就停（见停止条件）。
-2. **写 prompt**：短请求直接写进 `.aider-prompts/<任务名>.md`（先 `mkdir -p .aider-prompts .agent-results`）。一段话即可：做什么、改哪个文件、期望是什么、别动什么。
-3. **派发**（在仓库根目录）：
-
-```bash
-~/.claude/skills/aider-zh/aider-env.sh \
-  --yes-always \
-  --test-cmd "<TEST_CMD>" --auto-test \
-  -f .aider-prompts/<任务名>.md \
-  <目标文件路径> \
-  > .agent-results/<任务名>.log 2>&1
-```
-
-（仓库没有测试设施就去掉 `--test-cmd` 和 `--auto-test` 两行。）
-
-4. **验收**：日志末尾测试输出全绿（有测试设施时）；`git status` / `git show --stat` 只应看到目标文件（外加最多一个测试文件），发现无关杂物文件直接删；期望值抽查一两个（跑一次性 REPL/CLI 检查）。有问题就补一条修正 prompt 再派一次。
+2. **派发**：调用 `aider_task`，`task` 一段自足描述（做什么、改哪个文件、期望是什么、别动什么），`files` 传 `[<目标文件路径>]`。
+3. **验收**：看返回的 diff 是否只动目标文件；`git show --stat HEAD` 确认没多改；期望值抽查一两个（跑一次性 REPL/CLI 检查）。发现问题就补一条修正 task 再派一次，或 `aider_undo` 回滚。
 
 ## 停止条件
 
-- **任务要动多个生产文件**（跨文件重构、schema/协议迁移、改共享常量）：本技能不适用，告诉用户换方式。
-- **两次派发后仍不对**：停下，把日志尾部和 diff 贴给用户，不要让 aider 无限循环——它会开始改测试断言来"通过"。
-- **网关连不上或 401**（日志出现 `Connection error` / `InternalServerError` / 认证失败）：停下报告用户，不要自行换模型、不要反复重试。
+- **任务要动多个生产文件**（跨文件重构、schema/协议迁移、改共享常量）：本技能不适用，告诉用户换方式（`/acpx` 派给实现 agent）。
+- **两次派发后仍不对**：停下，把 diff 和 git stat 贴给用户，不要让它无限循环——它会开始改测试断言来"通过"。
+- **aider-rs 不可用**（`aider_status` 报错、或任务超时无提交）：停下报告用户，不要自行换工具、不要反复重试。
 - **SPEC 级需求**（需要用户确认行为和验收标准才敢动手的）：告诉用户这超出快速派发，先确认再派。
 
 ## 完成条件
 
-- 目标文件的改动已落地（`git status` / diff 可见，且只含目标文件；何时 commit 由编排者把握）。
-- 日志在 `.agent-results/` 里留档。
+- 目标文件的改动已落地（`git status` / `git show --stat HEAD` 可见，且只含目标文件；aider-rs 已自动提交）。
 - 验收结果已向用户汇报：改了什么、怎么验证的。

@@ -53,6 +53,25 @@ For structural queries:
 → `LSP` or `GitNexus` when relationships must be expanded  
 → `Read` the final source
 
+## GitNexus usage
+
+GitNexus answers graph-level questions: call chains, execution flows, change impact, and architecture. **Always use the CLI, not the MCP server** — the server is often not mounted (sessions frequently hit `Server "gitnexus" not found`). Run from the repo root: `node .gitnexus/run.cjs <command> --repo .`, always passing `--repo .` (or the intended repo path); never rely on a default binding when multiple repos are indexed.
+
+Before trusting a graph result, confirm the index is fresh with `node .gitnexus/run.cjs status --repo .`; if it reports stale (indexed commit ≠ HEAD), re-index with `node .gitnexus/run.cjs analyze --index-only` before continuing.
+
+| Question | Command |
+|---|---|
+| Execution flows for a concept | `query "<concept>" --repo .` (`-l` caps results) |
+| Callers / callees of a symbol | `context <symbol> --repo .` (`-f <path>` disambiguates common names) |
+| Shortest call path between two symbols | `trace <from> <to> --repo .` |
+| Change blast radius | `impact <symbol> -d upstream --repo .` |
+| Pre-commit change impact | `detect-changes --scope all --repo .` |
+| Custom call-chain trace | `cypher '<pattern>' --repo .` |
+
+Expanding `impact -d upstream`: d=1 direct dependents **WILL BREAK** (review first), d=2 **LIKELY AFFECTED**, d=3 transitive. `impact`'s risk is the edit gate: warn on HIGH/CRITICAL, stop on UNKNOWN — an empty caller set is not LOW, it means the walk could not answer (property access, dynamic dispatch, cross-language calls). Confirm with `zg --rg` before treating a symbol as safe to change or delete.
+
+An empty `query` / `context` / `impact` result does not mean the symbol is unused — the index may not resolve it. Fall back to `zg --rg` text search before concluding.
+
 ## Avoid redundant tools
 
 Do not use built-in `Grep` or `Glob` when the equivalent search can be performed by this routing layer.

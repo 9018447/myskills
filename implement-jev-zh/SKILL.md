@@ -13,7 +13,8 @@ disable-model-invocation: true
 ```text
 implement.sh check  [--repo R]              前置检查，先跑这个
 implement.sh status [--repo R] [--dry-run] [--zg]  总览所有 feature 状态；--zg 用语义索引检索实现痕迹
-implement.sh <feature> [--repo R] [--agent AGENT[:MODEL]] [--retries N]
+implement.sh list   [--repo R] [<feature>]  列出 feature 的 tickets（拓扑序 + 每票状态/标题/依赖）
+implement.sh <feature> [--repo R] [--agent AGENT[:MODEL]|'A->B->C'] [--retries N]
                         [--ttl SEC] [--dry-run] [--resume] [--skip-judge]
 implement.sh --help                         用法
 ```
@@ -44,7 +45,8 @@ headless 派发 → 完成判据 → 确定性核验 → 一个 Jev 判断门 �
 缺 `spec.md`（用 ticket 标题兜底）、拓扑有环/悬空、已有上次运行状态。`--repo` 未给时自动取
 当前目录 git 根；`<feature>` 未给且 `.scratch` 下唯一子目录时自动取，多个会列出并停在 BLOCK。
 
-- `--agent` 显式指定实现 agent（如 `codex:gpt-6-luna`、`kimi`）。未指定且非运行票时，驱动停止询问，不自行选择。
+- `--agent` 显式指定实现 agent（如 `codex:gpt-6-luna`、`kimi`）。未指定且非运行票时，驱动停止询问，不自行选择。也支持链式 `'A->B->C'`：按拓扑顺序给每张**真实**票（doc/跳过票不占位）分配下一个 agent，用尽后从头轮转，适合"交错的 agent 分工"。
+- `list` 子命令：只读列出某 feature 的 tickets——按拓扑顺序，含每票状态（todo/done/blocked）、标题与 `Blocked by`。`<feature>` 省略时自动发现，多 feature 则列出可用项。不开前置检查（不要求 jev-decide/herdr）。
 - `--dry-run` 只建 prompt/基线/证据桩，不派发真实 agent、不调 Jev，用于接线自检（也过前置检查）。
 - `--skip-judge` 跑到证据步停止，不调 Jev。
 - `--resume` 从 `.agent-results/.implement-state.json` 续跑。

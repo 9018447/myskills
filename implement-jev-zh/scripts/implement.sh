@@ -6,12 +6,15 @@
 #
 # Usage:
 #   implement.sh check  [--repo PATH]          run pre-flight checks only (no dispatch)
+#   implement.sh status [--repo PATH]          overview of every feature's stage (Jev)
+#   implement.sh list   [--repo PATH] [feature]  list a feature's tickets (topo order + status)
 #   implement.sh <feature> [OPTIONS]           implement tickets
 #   implement.sh -h | --help                   usage
 #
 #   <feature>   name of the feature dir: <repo>/.scratch/<feature>/issues/NN-<slug>.md
 #   --repo      target code repo (default: git root of cwd; auto-discovered if omitted)
-#   --agent     pin an agent (e.g. codex:gpt-6-luna, kimi). Unset → rule-based selection.
+#   --agent     pin an agent (codex:gpt-6-luna, kimi, ...). Or chain: 'a->b->c' assigns
+#               each ticket (in topo order) the next agent, cycling as needed.
 #   --retries   max re-dispatch rounds per ticket on in-scope fixes (default 2)
 #   --ttl       acpx idle TTL in seconds (default 300; pass 1800+ for long/run tickets)
 #   --dry-run   build prompt/baseline/evidence without dispatching a real agent
@@ -37,6 +40,7 @@ while [[ $i -lt ${#args[@]} ]]; do
   case "${args[$i]}" in
     check|--check) MODE="check" ;;
     status|--status) MODE="status" ;;
+    list|--list) MODE="list" ;;
     -h|--help) MODE="help" ;;
     --repo) REPO="${args[$((i+1))]}"; i=$((i+1));;
     --agent) AGENT_OVERRIDE="${args[$((i+1))]}"; i=$((i+1));;
@@ -62,6 +66,7 @@ implement.sh — 确定性实现驱动。代码由 acpx→外部实现 agent 写
 用法:
   implement.sh check [--repo PATH]        前置检查（不派发；报告 [BLOCK]/[WARN]）
   implement.sh status [--repo PATH]       总览所有 feature 状态（Jev 给阶段意见 + 下一步建议）
+  implement.sh list [--repo PATH] [feature]  列出 feature 的 tickets（拓扑序 + 状态）
   implement.sh <feature> [选项]           逐票实现
   implement.sh -h | --help                本帮助
 
@@ -72,6 +77,7 @@ implement.sh — 确定性实现驱动。代码由 acpx→外部实现 agent 写
 选项:
   --repo PATH   目标代码仓库（默认：当前目录所在 git 根）
   --agent A[:M] 固定实现 agent（如 codex:gpt-6-luna、kimi）；不指定且非运行票会停下询问
+                chain：'A1->A2->A3' 按拓扑顺序逐票轮转分配 agent（循环，跨越 doc/跳过票）
   --retries N   单票范围内修复的重派轮数上限（默认 2）
   --ttl SEC     acpx 空闲时限（默认 300；长票 1800+）
   --dry-run     只建 prompt/基线/证据桩，不派发真实 agent、不调 Jev（退出码 4）
@@ -89,6 +95,18 @@ if [[ "$MODE" == "status" ]]; then
   [[ -n "$REPO" ]] && sa+=(--repo "$REPO")
   [[ "$DRY_RUN" -eq 1 ]] && sa+=(--dry-run)
   bash "$SCRIPT_DIR/status.sh" "${sa[@]}"; exit $?
+fi
+
+# --agent 'A->B->C': assign agents per ticket in topo order, cycling across real tickets
+# (doc-only/skipped tickets don't consume a slot). A plain 'A' keeps single-agent pinning.
+CHAIN=(); CHAIN_TAKEN=0
+if [[ "$AGENT_OVERRIDE" == *"->"* ]]; then
+  _cs=$'\x1f'          # unit separator — split only on the literal "->", never on '-' inside names
+  _cs_in="${AGENT_OVERRIDE//->/$_cs}"
+  IFS="$_cs" read -ra CHAIN <<< "$_cs_in"
+  _tmp=(); for _c in "${CHAIN[@]}"; do [[ -n "$_c" ]] && _tmp+=("$_c"); done
+  CHAIN=("${_tmp[@]}")
+  log "agent chain: ${CHAIN[*]:-<empty>} — 按拓扑顺序逐票轮转"
 fi
 
 FALLBACK_CHAIN=(zcode kimi claude dsh)
@@ -159,6 +177,43 @@ print('\n'.join(order))
 PY
 }
 
+list_tickets() {
+  # read-only summary of a feature's tickets: topo order + per-ticket status/title/blocked_by
+  echo "feature: ${FEATURE:-<none>}    (repo: ${REPO:-<none>})"
+  if [[ -z "$FEATURE" || ! -d "$ISSUES_DIR" ]]; then
+    local cands
+    cands="$( (ls -d "$REPO"/.scratch/*/ 2>/dev/null || true) | xargs -n1 basename 2>/dev/null | tr '\n' ' ' )"
+    if [[ -n "$REPO" && -n "$cands" ]]; then echo "available features: $cands"
+    else echo "没有 feature（$REPO/.scratch/ 为空）——用 <feature> 指定"; fi
+    return 0
+  fi
+  local -a order; mapfile -t order < <(topo_sort)
+  local ncount; ncount="$(ls "$ISSUES_DIR"/[0-9][0-9]-*.md 2>/dev/null | wc -l | tr -d ' ')"
+  [[ "$ncount" -eq 0 ]] && { echo "no NN-*.md tickets under $ISSUES_DIR"; return 0; }
+  echo
+  printf '%-4s %-8s %-30s %s\n' '#' 'status' 'ticket' 'blocked_by  / title'
+  echo '--------------------------------------------------------------------'
+  local idx tid title bc st dep depdone
+  for idx in "${!order[@]}"; do
+    tid="${order[$idx]}"
+    [[ -z "$tid" || "$tid" != [0-9][0-9]-* ]] && continue   # skip blank / stray files
+    title="$(grep -m1 '^#' "$ISSUES_DIR/$tid.md" 2>/dev/null | sed 's/^#\+//' | xargs 2>/dev/null)"
+    bc="$(awk '/^Blocked by:/{sub(/^Blocked by:[ \t]*/,"");print;exit}' "$ISSUES_DIR/$tid.md" 2>/dev/null | tr ',，' ' ' | xargs)"
+    st="todo"
+    [[ "$(json_get "$STATE_FILE" "state.done.$tid" 2>/dev/null)" == "done" ]] && st="done"
+    if [[ "$st" != "done" && -n "$bc" ]]; then
+      depdone=1
+      for dep in $bc; do
+        [[ "$(json_get "$STATE_FILE" "state.done.$dep" 2>/dev/null)" == "done" ]] || depdone=0
+      done
+      [[ $depdone -eq 0 ]] && st="blocked"
+    fi
+    printf '%-4s %-8s %-30s %s\n' "$idx" "$st" "$tid" "  ($bc)  $title"
+  done
+  echo
+  echo "run: implement.sh $FEATURE [--resume] [--agent 'a->b']"
+}
+
 escalate() { # escalate <ticket> <reason> <pack-extra...>
   local tid="$1" reason="$2"; shift 2
   log "ESCALATE $tid: $reason"
@@ -186,11 +241,18 @@ escalate() { # escalate <ticket> <reason> <pack-extra...>
 }
 
 # ---------- agent selection ----------
-pick_agent() { # pick_agent <ticket_name> <ticket_file> -> echoes "agent[:model]"
-  local tid="$1" tf="$2"
+pick_agent() { # pick_agent <ticket_name> <ticket_file> <chain_slot> -> echoes "agent[:model]"
+  # NOTE: runs inside $( ) command substitution (subshell), so it must be stateless —
+  # chain position is passed in as <chain_slot>, never mutated here.
+  local tid="$1" tf="$2" slot="${3:-0}"
   # doc-only ticket (no code) → exempt from dispatch/review regardless of override
   if grep -qiE '^type:\s*doc|仅文档|doc-only' "$tf"; then echo "doc"; return; fi
-  if [[ -n "$AGENT_OVERRIDE" ]]; then echo "$AGENT_OVERRIDE"; return; fi
+  if [[ -n "$AGENT_OVERRIDE" ]]; then
+    if [[ "${#CHAIN[@]}" -gt 0 ]]; then
+      echo "${CHAIN[$((slot % ${#CHAIN[@]}))]}"; return
+    fi
+    echo "$AGENT_OVERRIDE"; return
+  fi
   # run ticket? heuristic: ticket body mentions 运行/run or a 时长 ≥20
   if grep -qiE '运行|run\b|时长:\s*(2[0-9]|[3-9][0-9]|[0-9]{3,})' "$tf"; then
     echo "$RUN_MODEL"; return
@@ -432,7 +494,8 @@ preflight() {  # preflight <mode=run|check>
 
   printf '\n\033[1m=== implement 前置检查 (%s) ===\033[0m\n' "$mode"
 
-  # ---- tools ----
+  # ---- tools (run/check need these; list/status are read-only) ----
+  if [[ "$mode" == "check" || "$mode" == "run" ]]; then
   printf '\n\033[1m[工具]\033[0m\n'
   local t
   for t in git python3; do
@@ -465,6 +528,7 @@ preflight() {  # preflight <mode=run|check>
       && { echo "  template $tpl: valid"; } \
       || { badtpl=1; say_w "judge-templates/$tpl.json 不是合法 JSON"; }
   done
+  fi
 
   # ---- repo / feature ----
   printf '\n\033[1m[仓库与 feature]\033[0m\n'
@@ -537,7 +601,8 @@ preflight() {  # preflight <mode=run|check>
 
 # ================= MAIN =================
 setup_paths
-preflight "$MODE"; pf=$?
+if [[ "$MODE" == "list" ]]; then preflight "$MODE" >/dev/null 2>&1; else preflight "$MODE"; fi; pf=$?
+if [[ "$MODE" == "list" ]]; then list_tickets; exit 0; fi
 if [[ "$MODE" == "check" ]]; then exit "$pf"; fi
 if [[ "$pf" -ne 0 ]]; then
   log "前置检查未通过——先解决 [BLOCK] 项（可再跑 implement.sh check），或用 --repo / 显式 <feature>"
@@ -578,7 +643,7 @@ for tid in "${ORDER[@]:-}"; do
   fi
 
   tsfile="$ISSUES_DIR/$tid.md"
-  agent="$(pick_agent "$tid" "$tsfile")"
+  agent="$(pick_agent "$tid" "$tsfile" "$CHAIN_TAKEN")"
   if [[ "$agent" == "doc" ]]; then
     log "$tid is doc-only; no dispatch/review (declare exempt)"
     python3 - "$STATE_FILE" "$tid" <<'PY'
@@ -592,6 +657,9 @@ PY
     escalate "$tid" "未指定 agent 且非运行票——需要你选实现 agent" "pick_agent could not decide; --agent <a> to pin."
     ESCALATED=1; break
   fi
+
+  # a real (non-doc, non-ask) ticket consumes one chain slot (caller-side, survivit subshell)
+  CHAIN_TAKEN=$((CHAIN_TAKEN+1))
 
   log "ticket $tid -> agent=$agent retries=$(json_get "$STATE_FILE" "state.retries.$tid" 2>/dev/null || echo 0)"
 

@@ -23,7 +23,7 @@
 #        4 dry-run complete; 1 error.  `check` exits 0 (ready) / 1 (blocked).
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ROOT="$SCRIPT_DIR/.."                 # skill dir (implement-jev-zh)
 JUDGE="$SCRIPT_DIR/judge.sh"
 GNX="$SCRIPT_DIR/gnx.sh"

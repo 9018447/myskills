@@ -11,10 +11,10 @@ RULES_DIR="$ROOT/.claude/rules"
 # 1. 工具检查（check-tools.sh 恒 exit 0，缺工具只报告不阻断）
 TOOLS="$(bash "$SCRIPT_DIR/check-tools.sh" 2>&1 || true)"
 
-# 2. 写两个细则文件（覆盖已存在者）
+# 2. 写两个细则文件（建软链接指向技能源文件）
 mkdir -p "$RULES_DIR"
-cp "$SCRIPT_DIR/ADD_RULES.md"  "$RULES_DIR/code-search.md"
-cp "$SCRIPT_DIR/CODING_RULES.md" "$RULES_DIR/coding-principle.md"
+ln -sfn "$SCRIPT_DIR/ADD_RULES.md"  "$RULES_DIR/code-search.md"
+ln -sfn "$SCRIPT_DIR/CODING_RULES.md" "$RULES_DIR/coding-principle.md"
 
 # 3. 选概要落点：CLAUDE.md 存在用它；否则 AGENTS.md；都不存在创建 AGENTS.md
 summary_action="updated summary"

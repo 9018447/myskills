@@ -11,20 +11,30 @@ disable-model-invocation: true
 ## 驱动入口
 
 ```text
+implement.sh check  [--repo R]              前置检查，先跑这个
 implement.sh <feature> [--repo R] [--agent AGENT[:MODEL]] [--retries N]
                         [--ttl SEC] [--dry-run] [--resume] [--skip-judge]
+implement.sh --help                         用法
 ```
 
 `<feature>` 对应 `<repo>/.scratch/<feature>/issues/NN-<slug>.md` 与 `spec.md`。脚本逐票执行，
-把每票作为一个独立闭环：**基线记录 → agent 选择 → prompt+GitNexus impact → headless 派发 →
-完成判据 → 确定性核验 → 一个 Jev 判断门 → 按值路由 → 下一票 → 整体 Jev 验收门**。
+把每票作为一个独立闭环：**前置检查 → 基线记录 → agent 选择 → prompt+GitNexus impact →
+headless 派发 → 完成判据 → 确定性核验 → 一个 Jev 判断门 → 按值路由 → 下一票 → 整体 Jev 验收门**。
+
+**前置检查（`implement.sh check`）**：任何真实派发前先自检，报告 `[BLOCK]`/`[WARN]` 后退出。
+`[BLOCK]`（0 个才放行）包括：`jev-decide`/`herdr`/`git`/`python3` 缺失、real 运行缺
+`OPENROUTER_API_KEY`/`TYPESAFE_API_KEY`、仓库不是 git、feature 目录或 tickets 不存在、多个
+候选 feature 未指定。`[WARN]`（可带病）包括：`gitnexus`/`zcode-preflight.sh` 不在 PATH、
+缺 `spec.md`（用 ticket 标题兜底）、拓扑有环/悬空、已有上次运行状态。`--repo` 未给时自动取
+当前目录 git 根；`<feature>` 未给且 `.scratch` 下唯一子目录时自动取，多个会列出并停在 BLOCK。
 
 - `--agent` 显式指定实现 agent（如 `codex:gpt-6-luna`、`kimi`）。未指定且非运行票时，驱动停止询问，不自行选择。
-- `--dry-run` 只建 prompt/基线/证据桩，不派发真实 agent、不调 Jev，用于接线自检。
+- `--dry-run` 只建 prompt/基线/证据桩，不派发真实 agent、不调 Jev，用于接线自检（也过前置检查）。
 - `--skip-judge` 跑到证据步停止，不调 Jev。
-- `--resume` 从 `.agent-results/.implement-state.json` 续跑，先打印之前的 review-pack。
+- `--resume` 从 `.agent-results/.implement-state.json` 续跑。
 
 退出码：`0` 全部通过并整体验收；`3` 停在等待人类决策；`4` dry-run 完成；`1` 出错。
+`check` 子命令：`0` 就绪可跑 / `1` 有 `[BLOCK]` 项。
 
 ## 状态与产物
 

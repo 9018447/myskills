@@ -5,11 +5,12 @@
 # + review layer.
 #
 # Usage:
-#   implement.sh <feature> [--repo PATH] [--agent AGENT[:MODEL]] [--retries N]
-#                        [--ttl SEC] [--dry-run] [--resume] [--skip-judge]
+#   implement.sh check  [--repo PATH]          run pre-flight checks only (no dispatch)
+#   implement.sh <feature> [OPTIONS]           implement tickets
+#   implement.sh -h | --help                   usage
 #
 #   <feature>   name of the feature dir: <repo>/.scratch/<feature>/issues/NN-<slug>.md
-#   --repo      target code repo (default: git root of cwd)
+#   --repo      target code repo (default: git root of cwd; auto-discovered if omitted)
 #   --agent     pin an agent (e.g. codex:gpt-6-luna, kimi). Unset → rule-based selection.
 #   --retries   max re-dispatch rounds per ticket on in-scope fixes (default 2)
 #   --ttl       acpx idle TTL in seconds (default 300; pass 1800+ for long/run tickets)
@@ -19,7 +20,7 @@
 #
 # State: <repo>/.agent-results/.implement-state.json
 # Exit:  0 all tickets green + final acceptance passed; 3 paused awaiting a human;
-#        4 dry-run complete; 1 error.
+#        4 dry-run complete; 1 error.  `check` exits 0 (ready) / 1 (blocked).
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,11 +30,13 @@ GNX="$SCRIPT_DIR/gnx.sh"
 
 # ---------- defaults ----------
 FEATURE=""; REPO=""; AGENT_OVERRIDE=""; RETRIES=2; TTL=300
-DRY_RUN=0; RESUME=0; SKIP_JUDGE=0
+DRY_RUN=0; RESUME=0; SKIP_JUDGE=0; MODE="run"
 
 args=("$@"); i=0
 while [[ $i -lt ${#args[@]} ]]; do
   case "${args[$i]}" in
+    check|--check) MODE="check" ;;
+    -h|--help) MODE="help" ;;
     --repo) REPO="${args[$((i+1))]}"; i=$((i+1));;
     --agent) AGENT_OVERRIDE="${args[$((i+1))]}"; i=$((i+1));;
     --retries) RETRIES="${args[$((i+1))]}"; i=$((i+1));;
@@ -47,23 +50,38 @@ while [[ $i -lt ${#args[@]} ]]; do
   i=$((i+1))
 done
 
-if [[ -z "$FEATURE" ]]; then echo "implement.sh: need a <feature>"; exit 1; fi
-if [[ -z "$REPO" ]]; then
-  REPO="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null)" || { echo "implement.sh: cannot find a git repo (use --repo)"; exit 1; }
-fi
-ISSUES_DIR="$REPO/.scratch/$FEATURE/issues"
-OUT_DIR="$REPO/.agent-results"
-STATE_FILE="$OUT_DIR/.implement-state.json"
-LOG_DIR="$OUT_DIR"
-mkdir -p "$ISSUES_DIR/.." "$OUT_DIR"
-
 log()  { printf '[implement %(%H:%M:%S)T] %s\n' -1 "$*"; }
 die()  { log "error: $*"; exit 1; }
-
 need_cmd() { command -v "$1" >/dev/null 2>&1 || { log "required tool missing: $1"; exit 1; }; }
-need_cmd jev-decide
-need_cmd git
-[[ "$DRY_RUN" -eq 1 ]] || need_cmd herdr
+
+print_usage() {
+  cat <<'USAGE'
+implement.sh — 确定性实现驱动。代码由 acpx→外部实现 agent 写；判断/评审由 Jev + GitNexus + 脚本负责。
+
+用法:
+  implement.sh check [--repo PATH]        前置检查（不派发；报告 [BLOCK]/[WARN]）
+  implement.sh <feature> [选项]           逐票实现
+  implement.sh -h | --help                本帮助
+
+位置:
+  <feature>  feature 目录名：<repo>/.scratch/<feature>/issues/NN-<slug>.md
+             （省略时自动发现：<repo>/.scratch 下唯一子目录；多个会列出并停止）
+
+选项:
+  --repo PATH   目标代码仓库（默认：当前目录所在 git 根）
+  --agent A[:M] 固定实现 agent（如 codex:gpt-6-luna、kimi）；不指定且非运行票会停下询问
+  --retries N   单票范围内修复的重派轮数上限（默认 2）
+  --ttl SEC     acpx 空闲时限（默认 300；长票 1800+）
+  --dry-run     只建 prompt/基线/证据桩，不派发真实 agent、不调 Jev（退出码 4）
+  --resume      从保存的状态续跑
+  --skip-judge  跑到证据步就停，不调 Jev
+
+退出码: 0 全绿+整体验收通过;  3 停下等人决断;  4 dry-run 完成;  1 出错
+        check: 0 就绪可跑 / 1 有 BLOCK 项
+USAGE
+}
+
+if [[ "$MODE" == "help" ]]; then print_usage; exit 0; fi
 
 FALLBACK_CHAIN=(zcode kimi claude dsh)
 RUN_MODEL="codex:gpt-6-luna"
@@ -385,7 +403,138 @@ PY
 
 }
 
+# ---------- derived paths ----------
+setup_paths() {
+  [[ -n "${REPO:-}" && -n "${FEATURE:-}" ]] || return 0
+  ISSUES_DIR="$REPO/.scratch/$FEATURE/issues"
+  OUT_DIR="$REPO/.agent-results"
+  STATE_FILE="$OUT_DIR/.implement-state.json"
+  LOG_DIR="$OUT_DIR"
+  mkdir -p "$ISSUES_DIR/.." "$OUT_DIR" 2>/dev/null || true
+}
+
+# ---------- pre-flight ----------
+# Everything that would make a later step fail fast BEFORE we spend dispatch/tokens.
+# Resolution is discovery-friendly: fills in REPO (cwd git root) and FEATURE
+# (unique dir under <repo>/.scratch). Returns 0 = ready, 1 = a BLOCK item remains.
+preflight() {  # preflight <mode=run|check>
+  local mode="$1" blocks=0 warns=0
+  say_b() { blocks=$((blocks+1)); printf '  \033[31m[BLOCK]\033[0m %s\n' "$1"; }
+  say_w() { warns=$((warns+1)); printf '  \033[33m[WARN ]\033[0m %s\n' "$1"; }
+
+  printf '\n\033[1m=== implement 前置检查 (%s) ===\033[0m\n' "$mode"
+
+  # ---- tools ----
+  printf '\n\033[1m[工具]\033[0m\n'
+  local t
+  for t in git python3; do
+    command -v "$t" >/dev/null 2>&1 || say_b "$t 不可用（不在 PATH）"
+  done
+  command -v jev-decide >/dev/null 2>&1 || say_b "jev-decide 不可用——判断门跑不了（uv tool jev-skill 安装到 ~/.local/bin）"
+  if [[ "$DRY_RUN" -eq 0 ]]; then
+    command -v herdr >/dev/null 2>&1 || say_b "herdr 不可用——真实派发需要"
+  else
+    printf '  (dry-run：herdr 不检测)\n'
+  fi
+  command -v zcode-preflight.sh >/dev/null 2>&1 || \
+    say_w "zcode-preflight.sh 不在 PATH——若票选 zcode 需先跑 ~/.claude/scripts/zcode-preflight.sh"
+  command -v gitnexus >/dev/null 2>&1 || say_w "gitnexus 不在 PATH——GitNexus 结构证据将降级为缺失"
+
+  # ---- Jev ----
+  printf '\n\033[1m[Jev]\033[0m\n'
+  if [[ "$DRY_RUN" -eq 0 ]]; then
+    if [[ -z "${OPENROUTER_API_KEY:-}" && -z "${TYPESAFE_API_KEY:-}" ]]; then
+      say_b "未配置 OPENROUTER_API_KEY / TYPESAFE_API_KEY——jev-decide 没有凭据"
+    else
+      echo "  api key: present"
+    fi
+  else
+    echo "  api key: (dry-run 不调用 Jev，跳过)"
+  fi
+  local tpl badtpl=0
+  for tpl in completion review fix-routing final-acceptance; do
+    python3 -c "import json;json.load(open('$SCRIPT_DIR/judge-templates/$tpl.json'))" 2>/dev/null \
+      && { echo "  template $tpl: valid"; } \
+      || { badtpl=1; say_w "judge-templates/$tpl.json 不是合法 JSON"; }
+  done
+
+  # ---- repo / feature ----
+  printf '\n\033[1m[仓库与 feature]\033[0m\n'
+  if [[ -z "$REPO" ]]; then
+    REPO="$(git rev-parse --show-toplevel 2>/dev/null)" || REPO=""
+    [[ -n "$REPO" ]] || say_b "找不到 git 仓库根（当前目录不在 git 里）——用 --repo 指定"
+    [[ -n "$REPO" ]] && echo "  repo(自动): $REPO"
+  else
+    [[ -d "$REPO" ]] || say_b "--repo=$REPO 不是有效目录"
+    git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1 || say_b "--repo=$REPO 不是 git 仓库"
+    [[ -n "$REPO" && -d "$REPO" ]] && echo "  repo: $REPO"
+  fi
+
+  if [[ -n "$REPO" ]]; then
+    local cands="" nf
+    cands="$( (ls -d "$REPO"/.scratch/*/ 2>/dev/null || true) | xargs -n1 basename 2>/dev/null || true)"
+    if [[ -z "$FEATURE" ]]; then
+      nf="$(printf '%s\n' "$cands" | grep -c . )"
+      if [[ -z "$cands" ]]; then
+        say_b "没有发现 feature（$REPO/.scratch/ 为空）——需要实现目标"
+      elif [[ "$nf" -eq 1 ]]; then
+        FEATURE="$cands"; echo "  feature(自动): $FEATURE"
+      else
+        say_b "发现多个 feature：$(printf '%s' "$cands" | tr '\n' ' ')——请显式指定 <feature>"
+      fi
+    else
+      echo "  feature: $FEATURE"
+    fi
+
+    if [[ -n "$FEATURE" ]]; then
+      setup_paths
+      [[ -d "$ISSUES_DIR" ]] || say_b "$ISSUES_DIR 不存在"
+      local n total
+      n="$(ls "$ISSUES_DIR"/[0-9][0-9]-*.md 2>/dev/null | wc -l | tr -d ' ')"
+      [[ "$n" -ge 1 ]] || say_b "$ISSUES_DIR 下没有 NN-*.md tickets"
+      [[ "$n" -ge 1 ]] && echo "  tickets: $n files in $ISSUES_DIR"
+      [[ -f "$REPO/.scratch/$FEATURE/spec.md" ]] || say_w "未找到 spec.md（驱动用 ticket 标题兜底）"
+      if [[ "$n" -ge 1 && -d "$ISSUES_DIR" ]]; then
+        local -a order
+        mapfile -t order < <(topo_sort)
+        total="$(ls "$ISSUES_DIR"/[0-9][0-9]-*.md 2>/dev/null | wc -l | tr -d ' ')"
+        if [[ "${#order[@]}" -ne "$total" ]]; then
+          say_w "依赖有环/悬空——拓扑只覆盖 ${#order[@]}/$total 票（剩余会按字母兜底追加）"
+        else
+          echo "  拓扑序: ${order[*]}"
+        fi
+      fi
+    fi
+  fi
+
+  # ---- state / output ----
+  printf '\n\033[1m[状态与产物]\033[0m\n'
+  local st_file
+  if [[ -n "$REPO" && -n "$FEATURE" ]]; then
+    st_file="$REPO/.agent-results/.implement-state.json"
+    if [[ -f "$st_file" ]]; then
+      if [[ "$RESUME" -eq 1 ]]; then echo "  state: 存在，--resume 续跑"
+      else say_w "已存在上次运行状态 $st_file——本轮会继续累加。想整体重跑请先 --resume 或备份该文件"; fi
+    fi
+    [[ -w "$REPO" ]] || say_w "仓库目录不可写？产物会写入 $REPO/.agent-results"
+  fi
+
+  printf '\n\033[1m=== %d BLOCK / %d WARN ===\033[0m\n' "$blocks" "$warns"
+  if [[ "$blocks" -gt 0 ]]; then
+    printf '%s\n' "先解决上面的 [BLOCK] 再跑；[WARN] 可带病继续。"
+    return 1
+  fi
+  return 0
+}
+
 # ================= MAIN =================
+setup_paths
+preflight "$MODE"; pf=$?
+if [[ "$MODE" == "check" ]]; then exit "$pf"; fi
+if [[ "$pf" -ne 0 ]]; then
+  log "前置检查未通过——先解决 [BLOCK] 项（可再跑 implement.sh check），或用 --repo / 显式 <feature>"
+  exit 1
+fi
 export IMPL_OUT_DIR="$LOG_DIR"
 log "implement.sh feature=$FEATURE repo=$REPO dry_run=$DRY_RUN resume=$RESUME"
 [[ -d "$ISSUES_DIR" ]] || die "no tickets at $ISSUES_DIR"

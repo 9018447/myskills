@@ -20,7 +20,9 @@ Use the following routing policy for repository search and code navigation. Pref
 
 ## Search policy
 
-Use `zg` as the default repository content search engine.
+Use `zg` as the default repository content search engine. It is semantic retrieval backed by an embedding model, so it tolerates paraphrase and finds matches by meaning rather than exact names. `zg --rg` is a separate exact-text engine, not the default for conceptual queries.
+
+`zg` owns its repository index. If `zg status` reports the index missing or stale, rebuild with `zg index` instead of silently falling back to plain `rg` — a fresh semantic index is what `zg` queries depend on.
 
 Use `zg --rg` when the query contains an exact identifier, string, error message, regex, or other pattern that requires exhaustive matching.
 

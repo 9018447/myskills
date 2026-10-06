@@ -25,7 +25,7 @@ bash <技能目录>/install.sh [仓库根目录]
 
 脚本做的事（完全确定，agent 不在场）：
 
-- **工具检查** — 调用技能目录里的 `check-tools.sh`，报告 `rg`、`zg`、`ast-grep`、`gitnexus`、`aider-rs` 各自的存在状态（含 LSP 宿主提示）。
+- **工具检查** — 调用技能目录里的 `check-tools.sh`，报告 `rg`、`zg`、`ast-grep`、`gitnexus` 各自的存在状态（含 LSP 宿主提示）。
 - **写细则** — 确保 `.claude/rules/` 存在，写 `code-search.md` 和 `coding-principle.md`，内容分别用 [ADD_RULES.md](./ADD_RULES.md) 和 [CODING_RULES.md](./CODING_RULES.md) 原文。文件已存在就覆盖——安装即覆盖，不询问。
 - **选概要落点** — 优先级：`CLAUDE.md` 存在用 `CLAUDE.md`；否则 `AGENTS.md` 存在用 `AGENTS.md`；两个都不存在就创建 `AGENTS.md`。绝不同时操作两个文件。
 - **写概要** — 在落点文件末尾追加 `## Tool Routing` + `## Division of Labor` 块，内容用 [APPEND_CLAUDE.md](./APPEND_CLAUDE.md) 原文。落点文件尾部已有这两个标题时就地替换旧块，不追加重复的、不动用户对上方章节的编辑。

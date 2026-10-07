@@ -67,7 +67,7 @@ test('tui: 搜索模式屏蔽全局键，q 不退出而是进入过滤词', asyn
   unmount();
 });
 
-test('tui: 应用预设后返回技能页，分发勾选状态已刷新', async () => {
+test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {
   const { repo } = makeFixture();
   writeFileSync(
     join(repo, 'skills-manifest.json'),
@@ -85,7 +85,10 @@ test('tui: 应用预设后返回技能页，分发勾选状态已刷新', async 
   await tick();
   stdin.write('\x1b'); // 返回技能页
   await tick();
-  assert.match(lastFrame()!, /\[x\] claude/); // 勾选状态必须反映刚应用的预设，而不是旧的空快照
+  const m = JSON.parse(readFileSync(join(repo, 'skills-manifest.json'), 'utf8'));
+  assert.deepEqual(m.presetApplied, { base: ['claude'] }); // 应用关系必须落盘，而不是旧快照
+  assert.deepEqual(m.agents, {}); // 预设是独立单元，不并集烘焙进 agent 清单
+  assert.doesNotMatch(lastFrame()!, /\[x\] claude/); // 分发面板只反映清单勾选，预设应用在预设页展示
   unmount();
 });
 

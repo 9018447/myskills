@@ -50,17 +50,19 @@ test('deletePreset: 删除存在的预设', () => {
   assert.deepEqual(loadManifest(repo).presets, { cli: ['a'] });
 });
 
-test('applyPreset: 并集追加，已有技能不重复，返回新增数', () => {
+test('applyPreset: 只记录应用关系，不并入 agents 清单（预设是独立单元）', () => {
   const repo = makeRepo(['a', 'b', 'c'], {
     agents: { claude: ['a'] },
     presets: { web: ['a', 'b'] },
   });
   const r = applyPreset(repo, 'web', ['claude', 'cursor']);
+  // claude 已有 a，新增计 1；cursor 全新，计 2
   assert.deepEqual(r.added, { claude: 1, cursor: 2 });
   assert.deepEqual(r.missing, []);
   const m = loadManifest(repo);
-  assert.deepEqual(m.agents.claude, ['a', 'b']);
-  assert.deepEqual(m.agents.cursor, ['a', 'b']);
+  assert.deepEqual(m.agents.claude, ['a']); // 不烘焙进 agent 清单
+  assert.equal(m.agents.cursor, undefined);
+  assert.deepEqual(m.presetApplied, { web: ['claude', 'cursor'] });
 });
 
 test('applyPreset: 预设中仓库不存在的技能跳过并计入 missing', () => {
@@ -68,7 +70,7 @@ test('applyPreset: 预设中仓库不存在的技能跳过并计入 missing', ()
   const r = applyPreset(repo, 'web', ['claude']);
   assert.deepEqual(r.added, { claude: 1 });
   assert.deepEqual(r.missing, ['ghost']);
-  assert.deepEqual(loadManifest(repo).agents.claude, ['a']);
+  assert.equal(loadManifest(repo).agents.claude, undefined); // 不并入 agent 清单
 });
 
 test('applyPreset: 预设不存在时抛错', () => {
@@ -81,6 +83,24 @@ test('applyPreset: 记录 presetApplied，重复应用不重复记录', () => {
   applyPreset(repo, 'web', ['claude']);
   applyPreset(repo, 'web', ['claude', 'cursor']);
   assert.deepEqual(loadManifest(repo).presetApplied, { web: ['claude', 'cursor'] });
+});
+
+test('applyPreset: 取消勾选即撤销应用，link 移除该预设的链接，其他预设不受影响', () => {
+  const { repo, skillsDir } = makeLinkedRepo(['a', 'b', 'c'], {
+    agents: { claude: [] },
+    presets: { web: ['a', 'b'], cli: ['c'] },
+  });
+  applyPreset(repo, 'web', ['claude']);
+  applyPreset(repo, 'cli', ['claude']);
+  link(repo);
+  assert.equal(existsSync(join(skillsDir, 'b')), true);
+  assert.equal(existsSync(join(skillsDir, 'c')), true);
+  applyPreset(repo, 'web', []); // 撤销 web，保留 cli
+  link(repo);
+  assert.equal(existsSync(join(skillsDir, 'a')), false);
+  assert.equal(existsSync(join(skillsDir, 'b')), false);
+  assert.equal(existsSync(join(skillsDir, 'c')), true);
+  assert.deepEqual(loadManifest(repo).presetApplied, { web: [], cli: ['claude'] });
 });
 
 test('deletePreset: 同时清除 presetApplied 记录', () => {

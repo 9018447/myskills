@@ -772,21 +772,26 @@ export interface ApplyResult {
   missing: string[]; // 预设里但仓库中不存在的技能
 }
 
-// 并集追加：预设技能并入目标 agent 清单，已有的不重复
+// 应用预设：只记录 presetApplied（覆盖为本次勾选的完整 agent 集合），不并入 agents 清单。
+// 链接由 link 按 presetApplied 并集生成——每个预设是独立单元：改动成员随 link/sync 传播，取消勾选即撤销
 export function applyPreset(repoRoot: string, name: string, agentIds: string[]): ApplyResult {
   const manifest = loadManifest(repoRoot);
   const skills = manifest.presets?.[name];
   if (!skills) throw new Error(`预设集 ${name} 不存在`);
   const missing = skills.filter((s) => !existsSync(join(repoRoot, s)));
   const valid = skills.filter((s) => !missing.includes(s));
+  const before = manifest.presetApplied?.[name] ?? [];
   const added: Record<string, number> = {};
   for (const id of agentIds) {
-    const list = manifest.agents[id] ?? [];
-    const before = list.length;
-    manifest.agents[id] = [...new Set([...list, ...valid])].sort();
-    added[id] = manifest.agents[id].length - before;
-    (manifest.presetApplied ??= {})[name] = [...new Set([...(manifest.presetApplied[name] ?? []), id])].sort();
+    if (before.includes(id)) continue;
+    // 该 agent 已会被链接的技能：自身清单 + 其他已应用预设的成员；预设里不在此中的才算新增
+    const already = new Set<string>(manifest.agents[id] ?? []);
+    for (const [p, ids] of Object.entries(manifest.presetApplied ?? {})) {
+      if (p !== name && ids.includes(id)) for (const s of manifest.presets?.[p] ?? []) already.add(s);
+    }
+    added[id] = valid.filter((s) => !already.has(s)).length;
   }
+  (manifest.presetApplied ??= {})[name] = [...agentIds].sort();
   saveManifest(repoRoot, manifest);
   return { added, missing };
 }

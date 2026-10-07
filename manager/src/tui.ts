@@ -404,7 +404,7 @@ function PresetsView({
         }
         const r = core.applyPreset(root, editing, [...applySel]);
         const parts = Object.entries(r.added).map(([id, n]) => `${id}+${n}`);
-        onNotice(`已应用预设 ${editing}：${parts.join('  ')}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}（按 l 生效，按 s 提交推送；之后改动预设会随 link/sync 传播）`);
+        onNotice(`已保存预设 ${editing} 的应用范围：${parts.length ? `新增 ${parts.join('  ')}` : '无新增'}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}（按 l 生效，按 s 提交推送；改动预设成员会随 link/sync 传播，取消勾选后回车即撤销该 agent 的应用）`);
         bumpTick();
         setMode('list');
       }
@@ -458,7 +458,7 @@ function PresetsView({
           `${active ? '❯' : ' '} [${applySel.has(a.id) ? 'x' : ' '}] ${a.id}  ${core.agentProjectGroup(a)}${core.agentInstalled(a) ? '' : '（未安装）'}`,
         );
       }),
-      h(Text, { dimColor: true }, '并集追加到所选 agent 的清单；esc 取消'),
+      h(Text, { dimColor: true }, '勾选=应用该预设，取消勾选=撤销；按 l 生效；esc 取消'),
     );
   }
   return h(

@@ -1,6 +1,6 @@
 ---
 name: acpx
-description: Use acpx as a headless ACP CLI for agent-to-agent communication, including installed-agent inspection, prompt/exec/sessions workflows, session scoping, queueing, permissions, output formats, system-prompt overrides, multi-agent flows authored with defineFlow/decision/decisionEdge. Built-in agents include pi. Overlay commands (dsh, zcode-acp bridge, omp) are only for users who name them explicitly.
+description: Use acpx as a headless ACP CLI for agent-to-agent communication, including installed-agent inspection, prompt/exec/sessions workflows, session scoping, queueing, permissions, output formats, system-prompt overrides, multi-agent flows authored with defineFlow/decision/decisionEdge. Dispatch chain for implementation work: omp / kimi -> dsh (fallback). zcode is retired (headless model creation broken, 2026-10-06); claude is not a dispatch target.
 ---
 
 # acpx
@@ -24,6 +24,10 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
    ```
 
    Read `tab_id` / `root_pane.pane_id` from the response; never guess IDs. `--cwd "$PWD"`, `--label`, `--no-focus` are mandatory. Reuse `herdr tab list` (or the equivalent listing) to find an existing dispatch tab before creating one.
+
+   **Re-dispatch: verify the pane still exists first.** A pane dies with the agent session that ran in it — after a run finishes, the old pane-id is gone and dispatching into it fails with `pane_not_found` (2026-10-06: cost one wasted dispatch round). Before re-dispatch, `herdr pane get <pane-id>` (or `herdr pane list`); when gone, reuse the tab from `herdr tab list` or recreate the tab, and take the fresh pane-id.
+
+   **Parallel dispatch into one working tree: file sets must not intersect.** When several tasks run concurrently in the same checkout, the files each task is allowed to modify must be disjoint; intersecting sets cause in-flight edits from one task to break another's test runs (2026-10-06: two tickets both touching `agent/src/bridge.jl` — one reported a `UndefVarError` caused by the other's half-finished edit). Intersecting file sets → serialize the dispatches, or give each task its own git worktree.
 2. **Launch with a log file and an explicit idle TTL so the wrapper exits on its own.** Primary form (herdr pane from the dispatch tab; output tee'd to the log so both the pane and the file have it):
 
    ```bash
@@ -44,7 +48,7 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
 
    **The harness's own background time limit kills tracked tasks too** (2026-10-01: a healthy dsh ticket dispatch was killed at the ~30-min default, log ended `[done] cancelled`). The implement-zh rule "no `--timeout`" does not cover this. Always pass an explicit `timeout` on the `run_in_background` launch (max 7200000 ms = 2 h); for expected >2 h work use a tmux detached session plus a waiter instead.
 
-   **The two dispatch forms are mutually exclusive.** The `acpx <agent> exec -f prompt.md` form is for built-in agents only. Overlay agents dispatched via `acpx --agent '<command>' exec -f prompt.md` must NOT also carry a positional agent name before `exec` — writing `--agent 'zcode-acp-server' ... zcode exec -f ...` shifts parsing and fails with `error: unknown option '-f'`.
+   **The two dispatch forms are mutually exclusive.** The `acpx <agent> exec -f prompt.md` form is for built-in agents only. Overlay agents dispatched via `acpx --agent '<command>' exec -f prompt.md` must NOT also carry a positional agent name before `exec` — writing `--agent 'dsh --profile acp' ... dsh exec -f ...` shifts parsing and fails with `error: unknown option '-f'`.
 
 4. **Verify within ~1 minute of launch that the task actually started** (the log reaches `session/new` / `session/set_config_option` with no apply error, and is advancing). For the herdr form, arm the completion callback the same way the fallback gets one — wrap `pane wait-output` in a background Bash so its exit wakes the session:
 
@@ -115,11 +119,12 @@ Do not send concurrent independent tasks into the same session.
 
 ## Agent selection
 
+**派发候补链（2026-10-06 定案）**：实现类工作首选 `omp`（overlay，`--agent 'omp acp'`）或内置 `kimi`；不可用时降级 `dsh`（`--agent 'dsh --profile acp'`）。**zcode 已退役**（3.14.4 headless 选模型必败，不再排障）；**`claude` 不作派发目标**。
+
 Common built-in agents include:
 
 ```text
 codex
-claude
 gemini
 kimi
 qwen
@@ -149,29 +154,13 @@ For DeepSeek Harness:
 acpx --agent 'dsh --profile acp' exec '<prompt>'
 ```
 
-For ZCode (via the `zcode-acp` bridge):
-
-```bash
-acpx --agent 'zcode-acp-server' exec '<prompt>'
-```
-
-ZCode drives the real `zcode app-server`. The `zcode` CLI must be discoverable; if it is only bundled inside the desktop app, set `ZCODE_BIN` to its `zcode.cjs` entry. On Linux the desktop app mounts a versioned `/tmp/.mount_ZCode-*/` at launch. If no mount exists, **just launch the AppImage and wait for the mount** (`~/桌面/ZCode-*.AppImage`), then glob it (macOS example: `ZCODE_BIN=/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs`). Credentials live in `~/.zcode/v2/config.json`; no API key is passed on the acpx side.
-
-Full headless-dispatch one-liner for zcode (no positional agent name; run as a tracked background task). Launch the app first if no mount exists, then dispatch:
-
-```bash
-pgrep -fa 'zcod[e]' >/dev/null 2>&1 || setsid ~/桌面/ZCode-*.AppImage >/dev/null 2>&1 &
-for i in $(seq 30); do ZCODE_BIN=$(ls /tmp/.mount_ZCode-*/resources/glm/zcode.cjs 2>/dev/null) && [ -n "$ZCODE_BIN" ] && break; sleep 2; done
-acpx --cwd <repo> --approve-all --ttl 60 --timeout <budget> --agent 'zcode-acp-server' exec -f prompt.md > .agent-results/zcode-<label>.log 2>&1
-```
-
-For Oh My Pi (omp) — only when the user explicitly names omp:
+For Oh My Pi (omp) — 候补链首选之一（代码票、零碎编码默认可用，不必等用户点名）：
 
 ```bash
 acpx --agent 'omp acp' exec '<prompt>'
 ```
 
-`omp acp` is omp's native stdio ACP mode. Requires `omp` on `PATH`.
+`omp acp` is omp's native stdio ACP mode. Requires `omp` on `PATH` — `command -v omp` 不在时直接降级 kimi，不要尝试安装或修 omp。
 
 Do not assume every adapter supports every ACP capability.
 

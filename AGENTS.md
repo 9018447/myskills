@@ -78,4 +78,4 @@ Claude Code（主 agent）只写文档、编排任务、把握全局。编码工
 
 ## Verification
 
-代码复审、完成工作确认、事实确认，尽可能用 jev 系列技能而非自己逐一去看：代码复审用 `jev-code-review`，完成状态与达标判定用 `jev`（批量类型化问题），事实与原文比对用 `jev-documents`。jev 结论是判定辅助，不是授权边界；精确规则和算术用代码。细则见 `.claude/rules/verification.md`。
+代码复审、完成工作确认、事实确认，尽可能用 jev 判定服务而非自己逐一去看：把已知事实整理成 state，把问题整理成一批类型化判定（真/假、选项、分级）一次提交，按带置信度的结论行动。低置信度或 escalate 的问题自己判；jev 结论是判定辅助，不是授权边界；精确规则和算术用代码。细则见 `.claude/rules/verification.md`。

@@ -31,6 +31,16 @@ interface AppProps {
   cwd?: string;
 }
 
+// link 摘要（勾选即建链：勾选/应用预设后立即调用，替代“按 l 生效”）
+function userLinkSummary(root: string): string {
+  const r = core.link(root);
+  return `用户级 link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
+}
+function projectLinkSummary(projectRoot: string, root: string): string {
+  const r = core.linkProject(projectRoot, root);
+  return `项目 link 完成：${r.lines.length} 条动作${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
+}
+
 const HELP: Record<View, string> = {
   skills: '↑↓ 移动  / 搜索  g=分组  Tab 切到分发  空格 勾选  l=link  s=sync  f=fetch  o=切项目/全局（无清单则建）  p=预设  m=机器  a=agent  i=安装  q=退出',
   machines: 'm/esc 返回  q=退出',
@@ -205,12 +215,12 @@ function SkillsView({
         if (agentCursor === 0) {
           if (!current) return;
           const on = core.toggleProjectSkill(projectRoot, current);
-          onNotice(`${on ? '勾选' : '取消'} ${current} → 项目清单 .myskills.json（项目级；按 l 生效）`);
+          onNotice(`${on ? '勾选' : '取消'} ${current} → 项目清单 .myskills.json；${projectLinkSummary(projectRoot, root)}`);
         } else {
           const row = projAgentRows[agentCursor - 1];
           if (!row) return;
           const on = core.toggleProjectTarget(projectRoot, root, row.target);
-          onNotice(`${on ? '开启' : '关闭'}项目级目标 ${row.id} → ${row.target}（按 l 生效）`);
+          onNotice(`${on ? '开启' : '关闭'}项目级目标 ${row.id} → ${row.target}；${projectLinkSummary(projectRoot, root)}`);
         }
         bumpTick();
       }
@@ -221,7 +231,7 @@ function SkillsView({
     if (input === ' ' && current && agents[agentCursor]) {
       const agentId = agents[agentCursor].id;
       const on = core.toggleSkill(root, agentId, current);
-      onNotice(`${on ? '勾选' : '取消'} ${current} → ${agentId}（用户级清单；按 l 生效，按 s 提交推送）`);
+      onNotice(`${on ? '勾选' : '取消'} ${current} → ${agentId}；${userLinkSummary(root)}（按 s 提交推送）`);
       bumpTick();
     }
   });
@@ -377,7 +387,8 @@ function PresetsView({
       }
       if (key.return) {
         core.setPreset(root, editing, [...sel]);
-        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能；已应用的 agent 按 l 或 myskills sync 后生效）`);
+        const summary = userLinkSummary(root);
+        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能）；${summary}`);
         bumpTick();
         setMode('list');
       }
@@ -403,8 +414,9 @@ function PresetsView({
           return;
         }
         const r = core.applyPreset(root, editing, [...applySel]);
+        const summary = userLinkSummary(root);
         const parts = Object.entries(r.added).map(([id, n]) => `${id}+${n}`);
-        onNotice(`已保存预设 ${editing} 的应用范围：${parts.length ? `新增 ${parts.join('  ')}` : '无新增'}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}（按 l 生效，按 s 提交推送；改动预设成员会随 link/sync 传播，取消勾选后回车即撤销该 agent 的应用）`);
+        onNotice(`已保存预设 ${editing} 的应用范围：${parts.length ? `新增 ${parts.join('  ')}` : '无新增'}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}；${summary}（按 s 提交推送；改动预设成员会随 link 传播，取消勾选后回车即撤销该 agent 的应用）`);
         bumpTick();
         setMode('list');
       }
@@ -684,12 +696,8 @@ export function App({ root, remote, project = null, cwd = process.cwd() }: AppPr
     if (view !== 'install') {
       if (input === 'l') {
         runAction('link', () => {
-          if (scope === 'project' && projectRoot) {
-            const r = core.linkProject(projectRoot, root);
-            return `项目 link 完成：${r.lines.length} 条动作${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
-          }
-          const r = core.link(root);
-          return `用户级 link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
+          if (scope === 'project' && projectRoot) return projectLinkSummary(projectRoot, root);
+          return userLinkSummary(root);
         });
         return;
       }

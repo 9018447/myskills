@@ -1,11 +1,15 @@
 {
   "agents": {
-    "agents": [],
+    "agents": [
+      "backup_retro"
+    ],
     "claude": [],
     "cursor": [],
     "kimi-code": [],
     "codex": [],
-    "pi": [],
+    "pi": [
+      "backup_retro"
+    ],
     "omp": []
   },
   "presets": {
@@ -32,27 +36,44 @@
       "github-pr-workflow",
       "github-repo-management"
     ],
-    "myskills": [
+    "skills": [
+      "gitnexus-cli",
+      "gitnexus-exploring",
+      "gitnexus-impact-analysis",
+      "tdd-zh"
+    ],
+    "orch-skills": [
       "acpx",
       "acpxtodo",
-      "open-code-review-delegate"
+      "jev",
+      "jev-code-review",
+      "jev-documents",
+      "jev-route",
+      "jev-setup",
+      "open-code-review-delegate",
+      "setup-claude-rules",
+      "split-tickets"
+    ],
+    "knowledge": [
+      "luyben-distillation-control"
     ]
   },
   "sources": {
     "skill-creator": "openai/skills/skills/.system/skill-creator"
   },
   "presetApplied": {
-    "myskills": [
+    "github": [
+      "claude"
+    ],
+    "orch-skills": [
+      "claude"
+    ],
+    "skills": [
       "agents",
-      "claude",
       "codex",
-      "cursor",
       "kimi-code",
       "omp",
       "pi"
-    ],
-    "github": [
-      "claude"
     ]
   }
 }

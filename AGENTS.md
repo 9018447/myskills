@@ -75,3 +75,7 @@ The full routing policy, including tool boundaries and escalation flows, lives i
 ## Division of Labor
 
 Claude Code（主 agent）只写文档、编排任务、把握全局。编码工作：零碎和单文件的改动由主 agent 自己直接完成，跨文件改动用 `/acpx` 派发，完整实现流程由用户以 `/acpxtodo` 启动。细则见 `.claude/rules/coding-principle.md`。
+
+## Verification
+
+代码复审、完成工作确认、事实确认，尽可能用 jev 系列技能而非自己逐一去看：代码复审用 `jev-code-review`，完成状态与达标判定用 `jev`（批量类型化问题），事实与原文比对用 `jev-documents`。jev 结论是判定辅助，不是授权边界；精确规则和算术用代码。细则见 `.claude/rules/verification.md`。

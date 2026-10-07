@@ -68,8 +68,10 @@ Use specialized code search tools instead of shell `grep`/`find` or built-in `Gr
 
 Escalate from cheap to expensive: `rg --files → zg → ast-grep / LSP → GitNexus`. After locating code, use `Read` on the exact source before concluding or editing.
 
+本节是硬约束，不是建议。已观察到的倒退：实际工作中很少用 `zg` 和 `GitNexus`，仍然退回 shell `grep`/`find`，`ast-grep` 几乎从未使用。内容搜索默认 `zg`，精确匹配 `zg --rg`，结构匹配 `ast-grep`，调用链与影响面 `GitNexus`；`grep`/`find` 只在路由层声明的例外情形或路由工具不可用（需当场说明）时才出现。细则见 `.claude/rules/code-search.md`。
+
 The full routing policy, including tool boundaries and escalation flows, lives in `.claude/rules/code-search.md`.
 
 ## Division of Labor
 
-Claude Code（主 agent）只写文档、编排任务、把握全局。编码工作：零碎和单文件的改动由主 agent 自己直接完成，跨文件改动用 `/acpx` 派发，完整实现流程由用户以 `/implement-zh` 启动。细则见 `.claude/rules/coding-principle.md`。
+Claude Code（主 agent）只写文档、编排任务、把握全局。编码工作：零碎和单文件的改动由主 agent 自己直接完成，跨文件改动用 `/acpx` 派发，完整实现流程由用户以 `/acpxtodo` 启动。细则见 `.claude/rules/coding-principle.md`。

@@ -95,3 +95,12 @@ Do not replace `Read` with search tools. Search tools locate code; `Read` retrie
 `Read` = final source inspection
 
 When several tools could answer the question, choose the narrowest specialized tool first. Escalate to more expensive graph or semantic operations only when they provide additional information.
+
+## Compliance（迭代记录）
+
+1. **2026-10-07 — 纠正路由倒退**：实际执行中观察到，agent 很少使用 `zg` 和 `GitNexus`，仍然退回 shell `grep`/`find`，`ast-grep` 更是从未用上。自本条起，上面的路由表按硬约束执行，不是偏好：
+
+   - 内容搜索的第一选择必须是 `zg`（语义、概念、措辞不确定的查询）或 `zg --rg`（精确标识符、错误消息、正则）。shell `grep`、`find`、内置 `Grep`/`Glob` 只在两种情况下允许：路由表已声明的例外（shell 组合、文件系统元数据、脚本化需求），或所选路由工具不可用且当场说明原因。
+   - `rg` 用于 `rg --files` 文件发现；内容层面的精确匹配走 `zg --rg`，不要用 `rg` 内容扫描替代。
+   - 按语法结构找代码（调用形态、AST 模式、结构化重构候选）必须用 `ast-grep`，不要用文本匹配凑合。
+   - 涉及调用链、依赖关系、多跳关系、变更影响面的问题必须用 `GitNexus`；它返回空结果时先用 `zg --rg` 复核再下结论，因为索引可能没有解析到该符号。

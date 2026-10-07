@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, lstatSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { setPreset, deletePreset, applyPreset, loadManifest, link } from '../src/core.ts';
+import { setPreset, deletePreset, applyPreset, migrateBakedPresets, loadManifest, link } from '../src/core.ts';
 
 function makeRepo(skills: string[], manifest: object = { agents: {} }) {
   const repo = mkdtempSync(join(tmpdir(), 'myskills-preset-'));
@@ -50,17 +50,17 @@ test('deletePreset: 删除存在的预设', () => {
   assert.deepEqual(loadManifest(repo).presets, { cli: ['a'] });
 });
 
-test('applyPreset: 只记录应用关系，不并入 agents 清单（预设是独立单元）', () => {
+test('applyPreset: 互斥接管——应用后预设成员从个人清单移出，改由预设管', () => {
   const repo = makeRepo(['a', 'b', 'c'], {
     agents: { claude: ['a'] },
     presets: { web: ['a', 'b'] },
   });
   const r = applyPreset(repo, 'web', ['claude', 'cursor']);
-  // claude 已有 a，新增计 1；cursor 全新，计 2
+  // claude 已有 a（被接管，链接不变），新增计 1；cursor 全新，计 2
   assert.deepEqual(r.added, { claude: 1, cursor: 2 });
   assert.deepEqual(r.missing, []);
   const m = loadManifest(repo);
-  assert.deepEqual(m.agents.claude, ['a']); // 不烘焙进 agent 清单
+  assert.deepEqual(m.agents.claude, []); // a 从个人清单移出，由预设管
   assert.equal(m.agents.cursor, undefined);
   assert.deepEqual(m.presetApplied, { web: ['claude', 'cursor'] });
 });
@@ -126,4 +126,45 @@ test('link: 预设应用到 agent 后，新增预设成员随 link 传播', () =
   link(repo);
   assert.equal(existsSync(join(skillsDir, 'c')), true);
   assert.equal(lstatSync(join(skillsDir, 'c')).isSymbolicLink(), true);
+});
+
+test('migrateBakedPresets: 补记含预设全部成员的 agent 并从个人清单移出成员', () => {
+  const repo = makeRepo(['a', 'b', 'x'], {
+    agents: {
+      claude: ['a', 'b', 'x'], // 烘焙了 web 全部成员 + 手工技能 x
+      cursor: ['a'], // 只有部分成员，不动
+    },
+    presets: { web: ['a', 'b'] },
+  });
+  const r = migrateBakedPresets(repo);
+  assert.deepEqual(r.backfilled, { web: ['claude'] });
+  assert.deepEqual(r.cleaned, { claude: 2 });
+  const m = loadManifest(repo);
+  assert.deepEqual(m.presetApplied?.web, ['claude']);
+  assert.deepEqual(m.agents.claude, ['x']); // 只剩手工技能
+  assert.deepEqual(m.agents.cursor, ['a']);
+});
+
+test('migrateBakedPresets: 已应用预设的烘焙成员被清理，即使 agent 当初未被补记', () => {
+  const repo = makeRepo(['a', 'b'], {
+    agents: { claude: ['a', 'b'], cursor: ['a'] },
+    presets: { web: ['a', 'b'] },
+    presetApplied: { web: ['claude'] },
+  });
+  const r = migrateBakedPresets(repo);
+  assert.deepEqual(r.backfilled, {}); // claude 已在 presetApplied，无需补记
+  assert.deepEqual(r.cleaned, { claude: 2 });
+  assert.deepEqual(loadManifest(repo).agents.claude, []);
+});
+
+test('migrateBakedPresets: 幂等——重复运行无进一步改动', () => {
+  const repo = makeRepo(['a', 'b', 'x'], {
+    agents: { claude: ['a', 'b', 'x'] },
+    presets: { web: ['a', 'b'] },
+  });
+  migrateBakedPresets(repo);
+  const r2 = migrateBakedPresets(repo);
+  assert.deepEqual(r2.backfilled, {});
+  assert.deepEqual(r2.cleaned, {});
+  assert.deepEqual(loadManifest(repo).agents.claude, ['x']);
 });

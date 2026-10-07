@@ -7,7 +7,7 @@
 - 顶层目录 = 一个技能（含 `SKILL.md`）
 - 例外：`manager/`（管理工具）、`machines/`（各机器状态）、集合目录（`data-processing/`、`molecular-*/`、`tools/`、`machine-learning-potentials/`、`atomistic-workflows/`、`agent-workflow/`、`matlab-skills-catalog/`、`mattpocock-skills-zh/`，它们内部含子技能）
 - `agents.json` —— agent 注册表：id、名称、skills 目录路径（支持 `~`；也支持项目级 agent，填项目内的绝对路径）。新增支持的 agent 就加一条
-- `skills-manifest.json` —— 分发清单：每个 agent 装哪些技能。**这是分发的唯一来源**。另有两个可选字段：`sources`（技能来源 GitHub 仓库，install 时自动记录）、`presets`（预设集：名字 → 技能列表，TUI 里按 p 管理；应用后预设是独立分发单元，成员改动随 link/sync 传播到已应用的 agent，取消应用后下次 link 移除其链接；已应用的 agent 记在 `presetApplied`）、`presetApplied`（预设集 → 已应用的 agent 列表）
+- `skills-manifest.json` —— 分发清单：每个 agent 装哪些技能。**这是分发的唯一来源**。另有两个可选字段：`sources`（技能来源 GitHub 仓库，install 时自动记录）、`presets`（预设集：名字 → 技能列表，TUI 里按 p 管理。应用是互斥接管：预设成员从 agent 个人清单移出、改由预设管，一个技能只属于一处；每个预设是独立分发单元，成员改动随 link/sync 传播到已应用的 agent，取消应用后下次 link 移除其链接，个人清单不回填）、`presetApplied`（预设集 → 已应用的 agent 列表）
 - `machines/<hostname>.json` —— 各机器同步状态（sha、时间、断链数）
 
 ## 行为约定
@@ -29,6 +29,7 @@ myskills status          # 写入 machines/<hostname>.json
 myskills sync            # pull --ff-only → link → status → 提交并推送清单（skills-manifest.json、agents.json）与状态
 myskills install <github-url> [--name n]   # 从 GitHub 安装技能入仓并推送（走 gh，支持 /tree/ref/subdir 集合仓子目录）
 myskills migrate         # 存量收敛 dry-run；加 --apply 执行
+myskills migrate --presets   # 一次性收敛旧版烘焙遗留：补记 presetApplied 并把已应用预设成员从个人清单移出（幂等）
 ```
 
 `myskills` 可从任意目录运行：默认按命令安装位置定位中心仓库，也可用 `MYSKILLS_ROOT` 指定仓库根。`link` 在当前目录或其子目录向上找到 `.myskills.json` 时进入项目模式，把项目清单中的技能链接到项目内 agent 目录；`link --global` 强制按中心仓库的全局清单操作。项目级分发的目标 agent 与 `agents.json` 注册表相同，路径去掉 `~/` 前缀（如 `~/.claude/skills` → 项目内 `.claude/skills`），默认全部开启；`.myskills.json` 写了显式 `targets`（含空数组）则以它为准。目标目录不需要预先存在：`init`、TUI 按 `o` 建立项目级分发或重新开启某个目标、以及 `link` 都会自动创建（如 `.claude/skills`）。项目级分发可先在项目根运行 `myskills init --skills skill-a,skill-b`，再在项目内任意子目录运行 `myskills link`；也可以在项目目录下直接进 TUI——标题与面板常驻标出当前编辑的是用户级（`skills-manifest.json`）还是项目级（`.myskills.json`），项目里还没有清单时按 `o` 会新建（落在 git 根）并切进项目模式，勾选技能与切换目标 agent 都会写入 `.myskills.json`，`l` 走项目 link。

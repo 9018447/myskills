@@ -773,7 +773,10 @@ export interface ApplyResult {
 }
 
 // 应用预设：只记录 presetApplied（覆盖为本次勾选的完整 agent 集合），不并入 agents 清单。
-// 链接由 link 按 presetApplied 并集生成——每个预设是独立单元：改动成员随 link/sync 传播，取消勾选即撤销
+// 互斥接管：应用的技能改由预设管，从该 agent 的个人清单移出——一个技能只属于一处；
+// 撤销应用后个人清单也不恢复，重装需重新应用预设或手工勾选。
+// 链接由 link 按「个人清单 ∪ 已应用预设」生成（接管后两者不重叠）——每个预设是独立单元：
+// 改动成员随 link/sync 传播，取消勾选即撤销
 export function applyPreset(repoRoot: string, name: string, agentIds: string[]): ApplyResult {
   const manifest = loadManifest(repoRoot);
   const skills = manifest.presets?.[name];
@@ -790,10 +793,53 @@ export function applyPreset(repoRoot: string, name: string, agentIds: string[]):
       if (p !== name && ids.includes(id)) for (const s of manifest.presets?.[p] ?? []) already.add(s);
     }
     added[id] = valid.filter((s) => !already.has(s)).length;
+    if (manifest.agents[id]) manifest.agents[id] = manifest.agents[id].filter((s) => !valid.includes(s));
   }
   (manifest.presetApplied ??= {})[name] = [...agentIds].sort();
   saveManifest(repoRoot, manifest);
   return { added, missing };
+}
+
+export interface MigratePresetsReport {
+  // 补记：个人清单里拥有某预设全部成员的 agent，视为已应用该预设（旧版烘焙遗留）
+  backfilled: Record<string, string[]>;
+  // 清理：已应用预设的成员从各 agent 个人清单移出的数量
+  cleaned: Record<string, number>;
+}
+
+// 一次性收敛烘焙遗留：旧版应用预设会把成员并集拷进 agent 个人清单，预设边界因此消失。
+// 此迁移把「恰好拥有某预设全部成员」的 agent 补记为已应用该预设，再把已应用预设的成员
+// 从个人清单移出（互斥接管）。幂等，重复运行无副作用。
+export function migrateBakedPresets(repoRoot: string): MigratePresetsReport {
+  const manifest = loadManifest(repoRoot);
+  const report: MigratePresetsReport = { backfilled: {}, cleaned: {} };
+  const presets = manifest.presets ?? {};
+  for (const [name, members] of Object.entries(presets)) {
+    if (members.length === 0) continue;
+    const applied = new Set(manifest.presetApplied?.[name] ?? []);
+    for (const [id, skills] of Object.entries(manifest.agents)) {
+      if (!applied.has(id) && members.every((s) => skills.includes(s))) {
+        (report.backfilled[name] ??= []).push(id);
+      }
+    }
+  }
+  for (const [name, ids] of Object.entries(report.backfilled)) {
+    manifest.presetApplied ??= {};
+    manifest.presetApplied[name] = [...new Set([...(manifest.presetApplied[name] ?? []), ...ids])].sort();
+  }
+  for (const [name, ids] of Object.entries(manifest.presetApplied ?? {})) {
+    for (const id of ids) {
+      const skills = manifest.agents[id];
+      if (!skills) continue;
+      const kept = skills.filter((s) => !(presets[name] ?? []).includes(s));
+      if (kept.length !== skills.length) {
+        manifest.agents[id] = kept;
+        report.cleaned[id] = (report.cleaned[id] ?? 0) + skills.length - kept.length;
+      }
+    }
+  }
+  saveManifest(repoRoot, manifest);
+  return report;
 }
 
 // agent 的项目分组键：skillsPath 里第一个点开头的段之前是项目路径；直接在家目录下的算「全局」

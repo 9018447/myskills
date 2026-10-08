@@ -1,62 +1,12 @@
 {
   "agents": {
-    "agents": [
-      "backup_retro"
-    ],
+    "agents": [],
     "claude": [],
     "cursor": [],
     "kimi-code": [],
     "codex": [],
-    "pi": [
-      "backup_retro"
-    ],
+    "pi": [],
     "omp": []
-  },
-  "presets": {
-    "matlab": [
-      "matlab",
-      "matlab-analyze-data",
-      "matlab-create-live-script",
-      "matlab-debugging",
-      "matlab-deploy-embedded-ai",
-      "matlab-install-products",
-      "matlab-list-products",
-      "matlab-performance-optimizer",
-      "matlab-review-code",
-      "matlab-testing",
-      "matlab-train-network"
-    ],
-    "academic": [
-      "scientific-visualization"
-    ],
-    "github": [
-      "github-auth",
-      "github-code-review",
-      "github-issues",
-      "github-pr-workflow",
-      "github-repo-management"
-    ],
-    "skills": [
-      "gitnexus-cli",
-      "gitnexus-exploring",
-      "gitnexus-impact-analysis",
-      "tdd-zh"
-    ],
-    "orch-skills": [
-      "acpx",
-      "acpxtodo",
-      "jev",
-      "jev-code-review",
-      "jev-documents",
-      "jev-route",
-      "jev-setup",
-      "open-code-review-delegate",
-      "setup-claude-rules",
-      "split-tickets"
-    ],
-    "knowledge": [
-      "luyben-distillation-control"
-    ]
   },
   "sources": {
     "skill-creator": "openai/skills/skills/.system/skill-creator"
@@ -68,9 +18,11 @@
     "orch-skills": [
       "claude"
     ],
-    "skills": [
+    "gitnexus": [
       "agents",
+      "claude",
       "codex",
+      "cursor",
       "kimi-code",
       "omp",
       "pi"

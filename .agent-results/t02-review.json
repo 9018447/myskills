@@ -1,0 +1,65 @@
+{
+  "state": {
+    "goal": "复审 myskills manager 票 02：建立 presets/ 文件夹事实模型（成员递归识别、启动 reconcile、技能移入预设的归属拒绝），评估正确性与验收覆盖",
+    "facts": [
+      "验收标准：①手工mv顶层技能进presets/foo/后任意CLI命令补顶层相对符号链接且幂等；②嵌套中间目录(presets/foo/skills/bar/SKILL.md)识别bar为成员并建链；③删成员后顶层断链下次启动清除；④顶层同名真身与成员冲突报错说明双方位置；⑤真身在预设A时移入B报错拒绝、移回顶层可再移入；⑥fixture测试覆盖全部情形",
+      "diff（4文件）：core.ts 新增预设文件夹模型段（core.ts:856-982）+134-5：PRESETS_DIR='presets'；PresetMember{name,preset,dir}；collectMembers 递归下探（isSkillDir 命中即止不深入，点文件跳过，断链跳过）；listPresets（presets/一级目录即预设，不存在返回空）；presetMembers（全部成员按名排序）；reconcilePresets（成员重名抛错列全部位置→顶层非链接条目与成员重名抛错说明双方位置→建相对符号链接（resolve相等即正确链接跳过，指向别处的旧链接rmSync重建）→清除顶层指向仓库内且目标不存在的断链（成员名断链已由重建分支处理，外部目标链接不动））；moveSkillToPreset（validateSkillName校验预设名与技能名→presetMembers查归属已归属即抛错→顶层isSkillDir检查→目标存在抛错→mkdirSync+renameSync真身+原地留相对符号链接）",
+      "validateSkillName(name, label='技能名') 加可选label参数，预设名共用同一约束，现有调用点行为不变",
+      "cli.ts：try块首行 reconcilePresets(findRepoRoot())，全部子命令启动即执行；tui.ts：start()入口定位root后先reconcile；冲突经现有catch打印退1",
+      "新测试文件 manager/test/preset-folders.test.ts 14例：mv后建链+幂等（readlink快照+ctimeMs证明未重建）、嵌套中间目录、非技能残留(CHANGELOG等)不识别、断链清除、顶层重名冲突（双方原样保留）、跨预设同名成员、移入/归属拒绝/移回再移入/非法名、CLI启动接线（spawnSync真实cli.ts link与status，冲突退非0）",
+      "测试实测（编排者复跑）：cd manager && npm test → pass 107, fail 0（原93+新14）",
+      "git diff --numstat：cli.ts +3-1、core.ts +134-5、tui.ts +4-1、preset-folders.test.ts 新文件未跟踪",
+      "omp披露的设计取舍：跨预设同名成员与顶层真身重名同为抛错（同一不变量：一层顶层无法各建一链），票面只显式列了后者",
+      "范围外未动：TUI/CLI预设管理界面、manifest presets字段废弃、存量迁移、启动交互确认（票03/04/05）；无git操作",
+      "工作区时间戳核验：仅manager/下4文件为本票改动，基线408条存量改动未触碰"
+    ],
+    "evidence": [
+      "npm test 复跑：pass 107 / fail 0 / duration 4.7s",
+      "日志 .agent-results/omp-t02-preset-layout-core.log 以 [done] end_turn 结尾，无 AccountQuotaExceeded，acpx进程已退出",
+      "编排者直读 core.ts:856-982 确认：冲突检查先行于建链、resolve比较避免重复建链、断链清理限定repoRoot内目标"
+    ],
+    "open_questions": []
+  },
+  "questions": {
+    "member_discovery": {
+      "type": "noul",
+      "instructions": "预设成员的递归下探识别是否正确：含SKILL.md目录即成员不再深入、无SKILL.md中间目录继续下探、非技能残留与断链不参与识别，且同名成员（同预设嵌套或跨预设）正确报错？",
+      "criteria": {
+        "true": "collectMembers实现与票02递归下探定义一致，重名检查覆盖同预设与跨预设",
+        "false": "识别逻辑或重名检查有缺陷"
+      }
+    },
+    "reconcile_safe_idempotent": {
+      "type": "noul",
+      "instructions": "reconcilePresets是否满足幂等与安全要求：不覆盖顶层真身、正确链接不重复创建（含绝对形式）、断链清理限定指向仓库内目标、无presets/目录时为无操作？",
+      "criteria": {
+        "true": "冲突检查先行+resolve比较+清理范围限定共同满足，测试证明幂等",
+        "false": "存在误删、重复重建或对空仓库误报的风险"
+      }
+    },
+    "move_rejection": {
+      "type": "noul",
+      "instructions": "moveSkillToPreset的归属拒绝语义是否正确：已归属即抛错不搬家、移回顶层后可再移入、目录名校验拦截路径逃逸？",
+      "criteria": {
+        "true": "归属检查+validateSkillName两段校验+rename实现与票02要求一致",
+        "false": "存在静默搬家、逃逸路径或目标覆盖风险"
+      }
+    },
+    "acceptance_complete": {
+      "type": "noul",
+      "instructions": "票02六条验收标准是否全部被实现与测试覆盖（含CLI/TUI启动接线）？",
+      "criteria": {
+        "true": "六条验收各有对应实现与断言，CLI接线有spawnSync真实命令测试",
+        "false": "有验收项未覆盖或断言不充分"
+      }
+    },
+    "startup_regression": {
+      "type": "noul",
+      "instructions": "每次CLI/TUI启动执行reconcile是否存在未识别的回归风险（如无presets目录的仓库、项目模式、现有link/status命令被干扰）？",
+      "criteria": {
+        "true": "无presets目录时listPresets返回空整体无操作，reconcile不触碰manifest与agent目录，link/status行为不变",
+        "false": "存在启动路径被reconcile破坏的场景"
+      }
+    }
+  }
+}

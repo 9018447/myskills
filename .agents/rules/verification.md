@@ -1,0 +1,1 @@
+/home/smh/myskills/setup-claude-rules/VERIFY_RULES.md

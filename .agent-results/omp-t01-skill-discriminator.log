@@ -1,0 +1,1363 @@
+[client] initialize (running)
+
+[client] session/new (running)
+
+[thinking] Let me start by reading the ticket file and understanding the codebase.
+
+[tool] Reading ticket 01 file (pending)
+  input: /home/smh/myskills/.scratch/preset-folders/issues/01-skill-discriminator.md
+  files: /home/smh/myskills/.scratch/preset-folders/issues/01-skill-discriminator.md
+
+[tool] Reading core.ts source (pending)
+  input: /home/smh/myskills/manager/src/core.ts
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading ticket 01 file (completed)
+  kind: read
+  input: /home/smh/myskills/.scratch/preset-folders/issues/01-skill-discriminator.md
+  files: /home/smh/myskills/.scratch/preset-folders/issues/01-skill-discriminator.md
+  output:
+    [.scratch/preset-folders/issues/01-skill-discriminator.md#4149]
+    1:# 01 — 技能判别统一为 SKILL.md 规则
+    2:
+    3:**构建内容：** 技能的判别标准从「顶层目录名」统一为「目录内含 SKILL.md」。顶层技能枚举（TUI 列表、CLI 各处）、安装落位检查、应用预设时的存在性校验全部改用同一判别；没有 SKILL.md 的顶层目录（集合目录、基础设施目录）从技能列表中消失。这是后续所有预设文件夹改造的地基。
+    4:
+    5:**运行预算：** `离线`
+    6:
+    7:**被以下阻塞：** 无——可立即开始。
+    8:
+    9:## 验收标准
+    10:
+    11:- [ ] 顶层枚举结果 = 含 SKILL.md 的顶层目录；集合目录（data-processing、molecular-* 等）与 manager/、machines/ 不再出现在技能列表
+    12:- [ ] 技能存在性校验（应用预设时）与枚举使用同一判别函数
+    13:- [ ] 测试覆盖：含 SKILL.md / 不含 / 符号链接指向含 SKILL.md 目录三种情形
+    14:
+    15:## 被以下阻塞
+    16:
+    17:- 无——可立即开始。
+
+[tool] Reading core.ts source (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/core.ts
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#9399]
+    1:// myskills 核心逻辑：link / init / status / sync / install / migrate 及清单、注册表读写。
+    2:// link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
+    3:// 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
+    4:import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';
+    …
+    8:import { spawnSync } from 'node:child_process';
+    9:
+    10-14:export interface AgentDef { … }
+    15:
+    16-24:export interface Manifest { … }
+    25:
+    26-30:export function expandHome(p: string): string { … }
+    31:
+    32:// 仓库根定位：MYSKILLS_ROOT 优先；否则取本模块真实路径上溯（manager/src/core.ts → 仓库根）。
+    33:// 不看 cwd——命令在任何目录下都作用于安装它的中心仓库，不会误操作别的同名清单仓库。
+    34-42:export function findRepoRoot(): string { … }
+    43:
+    44-50:export function readJson<T>(path: string): T { … }
+    51:
+    52-56:export function git(repoRoot: string, args: string[]): string { … }
+    57:
+    58:export function loadAgents(repoRoot: string): AgentDef[] {
+    59:  return readJson<{ agents: AgentDef[] }>(join(repoRoot, 'agents.json')).agents;
+    60:}
+    61:
+    62:export function saveAgents(repoRoot: string, agents: AgentDef[]): void {
+    63:  writeFileSync(join(repoRoot, 'agents.json'), JSON.stringify({ agents }, null, 2) + '\n');
+    ... (256 more lines)
+
+[thinking] The core.ts file is large (1471+ lines). I got a summary view. Let me read the key sections in detail:
+           1. `listRepoSkills` (lines 74-80)
+           2. `install` (lines 550) — 安装落位检查
+           3. `applyPreset` (lines 775-801) — 应用预设时的存在性校验
+           
+           Let me read those sections plus check tui.ts and cli.ts for skill enumeration.
+
+[tool] Reading listRepoSkills implementation (pending)
+  input: manager/src/core.ts
+  files: /home/smh/myskills/manager/src/core.ts
+
+[tool] Reading install and applyPreset implementations (pending)
+  input: manager/src/core.ts
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading listRepoSkills implementation (completed)
+  kind: read
+  input: manager/src/core.ts
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#9399]
+    1:// myskills 核心逻辑：link / init / status / sync / install / migrate 及清单、注册表读写。
+    2:// link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
+    3:// 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
+    4:import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';
+    …
+    8:import { spawnSync } from 'node:child_process';
+    9:
+    10-14:export interface AgentDef { … }
+    15:
+    16-24:export interface Manifest { … }
+    25:
+    26-30:export function expandHome(p: string): string { … }
+    31:
+    32:// 仓库根定位：MYSKILLS_ROOT 优先；否则取本模块真实路径上溯（manager/src/core.ts → 仓库根）。
+    33:// 不看 cwd——命令在任何目录下都作用于安装它的中心仓库，不会误操作别的同名清单仓库。
+    34-42:export function findRepoRoot(): string { … }
+    43:
+    44-50:export function readJson<T>(path: string): T { … }
+    51:
+    52-56:export function git(repoRoot: string, args: string[]): string { … }
+    57:
+    58:export function loadAgents(repoRoot: string): AgentDef[] {
+    59:  return readJson<{ agents: AgentDef[] }>(join(repoRoot, 'agents.json')).agents;
+    60:}
+    61:
+    62:export function saveAgents(repoRoot: string, agents: AgentDef[]): void {
+    63:  writeFileSync(join(repoRoot, 'agents.json'), JSON.stringify({ agents }, null, 2) + '\n');
+    ... (256 more lines)
+
+[tool] Reading install and applyPreset implementations (completed)
+  kind: read
+  input: manager/src/core.ts
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#9399]
+    1:// myskills 核心逻辑：link / init / status / sync / install / migrate 及清单、注册表读写。
+    2:// link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
+    3:// 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
+    4:import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';
+    …
+    8:import { spawnSync } from 'node:child_process';
+    9:
+    10-14:export interface AgentDef { … }
+    15:
+    16-24:export interface Manifest { … }
+    25:
+    26-30:export function expandHome(p: string): string { … }
+    31:
+    32:// 仓库根定位：MYSKILLS_ROOT 优先；否则取本模块真实路径上溯（manager/src/core.ts → 仓库根）。
+    33:// 不看 cwd——命令在任何目录下都作用于安装它的中心仓库，不会误操作别的同名清单仓库。
+    34-42:export function findRepoRoot(): string { … }
+    43:
+    44-50:export function readJson<T>(path: string): T { … }
+    51:
+    52-56:export function git(repoRoot: string, args: string[]): string { … }
+    57:
+    58:export function loadAgents(repoRoot: string): AgentDef[] {
+    59:  return readJson<{ agents: AgentDef[] }>(join(repoRoot, 'agents.json')).agents;
+    60:}
+    61:
+    62:export function saveAgents(repoRoot: string, agents: AgentDef[]): void {
+    63:  writeFileSync(join(repoRoot, 'agents.json'), JSON.stringify({ agents }, null, 2) + '\n');
+    ... (256 more lines)
+
+[thinking] The `read` tool is eliding the function bodies. I need to use `:raw` or specific ranges to see actual implementations. Let me read the raw content of the specific line ranges: 74-80 (listRepoSkills), 513-550 (install), 775-801 (applyPreset).
+读取器折叠了函数体；正在获取原始范围。
+
+[tool] Reading listRepoSkills raw body (pending)
+  input: manager/src/core.ts:74-128:raw
+  files: /home/smh/myskills/manager/src/core.ts
+
+[tool] Reading install raw body (pending)
+  input: manager/src/core.ts:505-550:raw
+  files: /home/smh/myskills/manager/src/core.ts
+
+[tool] Reading applyPreset raw body (pending)
+  input: manager/src/core.ts:756-810:raw
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading install raw body (completed)
+  kind: read
+  input: manager/src/core.ts:505-550:raw
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    // 技能名必须是一个安全的单目录段：字母数字开头，只含字母数字与 ._-，杜绝 ../ 逃逸与隐藏目录
+    export function validateSkillName(name: string): void {
+      if (!/^[A-Za-z0-9_-][A-Za-z0-9._-]*$/.test(name)) {
+        throw new Error(`非法技能名 "${name}"：只能由字母、数字、点、下划线、连字符组成，且不能以点开头`);
+      }
+    }
+    
+    export function install(repoRoot: string, input: string, nameOverride: string | undefined, remote: string): string {
+      const { owner, repo, ref, subdir } = parseGitHubUrl(input);
+      const name = nameOverride ?? (subdir ? subdir.replace(/\/+$/, '').split('/').pop()! : repo);
+      validateSkillName(name);
+      const dest = join(repoRoot, name);
+      if (existsSync(dest)) throw new Error(`仓库中已存在 ${name}，如需更新请先删除或换 --name`);
+    
+      const endpoint = `repos/${owner}/${repo}/tarball${ref ? `/${ref}` : ''}`;
+      const gh = spawnSync('gh', ['api', endpoint], { encoding: 'buffer', maxBuffer: 1024 * 1024 * 1024 });
+      if (gh.status !== 0) throw new Error(`gh api ${endpoint} 失败: ${gh.stderr?.toString().trim()}`);
+    
+      const tmp = mkdtempSync(join(tmpdir(), 'myskills-install-'));
+      const tgz = join(tmp, 'repo.tar.gz');
+      writeFileSync(tgz, gh.stdout);
+      const tar = spawnSync('tar', ['-xzf', tgz, '-C', tmp], { encoding: 'utf8' });
+      if (tar.status !== 0) throw new Error(`解压 tarball 失败: ${tar.stderr.trim()}`);
+    
+      const top = readdirSync(tmp).filter((e) => e !== 'repo.tar.gz');
+      if (top.length !== 1) throw new Error(`tarball 结构异常：顶层条目数为 ${top.length}`);
+      const base = resolve(tmp, top[0]);
+      const src = subdir ? resolve(base, subdir) : base;
+    ... (19 more lines)
+
+[tool] Reading listRepoSkills raw body (completed)
+  kind: read
+  input: manager/src/core.ts:74-128:raw
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    // 仓库里的技能：顶层含 SKILL.md 的目录
+    export function listRepoSkills(repoRoot: string): string[] {
+      return readdirSync(repoRoot, { withFileTypes: true })
+        .filter((e) => e.isDirectory() && !e.name.startsWith('.') && existsSync(join(repoRoot, e.name, 'SKILL.md')))
+        .map((e) => e.name)
+        .sort();
+    }
+    
+    // 读技能 frontmatter 的 description（不存在则返回空串）
+    // 支持单行值（可带单/双引号）与 YAML 块标量（> 折叠、| 保留换行，含 >- / |+ 等 chomping 变体）
+    export function skillDescription(repoRoot: string, name: string): string {
+      const text = readFileSync(join(repoRoot, name, 'SKILL.md'), 'utf8');
+      const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      if (!m) return '';
+      const lines = m[1].split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const lm = lines[i].match(/^description:\s*(.*)$/);
+        if (!lm) continue;
+        const rest = lm[1].trim();
+        // 块标量：收集后续的缩进内容行，直到下一个顶级键
+        const block = rest.match(/^([>|])[+-]?$/);
+        if (block) {
+          const content: string[] = [];
+          for (let j = i + 1; j < lines.length; j++) {
+            const l = lines[j];
+            if (l.trim() === '') {
+              content.push('');
+              continue;
+    ... (29 more lines)
+
+[tool] Reading applyPreset raw body (completed)
+  kind: read
+  input: manager/src/core.ts:756-810:raw
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    // 预设集 CRUD 与应用
+    export function setPreset(repoRoot: string, name: string, skills: string[]): void {
+      const manifest = loadManifest(repoRoot);
+      (manifest.presets ??= {})[name] = [...new Set(skills)].sort();
+      saveManifest(repoRoot, manifest);
+    }
+    
+    export function deletePreset(repoRoot: string, name: string): void {
+      const manifest = loadManifest(repoRoot);
+      if (manifest.presets) delete manifest.presets[name];
+      if (manifest.presetApplied) delete manifest.presetApplied[name];
+      saveManifest(repoRoot, manifest);
+    }
+    
+    export interface ApplyResult {
+      added: Record<string, number>; // 各 agent 新增数量
+      missing: string[]; // 预设里但仓库中不存在的技能
+    }
+    
+    // 应用预设：只记录 presetApplied（覆盖为本次勾选的完整 agent 集合），不并入 agents 清单。
+    // 互斥接管：应用的技能改由预设管，从该 agent 的个人清单移出——一个技能只属于一处；
+    // 撤销应用后个人清单也不恢复，重装需重新应用预设或手工勾选。
+    // 链接由 link 按「个人清单 ∪ 已应用预设」生成（接管后两者不重叠）——每个预设是独立单元：
+    // 改动成员随 link/sync 传播，取消勾选即撤销
+    export function applyPreset(repoRoot: string, name: string, agentIds: string[]): ApplyResult {
+      const manifest = loadManifest(repoRoot);
+      const skills = manifest.presets?.[name];
+      if (!skills) throw new Error(`预设集 ${name} 不存在`);
+    ... (29 more lines)
+
+[thinking] Now I have a clearer picture:
+           
+           1. `listRepoSkills` (core.ts:75-80): already filters `e.isDirectory() && !e.name.startsWith('.') && existsSync(join(repoRoot, e.name, 'SKILL.md'))`. 
+           
+           Wait — this already checks SKILL.md! But the ticket says collection directories without SKILL.md are being listed. Hmm. Let me check the actual repo root — maybe there are collection directories at top level that DO contain SKILL.md? No wait — the ticket says "顶层无 SKILL.md 的集合目录（data-processing/、molecular-* 等）被当成技能列出". Let me check whether `listRepoSkills` is used everywhere, or whether TUI uses a different enumeration.
+           
+           Note the issue: `e.isDirectory()` — with `withFileTypes: true`, `isDirectory()` returns false for symlinks (it's based on lstat semantics via dirent type). Actually for Dirent from readdirSync with withFileTypes, symlink entries have isDirectory() false and isSymbolicLink() true. So a syml...
+`listRepoSkills` 已经检查了 `SKILL.md`，但使用了 `dirent` 的 `isDirectory()`（不支持 `symlink`）。现在正在检查 `TUI/CLI` 如何枚举技能以及 `repo` 顶层实际包含的内容。
+
+[client] session/request_permission (running)
+
+[tool] Finding skill enumeration sites (pending)
+  input: manager/src
+  files: /home/smh/myskills/manager/src
+
+[tool] $ for d in */; do [ -f "$d/SKILL.md" ] && echo "SKILL  $d" || echo "noskil $d"; done; echo ---; ls -la | grep -E '^l' || echo "no symlinks at top" (pending)
+  input: for d in */; do [ -f "$d/SKILL.md" ] && echo "SKILL $d" || echo "noskil $d"; done; echo ---; ls -la | grep -E '^l' || echo "no symlinks at top"
+
+[tool] Finding skill enumeration sites (completed)
+  kind: search
+  input: manager/src
+  files: /home/smh/myskills/manager/src
+  output:
+    # manager/src/
+    ## core.ts#9399
+     3:// 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
+    *4:import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';
+     5:import { homedir, hostname, tmpdir } from 'node:os';
+     6:import { join, dirname, resolve, sep } from 'node:path';
+     7:import { fileURLToPath } from 'node:url';
+    ...
+     73:
+    *74:// 仓库里的技能：顶层含 SKILL.md 的目录
+    *75:export function listRepoSkills(repoRoot: string): string[] {
+    *76:  return readdirSync(repoRoot, { withFileTypes: true })
+    *77:    .filter((e) => e.isDirectory() && !e.name.startsWith('.') && existsSync(join(repoRoot, e.name, 'SKILL.md')))
+     78:    .map((e) => e.name)
+     79:    .sort();
+     80:}
+    ...
+     84:export function skillDescription(repoRoot: string, name: string): string {
+    *85:  const text = readFileSync(join(repoRoot, name, 'SKILL.md'), 'utf8');
+     86:  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+     87:  if (!m) return '';
+     88:  const lines = m[1].split('\n');
+    ...
+     134:  if (!existsSync(skillsPath)) return { linked, broken };
+    *135:  for (const entry of readdirSync(skillsPath)) {
+     136:    const entryPath = join(skillsPath, entry);
+     137:    if (!lstatSync(entryPath).isSymbolicLink()) continue;
+     138:    const target = resolve(skillsPath, readlinkSync(entryPath));
+    ... (180 more lines)
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ for d in */; do [ -f "$d/SKILL.md" ] && echo "SKILL  $d" || echo "noskil $d"; done; echo ---; ls -la | grep -E '^l' || echo "no symlinks at top" (completed)
+  kind: execute
+  input: for d in */; do [ -f "$d/SKILL.md" ] && echo "SKILL $d" || echo "noskil $d"; done; echo ---; ls -la | grep -E '^l' || echo "no symlinks at top"
+  output:
+    SKILL  academic-paper/
+    SKILL  academic-paper-access/
+    SKILL  academic-paper-reviewer/
+    SKILL  academic-writing/
+    SKILL  acpx/
+    SKILL  acpxtodo/
+    SKILL  agent-browser/
+    SKILL  agentic-jujutsu/
+    noskil agent-workflow/
+    SKILL  aider-zh/
+    SKILL  airtable/
+    SKILL  algorithmic-art/
+    SKILL  apple-notes/
+    SKILL  apple-reminders/
+    SKILL  architecture-diagram/
+    SKILL  arxiv/
+    SKILL  ask-matt/
+    noskil atomistic-workflows/
+    SKILL  audiocraft-audio-generation/
+    SKILL  biosteam/
+    SKILL  biosteam-cosmosac/
+    SKILL  biosteam-process-builder/
+    SKILL  biosteam-skill/
+    SKILL  blogwatcher/
+    SKILL  byted-web-search/
+    SKILL  cc-connect-setup/
+    SKILL  cc-send/
+    SKILL  chemical-yaml-definition/
+    ... (434 more lines)
+
+[thinking] Key facts established:
+           
+           1. `listRepoSkills` already filters by `SKILL.md` existence — so the 13 noskil dirs already don't appear in `listRepoSkills`. But the ticket says they DO appear in skill lists. Hmm. Wait — let me re-check. The TUI uses `core.listRepoSkills(root)` (lines 100, 332). So the TUI already filters...
+           
+           Wait, but there's `byted-supabase -> ../../.agents/skills/byted-supabase` — a symlink at top level. Let me check if it resolves to a dir with SKILL.md. `.claude -> .agents` starts with dot so excluded.
+           
+           Hmm, but the ticket claims: "代码里各处的技能判定分散且不一致，导致顶层无 SKILL.md 的集合目录被当成技能列出". Maybe the working tree has uncommitted changes? "工作区已有的未提交改动与你无关，不要动它们" — there might be uncommitted changes in manager/src that already partially do this. Let me check git status of manager/src.
+           
+           Actually wait — maybe `listRepoSkills` with SKILL.md check is itself an uncommitted change? Let me ch...
+仓库中已经存在 `SKILL.md` 过滤器。我正在检查未提交的状态（工单中提到了预先存在的未提交更改）以及剩余的调用点。
+
+[client] session/request_permission (running)
+
+[client] session/request_permission (running)
+
+[tool] $ git status --short -- manager/ && echo --- && git diff -- manager/src/ | head -100 && echo --- && git log --oneline -3 -- manager/src/core.ts (pending)
+  input: git status --short -- manager/ && echo --- && git diff -- manager/src/ | head -100 && echo --- && git log --oneline -3 -- manager/src/core.ts
+
+[tool] $ cd manager && ls test/ tests/ 2>/dev/null; ls src/ (pending)
+  input: cd manager && ls test/ tests/ 2>/dev/null; ls src/
+
+[client] terminal/create (running)
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd manager && ls test/ tests/ 2>/dev/null; ls src/ (completed)
+  kind: execute
+  input: cd manager && ls test/ tests/ 2>/dev/null; ls src/
+  output:
+    test/:
+    cli.test.ts
+    core.test.ts
+    install.test.ts
+    link.test.ts
+    migrate.test.ts
+    preset.test.ts
+    project.test.ts
+    sources.test.ts
+    status.test.ts
+    sync.test.ts
+    tui.test.ts
+    cli.ts
+    core.ts
+    tui.ts
+    
+    
+    Wall time: 0.02 seconds
+    
+    $ cd manager && ls test/ tests/ 2>/dev/null; ls src/
+    
+    test/:
+    cli.test.ts
+    core.test.ts
+    install.test.ts
+    link.test.ts
+    migrate.test.ts
+    preset.test.ts
+    ... (11 more lines)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ git status --short -- manager/ && echo --- && git diff -- manager/src/ | head -100 && echo --- && git log --oneline -3 -- manager/src/core.ts (completed)
+  kind: execute
+  input: git status --short -- manager/ && echo --- && git diff -- manager/src/ | head -100 && echo --- && git log --oneline -3 -- manager/src/core.ts
+  output:
+    ---
+    ---
+    016d957 预设互斥接管：应用预设把成员从个人清单移出改由预设管；migrate --presets 收敛旧版烘焙遗留（补记 presetApplied.github，清理 8 项/agent）
+    7c742f4 manager: 预设应用改为独立分发单元——只记 presetApplied，不再并集烘焙进 agent 清单；取消勾选即撤销，link 移除对应链接
+    a92947a manager: 预设集记录已应用 agent，预设改动随 link/sync 传播
+    
+    
+    Wall time: 0.04 seconds
+    
+    $ git status --short -- manager/ && echo --- && git diff -- manager/src/ | head -100 && echo --- && git log --oneline -3 -- manager/src/core.ts
+    
+    ---
+    ---
+    016d957 预设互斥接管：应用预设把成员从个人清单移出改由预设管；migrate --presets 收敛旧版烘焙遗留（补记 presetApplied.github，清理 8 项/agent）
+    7c742f4 manager: 预设应用改为独立分发单元——只记 presetApplied，不再并集烘焙进 agent 清单；取消勾选即撤销，link 移除对应链接
+    a92947a manager: 预设集记录已应用 agent，预设改动随 link/sync 传播
+    
+    
+    Wall time: 0.04 seconds
+
+[thinking] No uncommitted changes in manager/. So `listRepoSkills` already filters SKILL.md at top-level enumeration. Then where's the inconsistency the ticket talks about?
+           
+           Differences:
+           1. `listRepoSkills`: `e.isDirectory()` — dirent, does NOT follow symlinks. So `byted-supabase` symlink → not listed even if target has SKILL.md. Let me check: `byted-supabase -> ../../.agents/skills/byted-supabase` — does the target have SKILL.md? From repo root, `../../.agents` = `/home/smh/.agents`. Let me check.
+           
+           2. `applyPreset` existence check: `existsSync(join(repoRoot, s))` — any existing path counts, no SKILL.md. INCONSISTENT.
+           
+           3. `install`: `existsSync(join(src, 'SKILL.md'))` — checks SKILL.md but via existsSync (follows symlinks — fine). Semantically same as discriminator but a separate implementation. "安装落位检查" — the check that the source contains SKILL.md.
+           
+           4. `skillSources` uses listRepoSkills — cons...
+`manager/` 中没有未提交的变更。当前的差异：`listRepoSkills` 已经内联过滤了 `SKILL.md`，但 (a) 使用了基于 `dirent` 的 `isDirectory()`，排除了符号链接技能；(b) `applyPreset` 使用了单纯的 `existsSync`（没有检查 `SKILL.md`）；(c) `install` 有其自带的内联检查。我正在阅读测试规范。
+
+[tool] Reading core test conventions (pending)
+  input: manager/test/core.test.ts
+  files: /home/smh/myskills/manager/test/core.test.ts
+
+[tool] Reading preset and install test conventions (pending)
+  input: manager/test/preset.test.ts
+  files: /home/smh/myskills/manager/test/preset.test.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading core test conventions (completed)
+  kind: read
+  input: manager/test/core.test.ts
+  files: /home/smh/myskills/manager/test/core.test.ts
+  output:
+    [manager/test/core.test.ts#B36F]
+    1:import { test } from 'node:test';
+    2:import assert from 'node:assert/strict';
+    3:import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+    4:import { tmpdir } from 'node:os';
+    5:import { join } from 'node:path';
+    6:import { skillDescription, validateSkillName } from '../src/core.ts';
+    7:
+    8:function repoWithSkill(frontmatter: string): string {
+    9:  const repo = mkdtempSync(join(tmpdir(), 'myskills-core-'));
+    10:  mkdirSync(join(repo, 's'), { recursive: true });
+    11:  writeFileSync(join(repo, 's', 'SKILL.md'), `---\n${frontmatter}\n---\n正文\n`);
+    12:  return repo;
+    13:}
+    14:
+    15:test('skillDescription: 单行无引号', () => {
+    16:  assert.equal(skillDescription(repoWithSkill('name: s\ndescription: 简单描述'), 's'), '简单描述');
+    17:});
+    18:
+    19:test('skillDescription: 双引号包裹（值内含冒号）', () => {
+    20:  assert.equal(skillDescription(repoWithSkill('description: "foo: bar"'), 's'), 'foo: bar');
+    21:});
+    22:
+    23:test('skillDescription: 单引号包裹', () => {
+    24:  assert.equal(skillDescription(repoWithSkill("description: 'hello world'"), 's'), 'hello world');
+    25:});
+    26:
+    27:test('skillDescription: 折叠块标量 >，换行折叠为空格', () => {
+    ... (31 more lines)
+
+[tool] Reading preset and install test conventions (completed)
+  kind: read
+  input: manager/test/preset.test.ts
+  files: /home/smh/myskills/manager/test/preset.test.ts
+  output:
+    [manager/test/preset.test.ts#EAD1]
+    1:import { test } from 'node:test';
+    2:import assert from 'node:assert/strict';
+    3:import { mkdtempSync, mkdirSync, writeFileSync, existsSync, lstatSync } from 'node:fs';
+    4:import { tmpdir } from 'node:os';
+    5:import { join } from 'node:path';
+    6:import { setPreset, deletePreset, applyPreset, migrateBakedPresets, loadManifest, link } from '../src/core.ts';
+    7:
+    8-16:function makeRepo(skills: string[], manifest: object = { agents: {} }) { … }
+    17:
+    18:// 带 agent 注册表与已安装 skills 目录的 fixture，供 link 传播测试用
+    19-32:function makeLinkedRepo(skills: string[], manifest: object) { … }
+    33:
+    34-39:test('setPreset: 新建预设，去重并排序', () => { … });
+    40:
+    41-45:test('setPreset: 同名覆盖', () => { … });
+    46:
+    47-51:test('deletePreset: 删除存在的预设', () => { … });
+    52:
+    53-66:test('applyPreset: 互斥接管——应用后预设成员从个人清单移出，改由预设管', () => { … });
+    67:
+    68-74:test('applyPreset: 预设中仓库不存在的技能跳过并计入 missing', () => { … });
+    75:
+    76-79:test('applyPreset: 预设不存在时抛错', () => { … });
+    80:
+    81-86:test('applyPreset: 记录 presetApplied，重复应用不重复记录', () => { … });
+    87:
+    88-104:test('applyPreset: 取消勾选即撤销应用，link 移除该预设的链接，其他预设不受影响', () => { … });
+    ... (12 more lines)
+
+[tool] Reading preset test fixture helpers (pending)
+  input: manager/test/preset.test.ts:8-80:raw
+  files: /home/smh/myskills/manager/test/preset.test.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading preset test fixture helpers (completed)
+  kind: read
+  input: manager/test/preset.test.ts:8-80:raw
+  files: /home/smh/myskills/manager/test/preset.test.ts
+  output:
+    function makeRepo(skills: string[], manifest: object = { agents: {} }) {
+      const repo = mkdtempSync(join(tmpdir(), 'myskills-preset-'));
+      for (const s of skills) {
+        mkdirSync(join(repo, s), { recursive: true });
+        writeFileSync(join(repo, s, 'SKILL.md'), `---\nname: ${s}\n---\n`);
+      }
+      writeFileSync(join(repo, 'skills-manifest.json'), JSON.stringify(manifest, null, 2));
+      return repo;
+    }
+    
+    // 带 agent 注册表与已安装 skills 目录的 fixture，供 link 传播测试用
+    function makeLinkedRepo(skills: string[], manifest: object) {
+      const tmp = mkdtempSync(join(tmpdir(), 'myskills-preset-link-'));
+      const repo = join(tmp, 'repo');
+      mkdirSync(repo, { recursive: true });
+      for (const s of skills) {
+        mkdirSync(join(repo, s), { recursive: true });
+        writeFileSync(join(repo, s, 'SKILL.md'), `---\nname: ${s}\n---\n`);
+      }
+      const skillsDir = join(tmp, 'claude-skills');
+      mkdirSync(skillsDir, { recursive: true }); // 父目录存在 = agent 已安装
+      writeFileSync(join(repo, 'agents.json'), JSON.stringify({ agents: [{ id: 'claude', name: 'Claude', skillsPath: skillsDir }] }));
+      writeFileSync(join(repo, 'skills-manifest.json'), JSON.stringify(manifest, null, 2));
+      return { repo, skillsDir };
+    }
+    
+    test('setPreset: 新建预设，去重并排序', () => {
+      const repo = makeRepo(['a', 'b', 'c']);
+    ... (47 more lines)
+
+[thinking] Conventions clear. Now let me check the install test and tui test for enumeration, plus cli.ts quickly for other enumeration sites. Also check `skillSources` usage of listRepoSkills and `status()`. Let me quickly view cli.ts and relevant tui.ts parts.
+
+[client] session/request_permission (running)
+
+[tool] Reading cli.ts (pending)
+  input: manager/src/cli.ts
+  files: /home/smh/myskills/manager/src/cli.ts
+
+[tool] $ cd manager && grep -n "listRepoSkills\|isSkillDir" src/*.ts test/*.ts && node -e "
+const {listRepoSkills} = await import('./src/core.ts');
+console.log('byted-supabase listed?', listRepoSkills(process.cwd() + '/..').includes('byted-supabase'));
+console.log('tools listed?', listRepoSkills(process.cwd() + '/..').includes('tools'));
+" --input-type=module 2>&1 | tail -3 (pending)
+  input: cd manager && grep -n "listRepoSkills\|isSkillDir" src/*.ts test/*.ts && node -e " const {listRepoSkills} = await import('./src/core.ts'); console.log('byted-supabase listed?', listRepoSkills(process.cwd() + '/..').in...
+
+[client] fs/read_text_file (running)
+
+[client] terminal/create (running)
+
+[client] fs/read_text_file (running)
+
+[client] terminal/wait_for_exit (running)
+
+[tool] Reading cli.ts (completed)
+  kind: read
+  input: manager/src/cli.ts
+  files: /home/smh/myskills/manager/src/cli.ts
+  output:
+    [manager/src/cli.ts#F628]
+    1:#!/usr/bin/env node
+    2:// myskills 管理 CLI：link / status / sync / install / init / migrate（薄封装，逻辑在 core.ts）
+    3:// link 在含 .myskills.json 的目录下自动切项目模式，--global 强制全局
+    4:import { hostname } from 'node:os';
+    5:import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, migrateBakedPresets } from './core.ts';
+    6:
+    7:function resolveRemote(): string {
+    8:  const idx = process.argv.indexOf('--remote');
+    9:  return idx > -1 ? process.argv[idx + 1] : (process.env.MYSKILLS_REMOTE ?? 'origin');
+    10:}
+    11:
+    12:const command = process.argv[2];
+    13:
+    14:async function launchTui(): Promise<void> {
+    15:  if (!process.stdout.isTTY) {
+    16:    console.log('用法: myskills [link|status|sync|install|init|migrate|tui]（直接敲 myskills 进 TUI）');
+    17:    return;
+    18:  }
+    19:  const { start } = await import('./tui.ts');
+    20:  start(resolveRemote());
+    21:}
+    22:
+    23:try {
+    24:  switch (command) {
+    25:    case 'tui':
+    26:      await launchTui();
+    27:      break;
+    ... (55 more lines)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd manager && grep -n "listRepoSkills\|isSkillDir" src/*.ts test/*.ts && node -e "
+const {listRepoSkills} = await import('./src/core.ts');
+console.log('byted-supabase listed?', listRepoSkills(process.cwd() + '/..').includes('byted-supabase'));
+console.log('tools listed?', listRepoSkills(process.cwd() + '/..').includes('tools'));
+" --input-type=module 2>&1 | tail -3 (completed)
+  kind: execute
+  input: cd manager && grep -n "listRepoSkills\|isSkillDir" src/*.ts test/*.ts && node -e " const {listRepoSkills} = await import('./src/core.ts'); console.log('byted-supabase listed?', listRepoSkills(process.cwd() + '/..').in...
+  output:
+    src/core.ts:75:export function listRepoSkills(repoRoot: string): string[] {
+    src/core.ts:724:  const skills = listRepoSkills(repoRoot);
+    src/tui.ts:100:  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+    src/tui.ts:332:  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+    byted-supabase listed? false
+    tools listed? false
+    
+    
+    Wall time: 0.07 seconds
+    
+    $ cd manager && grep -n "listRepoSkills\|isSkillDir" src/*.ts test/*.ts && node -e "
+    const {listRepoSkills} = await import('./src/core.ts');
+    console.log('byted-supabase listed?', listRepoSkills(process.cwd() + '/..').includes('byted-supabase'));
+    console.log('tools listed?', listRepoSkills(process.cwd() + '/..').includes('tools'));
+    " --input-type=module 2>&1 | tail -3
+    
+    src/core.ts:75:export function listRepoSkills(repoRoot: string): string[] {
+    src/core.ts:724:  const skills = listRepoSkills(repoRoot);
+    src/tui.ts:100:  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+    src/tui.ts:332:  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+    byted-supabase listed? false
+    tools listed? false
+    
+    
+    Wall time: 0.07 seconds
+
+[thinking] Confirmed current behavior:
+           - `tools` etc. not listed (SKILL.md filter already works for real dirs).
+           - `byted-supabase` (symlink → `../../.agents/skills/byted-supabase`) NOT listed. Let me check if its target has SKILL.md — if yes, this is the failing case for the symlink requirement.
+           
+           Remaining inconsistencies to fix:
+           1. New shared discriminator `isSkillDir(path)`: stat-follow + directory + SKILL.md.
+           2. `listRepoSkills` uses it → symlinked skills appear.
+           3. `install` source check uses it.
+           4. `applyPreset` existence check uses it → dirs without SKILL.md count as missing.
+           
+           Check byted-supabase target has SKILL.md. Then TDD: write failing tests first (core.test.ts for listRepoSkills+isSkillDir, preset.test.ts for applyPreset missing on dir-without-SKILL.md), run → red, implement → green, run full suite.
+           
+           Test for symlink in enumeration: create repo fixture with dir `real/` (SKILL.md), d...
+确认：`listRepoSkills` 中已经过滤了实际目录；该符号链接（`byted-supabase`）被丢弃了——这就是那个报错的案例。我先验证其目标路径，然后检查 TUI 测试是否锁定了枚举行为。
+
+[client] session/request_permission (running)
+
+[tool] $ test -f /home/smh/.agents/skills/byted-supabase/SKILL.md && echo "target HAS SKILL.md (should be listed as skill)" || echo "target lacks SKILL.md"; cd manager && grep -n "listRepoSkills\|skills\[" test/tui.test.ts | head (pending)
+  input: test -f /home/smh/.agents/skills/byted-supabase/SKILL.md && echo "target HAS SKILL.md (should be listed as skill)" || echo "target lacks SKILL.md"; cd manager && grep -n "listRepoSkills\|skills\[" test/tui.test.ts | head
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ test -f /home/smh/.agents/skills/byted-supabase/SKILL.md && echo "target HAS SKILL.md (should be listed as skill)" || echo "target lacks SKILL.md"; cd manager && grep -n "listRepoSkills\|skills\[" test/tui.test.ts | head (completed)
+  kind: execute
+  input: test -f /home/smh/.agents/skills/byted-supabase/SKILL.md && echo "target HAS SKILL.md (should be listed as skill)" || echo "target lacks SKILL.md"; cd manager && grep -n "listRepoSkills\|skills\[" test/tui.test.ts | head
+  output:
+    target lacks SKILL.md
+    
+    
+    Wall time: 0.02 seconds
+    
+    $ test -f /home/smh/.agents/skills/byted-supabase/SKILL.md && echo "target HAS SKILL.md (should be listed as skill)" || echo "target lacks SKILL.md"; cd manager && grep -n "listRepoSkills\|skills\[" test/tui.test.ts | head
+    
+    target lacks SKILL.md
+    
+    
+    Wall time: 0.02 seconds
+
+[thinking] Interesting — `byted-supabase` symlink target does NOT have SKILL.md, so even with correct semantics it's not a skill. No tui.test.ts pinning of enumeration. Fine.
+           
+           So in the real repo, after the fix the visible list is unchanged (the 13 collection dirs + manager/machines/testdir were already excluded by the existing filter; byted-supabase target lacks SKILL.md). The behavioral changes are:
+           1. Symlink → dir-with-SKILL.md now listed (fixture-testable).
+           2. applyPreset: preset member that's an existing dir without SKILL.md → now counted missing (fixture-testable).
+           3. install: uses shared fn (behavior identical).
+           
+           TDD: write failing tests now.
+           
+           Tests to add in core.test.ts:
+           
+           ```ts
+           test('listRepoSkills: 只列含 SKILL.md 的目录；无 SKILL.md 的目录与符号链接目标不含 SKILL.md 的不列', ...)
+           ```
+           
+           Actually three distinct cases per acceptance:
+           1. dir with SKILL.md → listed
+           2. dir without SKILL.md → not listed
+           3. symlink...
+`byted-supabase` 目标缺少 SKILL.md，因此在真实仓库中列表保持不变——行为变化在于 fixtures：符号链接技能 + applyPreset 中无 SKILL.md 的成员。范围限定为：一个判别函数 `isSkillDir`，并连接到 `listRepoSkills`、`install` 和 `applyPreset`。遵循 TDD 原则，先编写失败的测试用例。
+
+[tool] Adding failing enumeration tests (pending)
+  input: {"input":"[manager/test/core.test.ts#B36F]\nPUT 3.=6:\n+import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync } from 'node:fs';\n+import { tmpdir } from 'node:os';\n+import { join } from 'node:path';\n+import { ...
+
+[client] fs/write_text_file (running)
+
+[tool] Adding failing enumeration tests (completed)
+  kind: edit
+  input: {"input":"[manager/test/core.test.ts#B36F]\nPUT 3.=6:\n+import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync } from 'node:fs';\n+import { tmpdir } from 'node:os';\n+import { join } from 'node:path';\n+import { ...
+  files: /home/smh/myskills/manager/test/core.test.ts
+  output:
+    [manager/test/core.test.ts#C866]
+    1:import { test } from 'node:test';
+    2:import assert from 'node:assert/strict';
+    3:import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync } from 'node:fs';
+    4:import { tmpdir } from 'node:os';
+    5:import { join } from 'node:path';
+    6:import { skillDescription, validateSkillName, listRepoSkills } from '../src/core.ts';
+    7:
+    8:function repoWithSkill(frontmatter: string): string {
+    
+    13:}
+    
+    51:test('validateSkillName: 拒绝路径逃逸与隐藏目录', () => {
+    
+    55:  for (const ok of ['alpha', 'my-skill', 'skill_v2', 'name.with.dots']) {
+    
+    57:  }
+    58:});
+    59:
+    60:test('listRepoSkills: 只列含 SKILL.md 的顶层目录，无 SKILL.md 的目录与顶层文件不列', () => {
+    …
+    80:  assert.deepEqual(listRepoSkills(repo), ['has-skill', 'linked-skill']);
+    81:});
+    
+    diff /home/smh/myskills/manager/test/core.test.ts (+23 lines)
+    
+    [manager/test/core.test.ts#C866]
+    1:import { test } from 'node:test';
+    ... (21 more lines)
+
+[tool] Adding failing applyPreset discriminator test (pending)
+  input: {"input":"[manager/test/preset.test.ts#EAD1]\nPUT >74:\n+\n+test('applyPreset: 预设成员目录存在但无 SKILL.md（非技能）与枚举同判，计入 missing', () => {\n+ const repo = makeRepo(['a']);\n+ mkdirSync(join(repo, 'tools')); // 集合目录：路径存在，但不是技能\...
+
+[client] fs/write_text_file (running)
+
+[tool] Adding failing applyPreset discriminator test (completed)
+  kind: edit
+  input: {"input":"[manager/test/preset.test.ts#EAD1]\nPUT >74:\n+\n+test('applyPreset: 预设成员目录存在但无 SKILL.md（非技能）与枚举同判，计入 missing', () => {\n+ const repo = makeRepo(['a']);\n+ mkdirSync(join(repo, 'tools')); // 集合目录：路径存在，但不是技能\...
+  files: /home/smh/myskills/manager/test/preset.test.ts
+  output:
+    [manager/test/preset.test.ts#EF42]
+    68:test('applyPreset: 预设中仓库不存在的技能跳过并计入 missing', () => {
+    
+    74:});
+    75:
+    76:test('applyPreset: 预设成员目录存在但无 SKILL.md（非技能）与枚举同判，计入 missing', () => {
+    77:  const repo = makeRepo(['a']);
+    …
+    83:});
+    84:
+    85:test('applyPreset: 预设不存在时抛错', () => {
+    86:  const repo = makeRepo(['a']);
+    
+    88:});
+    
+    diff /home/smh/myskills/manager/test/preset.test.ts (+9 lines)
+    
+    [manager/test/preset.test.ts#EF42]
+    68:test('applyPreset: 预设中仓库不存在的技能跳过并计入 missing', () => {
+    
+    74:});
+    75:
+    76:test('applyPreset: 预设成员目录存在但无 SKILL.md（非技能）与枚举同判，计入 missing', () => {
+    77:  const repo = makeRepo(['a']);
+    …
+    83:});
+    84:
+    85:test('applyPreset: 预设不存在时抛错', () => {
+    ... (3 more lines)
+
+[thinking] preset.test.ts imports: check `mkdirSync` is imported — yes, line 3 imports mkdtempSync, mkdirSync, writeFileSync, existsSync, lstatSync. setPreset imported. Good.
+           
+           Now run tests to confirm red.
+确认在实现前测试失败。
+
+[client] session/request_permission (running)
+
+[tool] $ cd manager && npm test 2>&1 | grep -E "^(not ok|ok [0-9]+ - (listRepoSkills|applyPreset))|tests [0-9]+|pass [0-9]+|fail [0-9]+" | head -20 (pending)
+  input: cd manager && npm test 2>&1 | grep -E "^(not ok|ok [0-9]+ - (listRepoSkills|applyPreset))|tests [0-9]+|pass [0-9]+|fail [0-9]+" | head -20
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd manager && npm test 2>&1 | grep -E "^(not ok|ok [0-9]+ - (listRepoSkills|applyPreset))|tests [0-9]+|pass [0-9]+|fail [0-9]+" | head -20 (completed)
+  kind: execute
+  input: cd manager && npm test 2>&1 | grep -E "^(not ok|ok [0-9]+ - (listRepoSkills|applyPreset))|tests [0-9]+|pass [0-9]+|fail [0-9]+" | head -20
+  output:
+    ℹ tests 93
+    ℹ pass 91
+    ℹ fail 2
+    
+    
+    Wall time: 4.43 seconds
+    
+    $ cd manager && npm test 2>&1 | grep -E "^(not ok|ok [0-9]+ - (listRepoSkills|applyPreset))|tests [0-9]+|pass [0-9]+|fail [0-9]+" | head -20
+    
+    ℹ tests 93
+    ℹ pass 91
+    ℹ fail 2
+    
+    
+    Wall time: 4.43 seconds
+
+[client] session/request_permission (running)
+
+[tool] $ cd manager && npm test 2>&1 | grep -B1 -A12 "^not ok" | head -50 (pending)
+  input: cd manager && npm test 2>&1 | grep -B1 -A12 "^not ok" | head -50
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd manager && npm test 2>&1 | grep -B1 -A12 "^not ok" | head -50 (completed)
+  kind: execute
+  input: cd manager && npm test 2>&1 | grep -B1 -A12 "^not ok" | head -50
+  output:
+    (no output)
+    
+    Wall time: 4.40 seconds
+    
+    $ cd manager && npm test 2>&1 | grep -B1 -A12 "^not ok" | head -50
+    
+    (no output)
+    
+    Wall time: 4.40 seconds
+
+[client] session/request_permission (running)
+
+[tool] $ cd manager && npm test 2>&1 | grep -A14 "✖\|failing" | head -60 (pending)
+  input: cd manager && npm test 2>&1 | grep -A14 "✖\|failing" | head -60
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd manager && npm test 2>&1 | grep -A14 "✖\|failing" | head -60 (completed)
+  kind: execute
+  input: cd manager && npm test 2>&1 | grep -A14 "✖\|failing" | head -60
+  output:
+    ✖ listRepoSkills: 符号链接按解析后的目标判定——指向含 SKILL.md 目录的链接才算技能 (1.27115ms)
+    ✔ install: 从 GitHub 整仓抓取技能，入仓、提交并推送 (132.653673ms)
+    ✔ install: 支持集合仓的子目录提取（/tree/ref/subdir 形式） (125.311577ms)
+    ✔ install: 同名技能已存在时拒绝覆盖 (85.260323ms)
+    ✔ install: --name 含 ../ 等非法技能名时拒绝，不在仓库外写文件 (236.74503ms)
+    ✔ install: subdir 含 ../ 逃逸 tarball 顶层目录时拒绝 (89.198999ms)
+    ✔ link: 按清单为已安装的 agent 创建指向仓库的符号链接 (71.813273ms)
+    ✔ link: 未安装的 agent 被跳过，不影响其他 agent (59.74692ms)
+    ✔ link: 移除指向仓库但已不在清单中的孤儿链接和断链，不动真实目录 (56.31107ms)
+    ✔ link: 在仓库外的任意目录运行，经 MYSKILLS_ROOT 仍作用于指定仓库 (58.401424ms)
+    ✔ link: 清单中的技能在仓库不存在时警告并跳过，退出码仍为 0 (57.221509ms)
+    ✔ migrate: 默认 dry-run，只报告计划，不改变任何文件 (66.758645ms)
+    ✔ migrate --apply: 独有拷入并换链接，同内容换链接，冲突保留，断链删除，清单更新 (61.546238ms)
+    ✔ migrate --apply: 本地技能含符号链接时保守判冲突，不误删本地内容 (58.539852ms)
+    ✔ migrate --apply: 符号链接目标不同、特殊文件类型（fifo）均保守判冲突 (59.162896ms)
+    --
+    ✖ applyPreset: 预设成员目录存在但无 SKILL.md（非技能）与枚举同判，计入 missing (1.281021ms)
+    ✔ applyPreset: 预设不存在时抛错 (0.406882ms)
+    ✔ applyPreset: 记录 presetApplied，重复应用不重复记录 (0.527189ms)
+    ✔ applyPreset: 取消勾选即撤销应用，link 移除该预设的链接，其他预设不受影响 (1.194106ms)
+    ✔ deletePreset: 同时清除 presetApplied 记录 (0.35482ms)
+    ✔ link: 预设应用到 agent 后，新增预设成员随 link 传播 (0.715249ms)
+    ✔ migrateBakedPresets: 补记含预设全部成员的 agent 并从个人清单移出成员 (0.747202ms)
+    ✔ migrateBakedPresets: 已应用预设的烘焙成员被清理，即使 agent 当初未被补记 (0.291477ms)
+    ✔ migrateBakedPresets: 幂等——重复运行无进一步改动 (0.35871ms)
+    ✔ 项目 link: 子目录运行，探测到 .claude/skills 并建链；清理孤儿与断链，不动真实目录和外部链接 (67.76769ms)
+    ✔ 项目 link: 显式 targets 优先于探测，目录不存在则创建 (59.977802ms)
+    ✔ 项目 link: 无 targets 时默认开启全部项目级 agent（注册表去 ~/ 派生），目录不存在则创建 (56.889011ms)
+    ... (101 more lines)
+
+[thinking] Red confirmed for exactly the two behavior changes. Now implement in core.ts:
+           
+           1. Add `statSync` import, add `isSkillDir`, rewire `listRepoSkills`.
+           2. `install`: `if (!isSkillDir(src))`.
+           3. `applyPreset`: `const missing = skills.filter((s) => !isSkillDir(join(repoRoot, s)));`
+           
+           Current import line 4: `import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';` — add statSync.
+正好有两个目标失败。正在实现判别器。
+
+[tool] Adding isSkillDir and rewiring listRepoSkills (pending)
+  input: {"input":"[manager/src/core.ts#9399]\nPUT 4.=4:\n+import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync } f...
+
+[client] fs/write_text_file (running)
+
+[tool] Adding isSkillDir and rewiring listRepoSkills (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#9399]\nPUT 4.=4:\n+import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync } f...
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#1C78]
+    2:// link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
+    3:// 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
+    4:import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync } from 'node:fs';
+    5:import { homedir, hostname, tmpdir } from 'node:os';
+    6:import { join, dirname, resolve, sep } from 'node:path';
+    
+    70:export function saveManifest(repoRoot: string, manifest: Manifest): void {
+    
+    72:}
+    73:
+    74:// 技能判别（全仓唯一标准）：目录内含 SKILL.md。符号链接本身不是技能，按解析后的目标判定——
+    75:// 目标目录含 SKILL.md 该链接才算技能；断链、普通文件、不可访问路径都不是技能
+    …
+    83:
+    84:// 仓库里的技能：顶层含 SKILL.md 的目录（含指向此类目录的符号链接）
+    85:export function listRepoSkills(repoRoot: string): string[] {
+    86:  return readdirSync(repoRoot, { withFileTypes: true })
+    87:    .filter((e) => !e.name.startsWith('.') && isSkillDir(join(repoRoot, e.name)))
+    88:    .map((e) => e.name)
+    89:    .sort();
+    90:}
+
+[thinking] The rule fires on tiny functions. Does `isSkillDir` qualify as an allowed tiny function? Check the allowed list:
+           
+           - "Three or more call sites need lockstep behavior" — YES. That's the entire point of this ticket: 3 call sites (listRepoSkills, install, applyPreset) must use the same discriminator. And the ticket explicitly requires "全部改用同一个判别函数" and acceptance "技能存在性校验（应用预设时）与枚举使用同一判别函数".
+           - "Exported name: stable domain concept" — also yes: it's the repo-wide single standard for "what is a skill", exported, and tested.
+           - Body isn't a single expression either — it's try/catch with two conditions.
+           
+           So `isSkillDir` is compliant. Continue: rewire install and applyPreset call sites.
+`isSkillDir` 符合允许例外情况：有 3 个调用点需要行为一致（票面的核心约束——“全部改用同一个判别函数”），导出的稳定领域概念，且其函数体包含 try/catch，并非单一表达式。接下来继续处理剩余的调用点。
+
+[tool] Rewiring install and applyPreset to isSkillDir (pending)
+  input: {"input":"[manager/src/core.ts#1C78]\nPUT 547.=547:\n+ if (!isSkillDir(src)) throw new Error(`${subdir ?? '仓库根'} 中没有 SKILL.md，不是一个技能`);\nPUT 795.=795:\n+ const missing = skills.filter((s) => !isSkillDir(join(repoRoot,...
+
+[tool] Rewiring install and applyPreset to isSkillDir (failed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#1C78]\nPUT 547.=547:\n+ if (!isSkillDir(src)) throw new Error(`${subdir ?? '仓库根'} 中没有 SKILL.md，不是一个技能`);\nPUT 795.=795:\n+ const missing = skills.filter((s) => !isSkillDir(join(repoRoot,...
+  output:
+    This edit anchors to lines 547, 795 of manager/src/core.ts that [manager/src/core.ts#1C78] never displayed (it showed a partial range, a search hit, or a folded summary). Actual file content at those lines:
+      547:    throw new Error(`子目录越界：${subdir} 逃逸出 tarball 顶层目录`);
+      795:  const valid = skills.filter((s) => !missing.includes(s));
+    Verify the content matches what you intend to touch, then re-issue the edit with the same [path#tag] header — a straight retry now succeeds without a re-read. If the content does NOT match, fix your line numbers.
+
+[tool] Verifying exact lines to replace (pending)
+  input: manager/src/core.ts:548-549:raw
+  files: /home/smh/myskills/manager/src/core.ts
+
+[tool] Verifying applyPreset missing line (pending)
+  input: manager/src/core.ts:794-796:raw
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Verifying applyPreset missing line (completed)
+  kind: read
+  input: manager/src/core.ts:794-796:raw
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    const missing = skills.filter((s) => !existsSync(join(repoRoot, s)));
+      const valid = skills.filter((s) => !missing.includes(s));
+      const before = manifest.presetApplied?.[name] ?? [];
+    
+    [68 more lines in file. Use :797 to continue]
+
+[tool] Verifying exact lines to replace (completed)
+  kind: read
+  input: manager/src/core.ts:548-549:raw
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    }
+      if (!existsSync(join(src, 'SKILL.md'))) throw new Error(`${subdir ?? '仓库根'} 中没有 SKILL.md，不是一个技能`);
+    
+    [315 more lines in file. Use :550 to continue]
+
+[tool] Rewiring install and applyPreset to isSkillDir (pending)
+  input: {"input":"[manager/src/core.ts#1C78]\nPUT 549.=549:\n+ if (!isSkillDir(src)) throw new Error(`${subdir ?? '仓库根'} 中没有 SKILL.md，不是一个技能`);\nPUT 794.=794:\n+ const missing = skills.filter((s) => !isSkillDir(join(repoRoot,...
+
+[client] fs/write_text_file (running)
+
+[tool] Rewiring install and applyPreset to isSkillDir (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#1C78]\nPUT 549.=549:\n+ if (!isSkillDir(src)) throw new Error(`${subdir ?? '仓库根'} 中没有 SKILL.md，不是一个技能`);\nPUT 794.=794:\n+ const missing = skills.filter((s) => !isSkillDir(join(repoRoot,...
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#884C]
+    545:  if (src !== base && !src.startsWith(base + sep)) {
+    
+    547:    throw new Error(`子目录越界：${subdir} 逃逸出 tarball 顶层目录`);
+    548:  }
+    549:  if (!isSkillDir(src)) throw new Error(`${subdir ?? '仓库根'} 中没有 SKILL.md，不是一个技能`);
+    550:
+    551:  cpSync(src, dest, { recursive: true });
+    792:  const skills = manifest.presets?.[name];
+    793:  if (!skills) throw new Error(`预设集 ${name} 不存在`);
+    794:  const missing = skills.filter((s) => !isSkillDir(join(repoRoot, s)));
+    795:  const valid = skills.filter((s) => !missing.includes(s));
+    796:  const before = manifest.presetApplied?.[name] ?? [];
+
+[client] session/request_permission (running)
+
+[tool] $ cd manager && npm test 2>&1 | grep -E "tests [0-9]+|pass [0-9]+|fail [0-9]+|✖" | head (pending)
+  input: cd manager && npm test 2>&1 | grep -E "tests [0-9]+|pass [0-9]+|fail [0-9]+|✖" | head
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd manager && npm test 2>&1 | grep -E "tests [0-9]+|pass [0-9]+|fail [0-9]+|✖" | head (completed)
+  kind: execute
+  input: cd manager && npm test 2>&1 | grep -E "tests [0-9]+|pass [0-9]+|fail [0-9]+|✖" | head
+  output:
+    ℹ tests 93
+    ℹ pass 93
+    ℹ fail 0
+    
+    
+    Wall time: 4.40 seconds
+    
+    $ cd manager && npm test 2>&1 | grep -E "tests [0-9]+|pass [0-9]+|fail [0-9]+|✖" | head
+    
+    ℹ tests 93
+    ℹ pass 93
+    ℹ fail 0
+    
+    
+    Wall time: 4.40 seconds
+
+[thinking] All 93 tests green. Now the smoke verification against the real repo (acceptance criterion 1): enumerate top-level via the new listRepoSkills and confirm the 13 collection dirs + manager/machines/testdir are absent, and count matches the SKILL.md dirs. Also verify tsc compiles (package likely uses plain ts via node — check package.json test script / typecheck). Let me check package.json for a typecheck script.
+93/93 全部通过。正在针对验收标准 1 对真实仓库进行冒烟测试，并进行类型检查。
+
+[client] session/request_permission (running)
+
+[tool] $ cd manager && node --input-type=module -e "
+const { listRepoSkills, isSkillDir } = await import('./src/core.ts');
+const root = process.cwd() + '/..';
+const skills = listRepoSkills(root);
+const banned = ['agent-workflow','atomistic-workflows','data-processing','machine-learning-potentials','matlab-skills-catalog','mattpocock-skills-zh','molecular-conformer','molecular-dynamics','molecular-representation','tools','manager','machines','testdir'];
+const leaked = skills.filter(s => banned.includes(s));
+console.log('total skills:', skills.length);
+console.log('banned leaked:', leaked.length === 0 ? 'NONE ✓' : leaked);
+console.log('byted-supabase (symlink, target无SKILL.md):', skills.includes('byted-supabase') ? 'LISTED ✗' : 'absent ✓');
+console.log('spot isSkillDir:', isSkillDir(root + '/tdd'), isSkillDir(root + '/tools'), isSkillDir(root + '/machines'));
+" && cat package.json | grep -A4 '\"scripts\"' (pending)
+  input: cd manager && node --input-type=module -e " const { listRepoSkills, isSkillDir } = await import('./src/core.ts'); const root = process.cwd() + '/..'; const skills = listRepoSkills(root); const banned = ['agent-workflo...
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd manager && node --input-type=module -e "
+const { listRepoSkills, isSkillDir } = await import('./src/core.ts');
+const root = process.cwd() + '/..';
+const skills = listRepoSkills(root);
+const banned = ['agent-workflow','atomistic-workflows','data-processing','machine-learning-potentials','matlab-skills-catalog','mattpocock-skills-zh','molecular-conformer','molecular-dynamics','molecular-representation','tools','manager','machines','testdir'];
+const leaked = skills.filter(s => banned.includes(s));
+console.log('total skills:', skills.length);
+console.log('banned leaked:', leaked.length === 0 ? 'NONE ✓' : leaked);
+console.log('byted-supabase (symlink, target无SKILL.md):', skills.includes('byted-supabase') ? 'LISTED ✗' : 'absent ✓');
+console.log('spot isSkillDir:', isSkillDir(root + '/tdd'), isSkillDir(root + '/tools'), isSkillDir(root + '/machines'));
+" && cat package.json | grep -A4 '\"scripts\"' (completed)
+  kind: execute
+  input: cd manager && node --input-type=module -e " const { listRepoSkills, isSkillDir } = await import('./src/core.ts'); const root = process.cwd() + '/..'; const skills = listRepoSkills(root); const banned = ['agent-workflo...
+  output:
+    total skills: 268
+    banned leaked: NONE ✓
+    byted-supabase (symlink, target无SKILL.md): absent ✓
+    spot isSkillDir: true false false
+      "scripts": {
+        "test": "node --test \"test/*.test.ts\""
+      },
+      "dependencies": {
+        "ink": "^7.1.1",
+    
+    
+    Wall time: 0.07 seconds
+    
+    $ cd manager && node --input-type=module -e "
+    const { listRepoSkills, isSkillDir } = await import('./src/core.ts');
+    const root = process.cwd() + '/..';
+    const skills = listRepoSkills(root);
+    const banned = ['agent-workflow','atomistic-workflows','data-processing','machine-learning-potentials','matlab-skills-catalog','mattpocock-skills-zh','molecular-conformer','molecular-dynamics','molecular-representation','tools','manager','machines','testdir'];
+    const leaked = skills.filter(s => banned.includes(s));
+    console.log('total skills:', skills.length);
+    console.log('banned leaked:', leaked.length === 0 ? 'NONE ✓' : leaked);
+    console.log('byted-supabase (symlink, target无SKILL.md):', skills.includes('byted-supabase') ? 'LISTED ✗' : 'absent ✓');
+    console.log('spot isSkillDir:', isSkillDir(root + '/tdd'), isSkillDir(root + '/tools'), isSkillDir(root + '/machines'));
+    " && cat package.json | grep -A4 '\"scripts\"'
+    
+    total skills: 268
+    banned leaked: NONE ✓
+    byted-supabase (symlink, target无SKILL.md): absent ✓
+    ... (9 more lines)
+
+[thinking] All verified:
+           - 268 skills (matches the SKILL.md count from my earlier listing: let me sanity-check — earlier `for d in */` listed SKILL entries; count of "SKILL " lines... roughly 268. Good.)
+           - None of the 13 banned dirs leak.
+           - Symlink semantics correct on both branches.
+           - No typecheck script; tests run via node --test with TS directly (node type stripping). tsc check: there's no tsconfig typecheck in scripts. npx tsc --noEmit? Is typescript a devDependency? Let me quickly verify there's no type error by... node ran the code fine. The project runs TS directly through node; no separate typecheck step exists, so test suite + runtime import is the verification bar.
+           
+           Also should double check the TUI still loads its list (tui.test.ts passed as part of 93). Done.
+           
+           Files changed:
+           - manager/src/core.ts: added `isSkillDir` (exported), `listRepoSkills` rewired, `install` src check, `applyPres...
+完成。测试 93/93 绿；真实仓库冒烟通过。
+
+## 改动文件与关键函数
+
+**`manager/src/core.ts`**
+- `isSkillDir(dir)`（新增，exported，core.ts:75）——全仓唯一技能判别：`statSync`（跟随符号链接）是目录 且 目录内含 `SKILL.md`；断链/文件/不可访问 → `false`
+- `listRepoSkills`（core.ts:85）——内联 `SKILL.md` 过滤改为 `isSkillDir`；dirent `isDirectory()` 换成判别函数后，符号链接按解析目标判定
+- `install`（core.ts:549）——tarball 源的落位检查改用 `isSkillDir(src)`，错误信息不变
+- `applyPreset`（core.ts:794）——成员存在性校验从裸 `existsSync` 改为 `!isSkillDir(...)`：目录存在但无 SKILL.md 计入 `missing`
+- import 增加 `statSync`
+
+**`manager/test/core.test.ts`** — 2 个新测试：含 SKILL.md 列出/不含与顶层文件不列；符号链接 → 含 SKILL.md 目录算技能，链接 → 无 SKILL.md 目录与断链不算（验收三情形全覆盖）
+**`manager/test/preset.test.ts`** — 1 个新测试：预设成员 `tools/`（存在但无 SKILL.md）计入 `missing` 且不计 `added`
+
+## 验证
+
+- TDD：先加 3 个测试 → 恰好 2 个目标失败（symlink 枚举、applyPreset missing）→ 实现后 93/93 全绿（`cd manager && npm test`）
+- 真实仓库冒烟：枚举 268 个技能；13 个集合目录 + `manager/`/`machines/`/`testdir/` 零泄漏；顶层符号链接 `byted-supabase`（目标无 SKILL.md）正确不列；`isSkillDir` 抽查 `tdd=true / tools=false / machines=false`
+- 无行为变化的点：install 源检查语义等价（已有测试覆盖）；`skillSources`、TUI 两处列表均走 `listRepoSkills`，自动收敛
+- 范围外未动：`migrate` 对 agent 目录内实体的 SKILL.md 检查（非本票验收项）、presets/ 布局、manifest 字段；未做任何 git 提交
+
+[done] end_turn

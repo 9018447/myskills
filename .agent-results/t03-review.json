@@ -1,0 +1,64 @@
+{
+  "state": {
+    "goal": "复审 myskills manager 票 03：TUI/CLI 预设操作改走文件夹、JSON presets 字段废弃、分发通路改现读文件夹，评估正确性、原子性、旧数据共存与验收覆盖",
+    "facts": [
+      "验收标准：①TUI新建/加减成员/删除预设与presets/文件夹状态一致；②应用预设+link后agent目录链接齐全解析到真身；③改成员后再link已应用agent链接增减；④manifest不再含presets字段、presetApplied行为不变；⑤同名技能加第二预设界面拒绝",
+      "diff（5文件，+330/-187）：core.ts：Manifest类型删除presets字段（presetApplied保留）；link()预设合并段改为presetMembers()现读构建membersByPreset Map，只对presetApplied已应用预设取成员，指向已删文件夹的记录按空成员处理；预设管理段重写（core.ts:774-842）：createPreset（mkdir+重名/非法名拒绝）、setPreset（diff同步：新增移入/去掉移回顶层，先assertSkillMovable整体预检任一失败完全不动）、deletePreset（成员全部移回顶层→删文件夹含残留→清presetApplied）、applyPreset（存在性按listPresets、成员按presetMembers，互斥接管语义不变）；新增assertSkillMovable（从moveSkillToPreset抽出）与moveSkillToTop（真身回顶层，顶层被占拒绝，支持嵌套成员）；删除migrateBakedPresets与MigratePresetsReport",
+      "cli.ts：删除--presets分支与migrateBakedPresets导入，myskills migrate --presets落入常规migrate路径不崩（AGENTS.md该文档行已失效，票06处理）",
+      "tui.ts：分组浏览（g键预设组）与PresetsView数据源全改文件夹（listPresets/presetMembers）；n建文件夹重名提示；保存/删除包try/catch失败留在编辑页给拒绝提示",
+      "测试：preset.test.ts 15个全部改写为文件夹语义（setPreset增减/拒绝、createPreset、moveSkillToTop、deletePreset、applyPreset接管/missing/撤销、link传播含realpathSync解析到真身、旧presetApplied指向缺失文件夹不崩）；tui.test.ts 新增3个TUI测试（新建+勾选落盘/重名拒绝、删除预设真身回顶层、跨预设加成员被拒）；多组高亮测试改用agent分组",
+      "测试实测（编排者复跑）：cd manager && npm test → pass 112, fail 0",
+      "旧字段共存冒烟（omp，沙箱）：manifest带遗留presets数据+无presets/文件夹时link不崩、applyPreset报预设不存在、deletePreset清presetApplied且presets数据原样带过",
+      "编排者直读核验：Manifest无presets字段（rg零匹配）、presetApplied在core.ts:24、link合并段core.ts:205-222读presetMembers",
+      "过渡期约束（编排者识别）：迁移票04落地前，真实manifest的presetApplied仍指向尚无文件夹的预设名，此时若对真仓跑link，这些预设成员按空成员处理、其agent链接会被移除——编排者已把真仓link推迟到票04完成之后，票03代码本身按设计行为正确"
+    ],
+    "evidence": [
+      "npm test 复跑：pass 112 / fail 0",
+      "日志 .agent-results/omp-t03-tui-folder-ops.log 以 [done] end_turn 结尾，无 AccountQuotaExceeded，acpx进程已退出",
+      "git diff --numstat：cli.ts +2-10、core.ts +78-65、tui.ts +38-7、preset.test.ts +124-96、tui.test.ts +88-9"
+    ],
+    "open_questions": []
+  },
+  "questions": {
+    "mgmt_folder_ops": {
+      "type": "noul",
+      "instructions": "预设管理通路是否完整切到文件夹：create/set/delete经文件夹操作且失败路径有预检与拒绝提示，TUI展示与勾选全部来自presetMembers/listPresets？",
+      "criteria": {
+        "true": "管理操作与展示数据源均走文件夹模型，重名/归属拒绝有界面提示",
+        "false": "仍有读写JSON presets字段或展示与文件夹脱节的路径"
+      }
+    },
+    "link_folder_merge": {
+      "type": "noul",
+      "instructions": "link的分发合并是否正确：已应用预设成员现读文件夹、个人清单∪预设成员语义保持、链接最终解析到真身？",
+      "criteria": {
+        "true": "membersByPreset现读+presetApplied过滤+realpathSync测试证明解析到真身",
+        "false": "合并逻辑或解析存在错误"
+      }
+    },
+    "atomicity": {
+      "type": "noul",
+      "instructions": "setPreset的diff同步是否原子：预检失败完全不动，成功路径无部分应用残留？",
+      "criteria": {
+        "true": "assertSkillMovable整体预检先行，任一失败零改动",
+        "false": "存在部分应用或半移动状态"
+      }
+    },
+    "legacy_coexistence": {
+      "type": "noul",
+      "instructions": "旧数据共存是否安全：manifest遗留presets字段被忽略原样带过、presetApplied指向缺失预设按空成员不崩、migrateBakedPresets删除后migrate路径完整？",
+      "criteria": {
+        "true": "缺字段与旧字段场景都有测试且smoke证明不崩",
+        "false": "存在崩溃或数据破坏路径"
+      }
+    },
+    "acceptance_complete": {
+      "type": "noul",
+      "instructions": "票03五条验收标准是否全部被实现与测试覆盖？",
+      "criteria": {
+        "true": "五条验收各有对应实现与断言（TUI交互以core层测试+3个TUI测试覆盖）",
+        "false": "有验收项未覆盖"
+      }
+    }
+  }
+}

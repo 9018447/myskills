@@ -1,0 +1,57 @@
+{
+  "state": {
+    "goal": "复审 myskills manager 票 01：把技能判别统一为「目录内含 SKILL.md」的单一函数 isSkillDir，评估改动正确性、符号链接语义、范围完整性与回归风险",
+    "facts": [
+      "验收标准：①顶层枚举=含SKILL.md的顶层目录，13个集合目录与manager/machines/testdir从技能列表消失；②技能存在性校验与枚举用同一判别函数；③测试覆盖含/不含SKILL.md/符号链接三种情形",
+      "diff（3文件，+49-7）：core.ts 新增导出 isSkillDir(dir)（core.ts:75-83）：try { statSync(dir).isDirectory() && existsSync(join(dir,'SKILL.md')) } catch { return false }；listRepoSkills（core.ts:85-91）过滤条件从 e.isDirectory() && existsSync(SKILL.md) 改为 !name.startsWith('.') && isSkillDir(...)；install（core.ts:549）tarball源检查改用 isSkillDir(src)；applyPreset（core.ts:794）missing 过滤从 !existsSync 改为 !isSkillDir；import 增加 statSync",
+      "statSync 跟随符号链接，所以顶层符号链接指向含SKILL.md目录时按目标判定为技能；断链 statSync 抛错返回 false",
+      "测试新增3个：core.test.ts 列表只含 has-skill（无SKILL.md目录+顶层文件不列）；core.test.ts 符号链接三态（指向含SKILL.md目录=技能、指向无SKILL.md目录=非技能、断链=非技能）；preset.test.ts 预设成员 tools/（存在但无SKILL.md）计入 missing 不计 added",
+      "测试实测（编排者复跑）：cd manager && npm test → pass 93, fail 0",
+      "真实仓库冒烟（omp 声称，编排者抽验diff与测试）：枚举268个技能；13个集合目录与manager/machines/testdir零泄漏；顶层符号链接 byted-supabase（目标无SKILL.md）正确不列",
+      "全库 rg 检查剩余 SKILL.md 判断点：core.ts:95 是读 frontmatter 非判别；core.ts:642/666 在 migrate 内判别 agent skills 目录（~/.claude/skills）里的实体而非仓库顶层，对普通目录 existsSync(SKILL.md) 与 isSkillDir 行为等价（symlink 分支在 migrate 里单独处理），实现者披露为范围外未动",
+      "listRepoSkills 调用方：core.ts:734 skillSources（逐技能 git log，列表缩小符合预期）、tui.ts:100 与 tui.ts:332 TUI 技能列表（集合目录不再列出是本票设计意图）",
+      "link()/分发路径按 manifest 清单操作，不经 listRepoSkills，不受列表缩小影响",
+      "时间戳核验：派发窗口内仅 manager/src/core.ts（13:53）被改，jev/、setup-claude-rules/、acpx/ 等改动为派发前基线，实现未越界"
+    ],
+    "evidence": [
+      "npm test 复跑输出：ℹ pass 93 / ℹ fail 0 / duration 4667ms",
+      "git diff --numstat -- manager/：core.ts +15-5、core.test.ts +25-2、preset.test.ts +9-0",
+      "日志 .agent-results/omp-t01-skill-discriminator.log 以 [done] end_turn 结尾，无 AccountQuotaExceeded，grep error 仅命中思考文本"
+    ],
+    "open_questions": []
+  },
+  "questions": {
+    "unified_discriminator": {
+      "type": "noul",
+      "criteria": {
+        "true": "listRepoSkills/install/applyPreset 均改用 isSkillDir，其余 SKILL.md 出现处读 frontmatter 或属 migrate agent 目录检查且无行为差异",
+        "false": "存在应当统一却遗漏的判别点，或剩余判断点存在行为不一致"
+      },
+      "instructions": "仓库范围的技能枚举与存在性校验是否全部收敛到 isSkillDir 单一判别（剩余裸 SKILL.md 判断均为非判别用途或行为等价的 migrate agent 目录实体检查）？"
+    },
+    "symlink_semantics": {
+      "type": "noul",
+      "criteria": {
+        "true": "statSync 跟随链接 + catch 返回 false 与三态测试共同证明语义正确",
+        "false": "存在语义错误（如断链被算作技能、或链接到技能目录被漏列）"
+      },
+      "instructions": "符号链接语义是否正确实现设计意图：链接指向含SKILL.md目录算技能、指向无SKILL.md目录与断链不算？"
+    },
+    "acceptance_complete": {
+      "type": "noul",
+      "criteria": {
+        "true": "枚举收敛、判别函数复用、三情形测试都有对应实现与断言",
+        "false": "有验收项未被覆盖或测试断言不充分"
+      },
+      "instructions": "票 01 三条验收标准是否全部被 diff 与测试覆盖？"
+    },
+    "regression_risk": {
+      "type": "noul",
+      "criteria": {
+        "true": "全部调用方（skillSources、TUI 两处列表）对列表缩小均无依赖，link 分发走 manifest 不受影响",
+        "false": "存在依赖完整列表的调用方会因此出错"
+      },
+      "instructions": "技能列表缩小（集合目录不再列出）是否存在未识别的回归风险（如某调用方依赖集合目录出现在列表里）？"
+    }
+  }
+}

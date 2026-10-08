@@ -1,1 +1,0 @@
-/home/smh/.claude/skills/setup-claude-rules/CODING_RULES.md

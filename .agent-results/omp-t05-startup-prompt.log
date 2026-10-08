@@ -1,0 +1,1578 @@
+[client] initialize (running)
+
+[client] session/new (running)
+
+[thinking] Let me start by reading the ticket file and understanding the codebase structure.
+
+[tool] Reading ticket 05 (pending)
+  input: /home/smh/myskills/.scratch/preset-folders/issues/05-startup-prompt.md
+  files: /home/smh/myskills/.scratch/preset-folders/issues/05-startup-prompt.md
+
+[tool] Reading core.ts head (pending)
+  input: /home/smh/myskills/manager/src/core.ts:1-140
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading ticket 05 (completed)
+  kind: read
+  input: /home/smh/myskills/.scratch/preset-folders/issues/05-startup-prompt.md
+  files: /home/smh/myskills/.scratch/preset-folders/issues/05-startup-prompt.md
+  output:
+    [.scratch/preset-folders/issues/05-startup-prompt.md#0CBC]
+    1:# 05 — 启动交互确认未知的顶层无 SKILL.md 文件夹
+    2:
+    3:**构建内容：** CLI/TUI 启动时发现顶层存在非空且不含 SKILL.md、也不在豁免名单里的文件夹时，交互式确认是否移入 `presets/` 下成为预设文件夹；同意则移动并完成 reconcile，拒绝则记入持久化拒绝名单，之后不再询问。`manager/`、`machines/`、`testdir/` 预置在默认豁免名单。非交互环境（管道、CI）跳过询问并提示，不做任何移动。
+    4:
+    5:**运行预算：** `离线`
+    6:
+    7:**被以下阻塞：** 02
+    8:
+    9:## 验收标准
+    10:
+    11:- [ ] 顶层放置一个新的非空无 SKILL.md 文件夹，启动时出现确认；同意后文件夹位于 `presets/` 下且成员获得顶层链接
+    12:- [ ] 拒绝后写入名单，连续启动不再询问
+    13:- [ ] manager/、machines/、testdir/ 从不触发询问
+    14:- [ ] 非交互环境（stdin 非终端）不询问、不移动、输出提示
+    15:- [ ] 测试覆盖同意、拒绝、豁免、非交互四种分支
+    16:
+    17:## 被以下阻塞
+    18:
+    19:- 02
+
+[tool] Reading core.ts head (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/core.ts:1-140
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E500]
+    1:// myskills 核心逻辑：link / init / status / sync / install / migrate 及清单、注册表读写。
+    2:// link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
+    3:// 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
+    4:import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync, renameSync, type Stats } from 'node:fs';
+    5:import { homedir, hostname, tmpdir } from 'node:os';
+    6:import { join, dirname, resolve, sep, relative } from 'node:path';
+    7:import { fileURLToPath } from 'node:url';
+    8:import { spawnSync } from 'node:child_process';
+    9:
+    10:export interface AgentDef {
+    11:  id: string;
+    12:  name: string;
+    13:  skillsPath: string; // 支持 ~ 展开
+    14:}
+    15:
+    16:export interface Manifest {
+    17:  agents: Record<string, string[]>;
+    18:  // 技能来源仓库："owner/repo" 或 "owner/repo/subdir"；install 时记录，存量由 skillSources 从 git 历史推断
+    19:  sources?: Record<string, string>;
+    20:  // 预设应用记录：预设名 → 已应用到的 agent id；预设成员读 presets/ 文件夹（见下方文件夹事实模型段），
+    21:  // link 时把这些 agent 的清单与预设当前成员取并集。
+    22:  // 旧版清单里的 presets 字段（名字 → 技能列表）已废弃：类型不再声明，读清单会原样带过、写清单不增不改，
+    23:  // 存量数据由一次性迁移收敛
+    24:  presetApplied?: Record<string, string[]>;
+    25:}
+    26:
+    27:export function expandHome(p: string): string {
+    ... (222 more lines)
+
+[thinking] Let me read the preset folder model section in core.ts (lines 856-982), plus the cli.ts and tui.ts wiring.
+
+[tool] Reading preset folder model (pending)
+  input: /home/smh/myskills/manager/src/core.ts:700-982
+  files: /home/smh/myskills/manager/src/core.ts
+
+[tool] Reading cli.ts (pending)
+  input: /home/smh/myskills/manager/src/cli.ts
+  files: /home/smh/myskills/manager/src/cli.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading preset folder model (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/core.ts:700-982
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E500]
+    629:export function migrate(repoRoot: string, apply: boolean): { actions: MigrateAction[]; lines: string[] } {
+    …
+    635:  for (const agent of agents) {
+    …
+    640:    for (const entry of readdirSync(skillsPath)) {
+    …
+    695:      if (apply) {
+    …
+    699:      }
+    700:    }
+    701:  }
+    702:
+    703:  const lines = actions.map(formatAction);
+    704:  if (!apply) {
+    705:    lines.push('\ndry-run：未做任何改动。确认后运行 myskills migrate --apply');
+    706:    return { actions, lines };
+    707:  }
+    708:  for (const [id, set] of Object.entries(converged)) {
+    709:    manifest.agents[id] = [...set].sort();
+    710:  }
+    711:  saveManifest(repoRoot, manifest);
+    712:  lines.push('清单已更新。请检查 git 状态后提交并推送。');
+    713:  return { actions, lines };
+    714:}
+    715:
+    716:// TUI 用：读取所有机器状态文件
+    717:export function machineStatuses(repoRoot: string): MachineStatus[] {
+    ... (373 more lines)
+
+[tool] Reading cli.ts (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/cli.ts
+  files: /home/smh/myskills/manager/src/cli.ts
+  output:
+    [manager/src/cli.ts#F5B1]
+    1:#!/usr/bin/env node
+    2:// myskills 管理 CLI：link / status / sync / install / init / migrate（薄封装，逻辑在 core.ts）
+    3:// link 在含 .myskills.json 的目录下自动切项目模式，--global 强制全局
+    4:import { hostname } from 'node:os';
+    5:import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets } from './core.ts';
+    6:
+    7:function resolveRemote(): string {
+    8:  const idx = process.argv.indexOf('--remote');
+    9:  return idx > -1 ? process.argv[idx + 1] : (process.env.MYSKILLS_REMOTE ?? 'origin');
+    10:}
+    11:
+    12:const command = process.argv[2];
+    13:
+    14:async function launchTui(): Promise<void> {
+    15:  if (!process.stdout.isTTY) {
+    16:    console.log('用法: myskills [link|status|sync|install|init|migrate|tui]（直接敲 myskills 进 TUI）');
+    17:    return;
+    18:  }
+    19:  const { start } = await import('./tui.ts');
+    20:  start(resolveRemote());
+    21:}
+    22:
+    23:try {
+    24:  // 启动 reconcile：把 presets/ 文件夹事实同步到仓库顶层（幂等；重名冲突时拒绝执行）
+    25:  reconcilePresets(findRepoRoot());
+    26:  switch (command) {
+    27:    case 'tui':
+    ... (49 more lines)
+
+[thinking] Now let me look at tui.ts start() and validateSkillName. Also check the existing test file structure.
+
+[tool] Finding reconcilePresets and validateSkillName (pending)
+  input: /home/smh/myskills/manager/src
+  files: /home/smh/myskills/manager/src
+
+[tool] Reading core.ts tail (pending)
+  input: /home/smh/myskills/manager/src/core.ts:144-360
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading core.ts tail (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/core.ts:144-360
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E500]
+    142:export function countLinks(skillsPath: string, repoRoot: string): { linked: number; broken: number } {
+    143:  let linked = 0;
+    144:  let broken = 0;
+    145:  if (!existsSync(skillsPath)) return { linked, broken };
+    146:  for (const entry of readdirSync(skillsPath)) {
+    147:    const entryPath = join(skillsPath, entry);
+    148:    if (!lstatSync(entryPath).isSymbolicLink()) continue;
+    149:    const target = resolve(skillsPath, readlinkSync(entryPath));
+    150:    if (!target.startsWith(repoRoot + '/')) continue;
+    151:    if (existsSync(target)) linked++;
+    152:    else broken++;
+    153:  }
+    154:  return { linked, broken };
+    155:}
+    156:
+    157:export function agentInstalled(agent: AgentDef): boolean {
+    158:  return existsSync(dirname(expandHome(agent.skillsPath)));
+    159:}
+    160:
+    161:export interface LinkReport {
+    162:  lines: string[];
+    163:  skippedAgents: string[];
+    164:  missingSkills: string[];
+    165:}
+    166:
+    167:// 把 wanted 技能同步进一个 skills 目录：建链/重建，并清理指向 repoRoot 的孤儿链接与断链。
+    168:// 全局 link（按 agent）与项目 link（按项目内目标目录）共用同一套"清单即真相"语义。
+    ... (295 more lines)
+
+[tool] Finding reconcilePresets and validateSkillName (completed)
+  kind: search
+  input: /home/smh/myskills/manager/src
+  files: /home/smh/myskills/manager/src
+  output:
+    # manager/src/
+    ## cli.ts#F5B1
+     4:import { hostname } from 'node:os';
+    *5:import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets } from './core.ts';
+     6:
+     7:function resolveRemote(): string {
+     8:  const idx = process.argv.indexOf('--remote');
+    ...
+     24:  // 启动 reconcile：把 presets/ 文件夹事实同步到仓库顶层（幂等；重名冲突时拒绝执行）
+    *25:  reconcilePresets(findRepoRoot());
+     26:  switch (command) {
+     27:    case 'tui':
+     28:      await launchTui();
+    ## core.ts#E500
+     524:// label 用于报错文案（技能名 / 预设名共用同一套约束）
+    *525:export function validateSkillName(name: string, label = '技能名'): void {
+     526:  if (!/^[A-Za-z0-9_-][A-Za-z0-9._-]*$/.test(name)) {
+     527:    throw new Error(`非法${label} "${name}"：只能由字母、数字、点、下划线、连字符组成，且不能以点开头`);
+     528:  }
+    ...
+     533:  const name = nameOverride ?? (subdir ? subdir.replace(/\/+$/, '').split('/').pop()! : repo);
+    *534:  validateSkillName(name);
+     535:  const dest = join(repoRoot, name);
+     536:  if (existsSync(dest)) throw new Error(`仓库中已存在 ${name}，如需更新请先删除或换 --name`);
+     537:
+    ...
+     777:export function createPreset(repoRoot: string, name: string): void {
+    *778:  validateSkillName(name, '预设名');
+    ... (28 more lines)
+
+[thinking] Now let me look at the tui.ts start() and check the test file structure to understand the existing test conventions.
+
+[tool] Reading tui.ts start (pending)
+  input: /home/smh/myskills/manager/src/tui.ts:780-817
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[tool] Listing manager test files (pending)
+  input: /home/smh/myskills/manager
+  files: /home/smh/myskills/manager
+
+[client] fs/read_text_file (running)
+
+[tool] Listing manager test files (completed)
+  kind: search
+  input: /home/smh/myskills/manager
+  files: /home/smh/myskills/manager
+  output:
+    # manager/
+    package-lock.json
+    package.json
+    ## test/
+    tui.test.ts
+    preset.test.ts
+    preset-folders.test.ts
+    core.test.ts
+    project.test.ts
+    install.test.ts
+    migrate.test.ts
+    sync.test.ts
+    link.test.ts
+    status.test.ts
+    cli.test.ts
+    sources.test.ts
+    ## src/
+    tui.ts
+    cli.ts
+    core.ts
+
+[tool] Reading tui.ts start (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/tui.ts:780-817
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#9943]
+    654:export function App({ root, remote, project = null, cwd = process.cwd() }: AppProps) {
+    …
+    779:
+    780:  // 作用域随时可见：正在编辑的是哪个清单文件、当前算用户级还是项目级
+    781:  const scopeLine =
+    782:    scope === 'project' && projectRoot
+    783:      ? '当前作用域：项目级 · ' + join(projectRoot, core.PROJECT_MANIFEST_FILE)
+    784:      : '当前作用域：用户级 · ' + join(root, 'skills-manifest.json') + '（' + (projectRoot ? 'o 切到项目级' : 'o 在本项目建立项目级') + '）';
+    785:  return h(
+    786:    Box, { flexDirection: 'column' },
+    787:    h(
+    788:      Text, { bold: true, color: 'magenta' },
+    789:      scope === 'project' && projectRoot
+    790:        ? `myskills 管理｜项目模式：${projectRoot}（编辑项目级 .myskills.json）`
+    791:        : 'myskills 管理｜全局（编辑用户级 skills-manifest.json）',
+    792:    ),
+    793:    h(Text, { dimColor: true }, scopeLine),
+    794:    view === 'skills'
+    795:      ? h(SkillsView, { root, agents, manifest, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), tick, searching, setSearching, scope, projectRoot, projectSkills })
+    796:      : view === 'machines'
+    797:        ? h(MachinesView, { root, tick })
+    798:        : view === 'agents'
+    799:          ? h(AgentsView, { root, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), setBusy: setViewBusy })
+    800:          : view === 'presets'
+    801:            ? h(PresetsView, { root, agents, tick, onNotice: setNotice, bumpTick: () => setTick((t) => t + 1), setBusy: setViewBusy })
+    802:            : h(InstallView, { root, remote, onNotice: setNotice, onDone: () => { setView('skills'); setTick((t) => t + 1); } }),
+    803:    h(Text, { color: running ? 'yellow' : 'green' }, notice),
+    ... (21 more lines)
+
+[tool] Reading preset-folders tests (pending)
+  input: /home/smh/myskills/manager/test/preset-folders.test.ts
+  files: /home/smh/myskills/manager/test/preset-folders.test.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading preset-folders tests (completed)
+  kind: read
+  input: /home/smh/myskills/manager/test/preset-folders.test.ts
+  files: /home/smh/myskills/manager/test/preset-folders.test.ts
+  output:
+    [manager/test/preset-folders.test.ts#597F]
+    1:// 票 02：预设集文件夹事实模型——presets/<预设>/<技能>/ 存真身、顶层留相对符号链接。
+    2:// 覆盖：递归成员识别、启动 reconcile 幂等、断链清除、顶层重名冲突拒绝、移入预设的拒绝语义、CLI 启动接线
+    3:import { test } from 'node:test';
+    …
+    10:import { reconcilePresets, moveSkillToPreset, listPresets, presetMembers } from '../src/core.ts';
+    11:
+    12:const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'cli.ts');
+    13:
+    14-23:function makeRepo(skills: string[]) { … }
+    24:
+    25:// 在仓库内相对路径 rel 处造一个技能真身
+    26-29:function makeSkill(repo: string, rel: string) { … }
+    30:
+    31:// 顶层全部符号链接的 readlink 原始目标（幂等性对比用）
+    32-38:function topLinks(repo: string): Record<string, string> { … }
+    39:
+    40-54:test('presetMembers: 递归下探识别成员；预设内非技能残留不参与', () => { … });
+    55:
+    56-60:test('presetMembers: 没有 presets/ 目录时返回空', () => { … });
+    61:
+    62-74:test('reconcile: 手工 mv 顶层技能进 presets/foo/ 后，顶层出现指向真身的相对符号链接；重复运行无变化', () => { … });
+    75:
+    76-82:test('reconcile: 嵌套一层中间目录也能识别成员并在顶层建链', () => { … });
+    83:
+    84-91:test('reconcile: 顶层已有指向成员的正确链接时不重复创建（内容不变）', () => { … });
+    92:
+    93-100:test('reconcile: 删除预设成员后，顶层残留断链在下次启动时被清除', () => { … });
+    ... (18 more lines)
+
+[tool] Reading test helpers and CLI tests (pending)
+  input: /home/smh/myskills/manager/test/preset-folders.test.ts:4-54
+  files: /home/smh/myskills/manager/test/preset-folders.test.ts
+
+[tool] Reading cli test conventions (pending)
+  input: /home/smh/myskills/manager/test/cli.test.ts
+  files: /home/smh/myskills/manager/test/cli.test.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading test helpers and CLI tests (completed)
+  kind: read
+  input: /home/smh/myskills/manager/test/preset-folders.test.ts:4-54
+  files: /home/smh/myskills/manager/test/preset-folders.test.ts
+  output:
+    [manager/test/preset-folders.test.ts#597F]
+    3:import { test } from 'node:test';
+    4:import assert from 'node:assert/strict';
+    5:import { mkdtempSync, mkdirSync, writeFileSync, existsSync, lstatSync, readlinkSync, readdirSync, renameSync, rmSync } from 'node:fs';
+    6:import { tmpdir } from 'node:os';
+    7:import { join, dirname } from 'node:path';
+    8:import { fileURLToPath } from 'node:url';
+    9:import { spawnSync } from 'node:child_process';
+    10:import { reconcilePresets, moveSkillToPreset, listPresets, presetMembers } from '../src/core.ts';
+    11:
+    12:const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'cli.ts');
+    13:
+    14:function makeRepo(skills: string[]) {
+    15:  const repo = mkdtempSync(join(tmpdir(), 'myskills-presetdir-'));
+    16:  writeFileSync(join(repo, 'skills-manifest.json'), JSON.stringify({ agents: {} }, null, 2));
+    17:  writeFileSync(join(repo, 'agents.json'), JSON.stringify({ agents: [] }, null, 2));
+    18:  for (const s of skills) {
+    19:    mkdirSync(join(repo, s), { recursive: true });
+    20:    writeFileSync(join(repo, s, 'SKILL.md'), `---\nname: ${s}\n---\n`);
+    21:  }
+    22:  return repo;
+    23:}
+    24:
+    25:// 在仓库内相对路径 rel 处造一个技能真身
+    26:function makeSkill(repo: string, rel: string) {
+    27:  mkdirSync(join(repo, rel), { recursive: true });
+    28:  writeFileSync(join(repo, rel, 'SKILL.md'), `---\nname: ${rel.split('/').pop()}\n---\n`);
+    29:}
+    ... (32 more lines)
+
+[tool] Reading cli test conventions (completed)
+  kind: read
+  input: /home/smh/myskills/manager/test/cli.test.ts
+  files: /home/smh/myskills/manager/test/cli.test.ts
+  output:
+    [manager/test/cli.test.ts#E601]
+    1:import { test } from 'node:test';
+    2:import assert from 'node:assert/strict';
+    3:import { join, dirname } from 'node:path';
+    4:import { fileURLToPath } from 'node:url';
+    5:import { spawnSync } from 'node:child_process';
+    6:import { mkdtempSync } from 'node:fs';
+    7:import { tmpdir } from 'node:os';
+    8:import { findRepoRoot } from '../src/core.ts';
+    9:
+    10:const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'cli.ts');
+    11:
+    12:test('cli: 无参数且非 TTY 时打印用法（提示 tui 入口），退出码 0', () => {
+    13:  const r = spawnSync('node', [CLI], { encoding: 'utf8' });
+    14:  assert.equal(r.status, 0);
+    15:  assert.match(r.stdout + r.stderr, /link/);
+    16:  assert.match(r.stdout + r.stderr, /tui/);
+    17:});
+    18:
+    19:test('findRepoRoot: 未设 MYSKILLS_ROOT 时返回脚本所在仓库的真实根，与运行目录无关', () => {
+    20:  delete process.env.MYSKILLS_ROOT;
+    21:  const expected = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+    22:  const cwd = process.cwd();
+    23:  process.chdir('/');
+    24:  try {
+    25:    assert.equal(findRepoRoot(), join(expected));
+    26:  } finally {
+    27:    process.chdir(cwd);
+    ... (14 more lines)
+
+[thinking] Now let me check the rest of the preset-folders.test.ts to see the CLI wiring tests, especially how they run the CLI with MYSKILLS_ROOT.
+
+[tool] Reading remaining preset-folder tests (pending)
+  input: /home/smh/myskills/manager/test/preset-folders.test.ts:173-193
+  files: /home/smh/myskills/manager/test/preset-folders.test.ts
+
+[tool] Reading package.json (pending)
+  input: /home/smh/myskills/manager/package.json
+  files: /home/smh/myskills/manager/package.json
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading remaining preset-folder tests (completed)
+  kind: read
+  input: /home/smh/myskills/manager/test/preset-folders.test.ts:173-193
+  files: /home/smh/myskills/manager/test/preset-folders.test.ts
+  output:
+    [manager/test/preset-folders.test.ts#597F]
+    172:
+    173:test('cli: 任意命令启动即执行 reconcile（含断链清除语义由 core 测试覆盖）', () => {
+    174:  const repo = makeRepo(['a']);
+    175:  mkdirSync(join(repo, 'presets/foo'), { recursive: true });
+    176:  renameSync(join(repo, 'a'), join(repo, 'presets/foo', 'a'));
+    177:  const r = spawnSync('node', [CLI, 'link'], { encoding: 'utf8', env: { ...process.env, MYSKILLS_ROOT: repo } });
+    178:  assert.equal(r.status, 0, r.stderr);
+    179:  assert.ok(lstatSync(join(repo, 'a')).isSymbolicLink());
+    180:  assert.equal(readlinkSync(join(repo, 'a')), 'presets/foo/a');
+    181:});
+    182:
+    183:test('cli: 顶层真身与预设成员冲突时，命令报错退出非 0 并说明位置', () => {
+    184:  const repo = makeRepo(['dup']);
+    185:  makeSkill(repo, 'presets/foo/dup');
+    186:  const r = spawnSync('node', [CLI, 'status'], { encoding: 'utf8', env: { ...process.env, MYSKILLS_ROOT: repo } });
+    187:  assert.notEqual(r.status, 0);
+    188:  assert.match(r.stderr, /dup/);
+    189:  assert.match(r.stderr, /presets\/foo\/dup/);
+    190:  // 双方原样保留
+    191:  assert.ok(existsSync(join(repo, 'dup/SKILL.md')));
+    192:  assert.ok(existsSync(join(repo, 'presets/foo/dup/SKILL.md')));
+    193:});
+
+[client] fs/read_text_file (running)
+
+[tool] Reading package.json (completed)
+  kind: read
+  input: /home/smh/myskills/manager/package.json
+  files: /home/smh/myskills/manager/package.json
+  output:
+    [manager/package.json#D098]
+    1:{
+    2:  "name": "myskills-manager",
+    3:  "version": "0.1.0",
+    4:  "private": true,
+    5:  "type": "module",
+    6:  "description": "myskills 仓库的多机分发管理工具：link/status/sync/install/migrate",
+    7:  "bin": {
+    8:    "myskills": "src/cli.ts",
+    9:    "myskills-tui": "src/tui.ts"
+    10:  },
+    11:  "scripts": {
+    12:    "test": "node --test \"test/*.test.ts\""
+    13:  },
+    14:  "dependencies": {
+    15:    "ink": "^7.1.1",
+    16:    "react": "^19.3.0"
+    17:  },
+    18:  "devDependencies": {
+    19:    "@types/react": "^19.3.0",
+    20:    "ink-testing-library": "^4.0.0"
+    21:  }
+    22:}
+
+[thinking] Now I have a full picture. Let me design the feature.
+           
+           ## Design
+           
+           New function in core.ts: `promptUnknownTopDirs` (or similar name). Requirements:
+           
+           1. At CLI/TUI startup (before reconcile), scan repo top-level for directories that are:
+              - non-empty
+              - `isSkillDir` false (no SKILL.md at top of that dir)
+              - not in exemption list (`manager`, `machines`, `testdir`, plus `presets` itself, and hidden dirs start with `.` — should be excluded too; also `.git` etc. dot-dirs are already excluded by convention; also files not dirs skipped)
+              - not in rejected list (persistent)
+           2. For each such dir, interactively confirm: "move into presets/ as preset folder <name>?"
+              - Yes → validate name with `validateSkillName`; if `presets/<name>` exists → prompt (report) and leave in place; else `mv` dir into `presets/`, then after all confirmations run reconcile so its member skills get top links.
+           ...
+现在让我检查一下 `tui.ts` 的底部和 `tui` 的测试，看看是如何调用 `start` 的。
+
+[tool] Reading tui.ts invocation (pending)
+  input: /home/smh/myskills/manager/src/tui.ts:817-822
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[tool] Finding start usages (pending)
+  input: /home/smh/myskills/manager
+  files: /home/smh/myskills/manager
+
+[client] fs/read_text_file (running)
+
+[tool] Finding start usages (completed)
+  kind: search
+  input: /home/smh/myskills/manager
+  files: /home/smh/myskills/manager
+  output:
+    # manager/src/
+    ## cli.ts#F5B1
+     19:  const { start } = await import('./tui.ts');
+    *20:  start(resolveRemote());
+     21:}
+     22:
+     23:try {
+    ## tui.ts#9943
+     27:  remote: string;
+    *28:  // 检测到的项目根（含 .myskills.json）；null/缺省 = 纯全局模式。由 start() 探测传入，测试可显式指定
+     29:  project?: { root: string } | null;
+     30:  // 启动目录：项目没有 .myskills.json 时按 o 在这里（或其 git 根）建立项目级分发
+     31:  cwd?: string;
+    ...
+     809:// 直接运行时渲染；也供 cli.ts 的 tui 子命令调用。启动目录向上找到 .myskills.json 时进入项目模式
+    *810:export function start(remote: string) {
+     811:  const cwd = process.cwd();
+     812:  const root = core.findRepoRoot();
+     813:  // 启动 reconcile：把 presets/ 文件夹事实同步到仓库顶层（幂等；重名冲突时拒绝启动）
+    ...
+     820:  const remote = remoteIdx > -1 ? process.argv[remoteIdx + 1] : (process.env.MYSKILLS_REMOTE ?? 'origin');
+    *821:  start(remote);
+     822:}
+
+[tool] Reading tui.ts invocation (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/tui.ts:817-822
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#9943]
+    810:export function start(remote: string) {
+    …
+    816:}
+    817:
+    818:if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*\//, ''))) {
+    819:  const remoteIdx = process.argv.indexOf('--remote');
+    820:  const remote = remoteIdx > -1 ? process.argv[remoteIdx + 1] : (process.env.MYSKILLS_REMOTE ?? 'origin');
+    821:  start(remote);
+    822:}
+
+[thinking] Clear picture now. Plan:
+           
+           1. Todo init.
+           2. Write failing tests `manager/test/startup-prompt.test.ts`.
+           3. Run → confirm failure (module lacks exports).
+           4. Implement in core.ts: `PRESET_PROMPT_FILE`, `TOP_DIR_EXEMPTIONS`, `listPromptableTopDirs`, `promptUnknownTopDirs` (async), `confirmOnTty` (readline helper).
+           5. Wire cli.ts + tui.ts.
+           6. Run new tests + full suite.
+           
+           Note top-level await in cli.ts already used (line 28 `await launchTui()`). Good.
+           
+           TDD: write the test file first.
+计划很明确。TDD 流程：先写失败测试 → 实现 core + wiring → 绿。
+
+[tool] Initializing ticket 05 work (pending)
+  input: {"op":"init","list":["写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）","core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty","接线 cli.ts 与 tui.ts（prompt 先于 reconcile）","跑新测试与全量 npm test 验证"]}
+
+[tool] Initializing ticket 05 work (failed)
+  kind: think
+  input: {"op":"init","list":["写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）","core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty","接线 cli.ts 与 tui.ts（prompt 先于 reconcile）","跑新测试与全量 npm test 验证"]}
+  output:
+    Invalid todo arguments: list[0] must be an object (was a string)
+    list[1] must be an object (was a string)
+    list[2] must be an object (was a string)
+    list[3] must be an object (was a string)
+
+[tool] Initializing ticket 05 work (pending)
+  input: {"op":"init","phase":"[\"ticket-05\"]","items":["写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）","core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty","接线 cli.ts 与 tui.ts（prompt 先于 reconcile）","跑新测试与全量 npm tes...
+
+[tool] Initializing ticket 05 work (completed)
+  kind: think
+  input: {"op":"init","phase":"[\"ticket-05\"]","items":["写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）","core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty","接线 cli.ts 与 tui.ts（prompt 先于 reconcile）","跑新测试与全量 npm tes...
+  output:
+    Remaining items (4):
+      - 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线） [in_progress] (["ticket-05"])
+      - core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty [pending] (["ticket-05"])
+      - 接线 cli.ts 与 tui.ts（prompt 先于 reconcile） [pending] (["ticket-05"])
+      - 跑新测试与全量 npm test 验证 [pending] (["ticket-05"])
+    Overall: 0/4 done, 4 open.
+    Active phase 1/1 "["ticket-05"]" (0/4).
+      ["ticket-05"]:
+        - [ ] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线） (in progress)
+        - [ ] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty
+        - [ ] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile）
+        - [ ] 跑新测试与全量 npm test 验证
+
+[plan]
+  - [in_progress] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）
+  - [pending] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty
+  - [pending] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile）
+  - [pending] 跑新测试与全量 npm test 验证
+
+[tool] Writing failing startup-prompt tests (pending)
+  input: /home/smh/myskills/manager/test/startup-prompt.test.ts
+  files: /home/smh/myskills/manager/test/startup-prompt.test.ts
+
+[client] fs/write_text_file (running)
+
+[tool] Writing failing startup-prompt tests (completed)
+  kind: edit
+  input: /home/smh/myskills/manager/test/startup-prompt.test.ts
+  files: /home/smh/myskills/manager/test/startup-prompt.test.ts
+  output:
+    [manager/test/startup-prompt.test.ts#8C3D]
+    Successfully wrote 7517 bytes to manager/test/startup-prompt.test.ts
+
+[client] session/request_permission (running)
+
+[tool] $ node --test test/startup-prompt.test.ts 2>&1 | tail -20 (pending)
+  input: node --test test/startup-prompt.test.ts 2>&1 | tail -20
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ node --test test/startup-prompt.test.ts 2>&1 | tail -20 (completed)
+  kind: execute
+  input: node --test test/startup-prompt.test.ts 2>&1 | tail -20
+  output:
+    at async ModuleJob.run (node:internal/modules/esm/module_job:431:5)
+        at async node:internal/modules/esm/loader:636:26
+        at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+    
+    Node.js v26.1.0
+    ✖ test/startup-prompt.test.ts (58.612393ms)
+    ℹ tests 1
+    ℹ suites 0
+    ℹ pass 0
+    ℹ fail 1
+    ℹ cancelled 0
+    ℹ skipped 0
+    ℹ todo 0
+    ℹ duration_ms 62.895357
+    
+    ✖ failing tests:
+    
+    test at test/startup-prompt.test.ts:1:1
+    ✖ test/startup-prompt.test.ts (58.612393ms)
+      'test failed'
+    
+    
+    Wall time: 0.10 seconds
+    
+    $ node --test test/startup-prompt.test.ts 2>&1 | tail -20
+    
+    at async ModuleJob.run (node:internal/modules/esm/module_job:431:5)
+        at async node:internal/modules/esm/loader:636:26
+    ... (21 more lines)
+
+[thinking] Fails as expected (missing exports — module load error). Now implement in core.ts. Insert the new section after the preset folder model section (after moveSkillToTop, near end of file). Let me read the end of core.ts to find the right insertion point.
+如预期失败（缺少导出）。现在正在 `core.ts` 中实现，放在 preset 文件夹模型部分之后。
+
+[tool] Reading core.ts tail (pending)
+  input: /home/smh/myskills/manager/src/core.ts:980-1002
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading core.ts tail (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/core.ts:980-1002
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E500]
+    979:
+    980:// 技能移回顶层：预设文件夹里的真身（含嵌套成员）mv 回仓库顶层，替换 reconcile 留下的符号链接；
+    981:// 顶层被真实目录/文件占用时拒绝（不覆盖、不删除占用方）。预设文件夹保留（空预设仍是预设）
+    982:export function moveSkillToTop(repoRoot: string, preset: string, skill: string): void {
+    983:  const m = presetMembers(repoRoot).find((x) => x.preset === preset && x.name === skill);
+    984:  if (!m) throw new Error(`预设 ${preset} 里没有技能 ${skill}`);
+    985:  const top = join(repoRoot, skill);
+    986:  let st: Stats | undefined;
+    987:  try {
+    988:    st = lstatSync(top);
+    989:  } catch {
+    990:    // 顶层无条目（未 reconcile），直接落位
+    991:  }
+    992:  if (st && !st.isSymbolicLink()) throw new Error(`顶层 ${top} 已被占用，请手动取舍`);
+    993:  if (st) rmSync(top, { force: true });
+    994:  renameSync(join(repoRoot, m.dir), top);
+    995:}
+    996:
+    997:// agent 的项目分组键：skillsPath 里第一个点开头的段之前是项目路径；直接在家目录下的算「全局」
+    998:export function agentProjectGroup(agent: AgentDef): string {
+    999:  const p = expandHome(agent.skillsPath);
+    1000:  const segments = p.split('/');
+    1001:  const dotIdx = segments.findIndex((s) => s.startsWith('.'));
+    1002:  if (dotIdx === -1) return dirname(dirname(p));
+    1003:  const prefix = segments.slice(0, dotIdx).join('/') || '/';
+    1004:  return prefix === homedir() ? '全局' : prefix;
+    1005:}
+
+[tool] Adding startup prompt feature to core.ts (pending)
+  input: {"input":"[manager/src/core.ts#E500]\nPUT >995:\n+\n+// ---------- 启动确认（票 05）：顶层未知非技能文件夹引导进 presets/ ----------\n+\n+// 预置豁免名单：仓库固定目录 + presets 自身；点开头目录、技能目录、空目录天然不参与（见 listPromptableTopDirs）\n+export const TOP_DIR_EX...
+
+[client] fs/write_text_file (running)
+
+[tool] Adding startup prompt feature to core.ts (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#E500]\nPUT >995:\n+\n+// ---------- 启动确认（票 05）：顶层未知非技能文件夹引导进 presets/ ----------\n+\n+// 预置豁免名单：仓库固定目录 + presets 自身；点开头目录、技能目录、空目录天然不参与（见 listPromptableTopDirs）\n+export const TOP_DIR_EX...
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#C6E6]
+    982:export function moveSkillToTop(repoRoot: string, preset: string, skill: string): void {
+    
+    995:}
+    996:
+    997:// ---------- 启动确认（票 05）：顶层未知非技能文件夹引导进 presets/ ----------
+    998:
+    …
+    1094:}
+    1095:
+    1096:// agent 的项目分组键：skillsPath 里第一个点开头的段之前是项目路径；直接在家目录下的算「全局」
+    1097:export function agentProjectGroup(agent: AgentDef): string {
+    
+    1104:}
+    
+    Warnings:
+    Auto-prefixed bare body row(s) with `+`. Body rows must be `+TEXT` literal lines.
+    This edit introduced a syntax error near line 995: the file parsed before the patch and no longer does. It was applied exactly as written, so a line number or range endpoint is likely wrong — re-read the touched region and re-issue a correcting edit.
+
+[thinking] Three rule violations flagged on my edit:
+           
+           1. **ts-no-tiny-functions**: `loadDismissed`/`saveDismissed` — hmm. Let me check which functions are "tiny". `saveDismissed` is a one-expression wrapper (writeFileSync + formatting). `loadDismissed` has real logic (try/catch, validation). `confirmOnTty` — real logic. Exports: `listPromptableTopDirs`, `promptUnknownTopDirs` — exported API/test seam, allowed. `saveDismissed` — private, single writeFileSync call with formatting... called once. Inline it. `loadDismissed` — multi-statement logic, called twice (listPromptableTopDirs + promptUnknownTopDirs) — lockstep behavior at 2 call sites + non-trivial. Keep. Actually 2 call sites need lockstep → borderline allowed ("Three or more call sites"). Hmm. It's not a trivial rename — it has existsSync check, try/catch, array filter. That's real behavior, not a one-expression wrapper. Keep loadDismissed...
+有三处需要修复：一个格式错误的文档注释行（语法错误），`saveDismissed` 是一个单一表达式包装器（需要内联），以及 `TOP_DIR_EXEMPTIONS` 是一个静态字符串表（应使用 `Record`，而不是数组）。正在重新阅读已应用的代码块：
+
+[tool] Re-reading inserted block (pending)
+  input: /home/smh/myskills/manager/src/core.ts:996-1094
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Re-reading inserted block (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/core.ts:996-1094
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#C6E6]
+    982:export function moveSkillToTop(repoRoot: string, preset: string, skill: string): void {
+    …
+    995:}
+    996:
+    997:// ---------- 启动确认（票 05）：顶层未知非技能文件夹引导进 presets/ ----------
+    998:
+    999:// 预置豁免名单：仓库固定目录 + presets 自身；点开头目录、技能目录、空目录天然不参与（见 listPromptableTopDirs）
+    1000:export const TOP_DIR_EXEMPTIONS = ['manager', 'machines', 'testdir', PRESETS_DIR];
+    1001:
+    1002:// 拒绝名单文件（仓库根）：记用户明确跳过的顶层文件夹，跨进程持久；手工删除条目（或整个文件）可重新被询问
+    1003:export const PRESET_PROMPT_FILE = '.preset-prompt.json';
+    1004:
+    1005:// 名单损坏时按空处理（不拦截询问），不因文件本身报错
+    1006:function loadDismissed(repoRoot: string): string[] {
+    1007:  const p = join(repoRoot, PRESET_PROMPT_FILE);
+    1008:  if (!existsSync(p)) return [];
+    1009:  try {
+    1010:    const raw = readJson<{ dismissed?: unknown }>(p);
+    1011:    return Array.isArray(raw.dismissed) ? raw.dismissed.filter((x): x is string => typeof x === 'string') : [];
+    1012:  } catch {
+    1013:    return [];
+    1014:  }
+    1015:}
+    1016:
+    1017:function saveDismissed(repoRoot: string, dismissed: string[]): void {
+    1018:  writeFileSync(join(repoRoot, PRESET_PROMPT_FILE), JSON.stringify({ dismissed: [...new Set(dismissed)].sort() }, null, 2) + '\n');
+    1019:}
+    ... (177 more lines)
+
+[thinking] Fix:
+           1. Line 1044: ` 拒绝 → ...` → `+// 拒绝 → ...` (syntax error).
+           2. Line 1000: array → `Record<string, true>`; line 1027 usage `.includes(e.name)` → key lookup.
+           3. Lines 1017-1019: inline `saveDismissed` at its single call site (1080); remove the wrapper.
+           4. `createInterface` — need import from 'node:readline/promises'. Add to imports.
+           
+           Edits:
+
+[tool] Fixing doc comment, Record exemption table, inlining saveDismissed (pending)
+  input: {"input":"[manager/src/core.ts#C6E6]\nPUT 1000.=1000:\n+export const TOP_DIR_EXEMPTIONS: Record<string, true> = { manager: true, machines: true, testdir: true, [PRESETS_DIR]: true };\nPUT 1017.=1019:\n+(无可)\nPUT 1027....
+
+[client] fs/write_text_file (running)
+
+[tool] Fixing doc comment, Record exemption table, inlining saveDismissed (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#C6E6]\nPUT 1000.=1000:\n+export const TOP_DIR_EXEMPTIONS: Record<string, true> = { manager: true, machines: true, testdir: true, [PRESETS_DIR]: true };\nPUT 1017.=1019:\n+(无可)\nPUT 1027....
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#19B8]
+    998:
+    999:// 预置豁免名单：仓库固定目录 + presets 自身；点开头目录、技能目录、空目录天然不参与（见 listPromptableTopDirs）
+    1000:export const TOP_DIR_EXEMPTIONS: Record<string, true> = { manager: true, machines: true, testdir: true, [PRESETS_DIR]: true };
+    1001:
+    1002:// 拒绝名单文件（仓库根）：记用户明确跳过的顶层文件夹，跨进程持久；手工删除条目（或整个文件）可重新被询问
+    
+    1006:function loadDismissed(repoRoot: string): string[] {
+    
+    1015:}
+    1016:
+    1017:(无可)
+    1018:
+    1019:// 顶层待确认文件夹：真实目录（非符号链接）、非空、自身无 SKILL.md、不在豁免与拒绝名单
+    
+    1022:  return readdirSync(repoRoot, { withFileTypes: true })
+    1023:    .filter((e) => !e.name.startsWith('.'))
+    1024:    .filter((e) => e.isDirectory())
+    1025:    .filter((e) => !TOP_DIR_EXEMPTIONS[e.name])
+    1026:    .filter((e) => !dismissed.has(e.name))
+    1027:    .filter((e) => !isSkillDir(join(repoRoot, e.name)))
+    1040:// 启动确认：逐个询问顶层未知文件夹是否移入 presets/ 成为预设文件夹。
+    1041:// 同意 → mv 进 presets/<名>/（名字过 validateSkillName；目标已存在则提示后留在原地，不记名单，下次仍会问）；
+    1042:// 拒绝 → 记入 PRESET_PROMPT_FILE，之后启动不再询问。移动后的建链由调用方随后的 reconcile 完成。
+    1043:// 非交互（tty 非 true 或未提供 confirm）→ 不询问不动手，返回一行提示列出待确认文件夹。
+    1044:// 返回报告行，不直接打印（打印由 cli.ts / tui.ts 负责）
+    1045:export async function promptUnknownTopDirs(repoRoot: string, opts: PromptUnknownDirsOpts = {}): Promise<string[]> {
+    
+    ... (10 more lines)
+
+[thinking] Line 1017 now contains literal `(无可)` — I intended to delete lines 1017-1019 (saveDismissed wrapper) but provided a body. Fix: replace line 1017 with nothing (CUT). Let me do `CUT 1017.=1017`. Also need to add the readline import. Current imports at line 8: `import { spawnSync } from 'node:child_process';`. Add `import { createInterface } from 'node:readline/promises';` after it.
+
+[tool] Removing placeholder line, adding readline import (pending)
+  input: {"input":"[manager/src/core.ts#19B8]\nCUT 1017.=1017\nPUT >8:\n+import { createInterface } from 'node:readline/promises';\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Removing placeholder line, adding readline import (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#19B8]\nCUT 1017.=1017\nPUT >8:\n+import { createInterface } from 'node:readline/promises';\n"}
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#0763]
+    7:import { fileURLToPath } from 'node:url';
+    8:import { spawnSync } from 'node:child_process';
+    9:import { createInterface } from 'node:readline/promises';
+    10:
+    11:export interface AgentDef {
+    
+    15:}
+    
+    1007:function loadDismissed(repoRoot: string): string[] {
+    
+    1016:}
+    1017:
+    1018:
+    1019:// 顶层待确认文件夹：真实目录（非符号链接）、非空、自身无 SKILL.md、不在豁免与拒绝名单
+现在开始接入 `cli.ts` 和 `tui.ts`（在 `reconcile` 之前进行 `prompt`）：
+
+[tool] Wiring startup prompt in cli.ts (pending)
+  input: {"input":"[manager/src/cli.ts#F5B1]\nPUT 5.=5:\n+import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets, promptUnknownTopDirs, ...
+
+[client] fs/write_text_file (running)
+
+[tool] Wiring startup prompt in cli.ts (completed)
+  kind: edit
+  input: {"input":"[manager/src/cli.ts#F5B1]\nPUT 5.=5:\n+import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets, promptUnknownTopDirs, ...
+  files: /home/smh/myskills/manager/src/cli.ts
+  output:
+    [manager/src/cli.ts#1089]
+    3:// link 在含 .myskills.json 的目录下自动切项目模式，--global 强制全局
+    4:import { hostname } from 'node:os';
+    5:import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets, promptUnknownTopDirs, confirmOnTty } from './core.ts';
+    6:
+    7:function resolveRemote(): string {
+    
+    10:}
+    
+    22:
+    23:try {
+    24:  const repoRoot = findRepoRoot();
+    25:  // 启动确认：顶层未知非技能文件夹引导进 presets/（非交互环境只提示不动手），
+    26:  // 先于 reconcile——同意移入的文件夹立即被 reconcile 建链
+    27:  for (const line of await promptUnknownTopDirs(repoRoot, { tty: process.stdin.isTTY === true, confirm: confirmOnTty })) console.log(line);
+    28:  reconcilePresets(repoRoot);
+    29:  switch (command) {
+    30:    case 'tui':
+    
+    32:      break;
+    
+    75:  }
+    76:} catch (err) {
+    
+    79:}
+    
+    diff /home/smh/myskills/manager/src/cli.ts (+3 lines)
+    
+    ... (25 more lines)
+
+[tool] Wiring startup prompt in tui.ts start (pending)
+  input: {"input":"[manager/src/tui.ts#9943]\nPUT 810.=815:\n+export async function start(remote: string) {\n+ const cwd = process.cwd();\n+ const root = core.findRepoRoot();\n+ // 启动确认：顶层未知非技能文件夹引导进 presets/（非交互环境只提示不动手），\n+ ...
+
+[tool] Wiring startup prompt in tui.ts start (failed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#9943]\nPUT 810.=815:\n+export async function start(remote: string) {\n+ const cwd = process.cwd();\n+ const root = core.findRepoRoot();\n+ // 启动确认：顶层未知非技能文件夹引导进 presets/（非交互环境只提示不动手），\n+ ...
+  output:
+    This edit anchors to lines 20 of manager/src/tui.ts that [manager/src/tui.ts#9943] never displayed (it showed a partial range, a search hit, or a folded summary). Actual file content at those lines:
+      20:  source: '按来源',
+    Verify the content matches what you intend to touch, then re-issue the edit with the same [path#tag] header — a straight retry now succeeds without a re-read. If the content does NOT match, fix your line numbers.
+
+[thinking] The tui.ts tag spans lines shown before (654-822 partial). Line 20 was not in displayed range (780-817 + grep hits). The error says line 20 of tui.ts is `source: '按来源',` — that's in tui.ts, not cli.ts! I meant cli.ts line 20 (`start(resolveRemote());`) but I anchored to tui.ts. Mistake: cli.ts line 20 is the `start(resolveRemote())` inside launchTui. That edit belongs in cli.ts. Did the other two ops apply? The error means the whole edit was rejected (anchored to wrong displayed lines). Let me verify current state of both files: tui.ts start (was it modified?) and cli.ts line 20.
+           
+           The error says edit not applied (it's a pre-check failure). So tui.ts is unchanged. I need:
+           1. cli.ts: line 20 `start(resolveRemote());` → `await start(resolveRemote());` — wait, launchTui is async, `await` fine. Actually since prompt now happens inside start(), await isn't strictly needed but keeps error pr...
+编辑操作关联了 `tui.ts` 中未显示的行——什么都没有被应用。`start(resolveRemote())` 的修改属于 `cli.ts`。正在重新正确地执行：
+
+[tool] Verifying cli.ts launchTui (pending)
+  input: /home/smh/myskills/manager/src/cli.ts:14-22
+  files: /home/smh/myskills/manager/src/cli.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Verifying cli.ts launchTui (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/cli.ts:14-22
+  files: /home/smh/myskills/manager/src/cli.ts
+  output:
+    [manager/src/cli.ts#1089]
+    13:
+    14:async function launchTui(): Promise<void> {
+    15:  if (!process.stdout.isTTY) {
+    16:    console.log('用法: myskills [link|status|sync|install|init|migrate|tui]（直接敲 myskills 进 TUI）');
+    17:    return;
+    18:  }
+    19:  const { start } = await import('./tui.ts');
+    20:  start(resolveRemote());
+    21:}
+    22:
+    23:try {
+    24:  const repoRoot = findRepoRoot();
+    25:  // 启动确认：顶层未知非技能文件夹引导进 presets/（非交互环境只提示不动手），
+    …
+    76:} catch (err) {
+    …
+    79:}
+    
+    [54 more lines in file. Use :26 to continue]
+
+[tool] Awaiting async start in cli launchTui (pending)
+  input: {"input":"[manager/src/cli.ts#1089]\nPUT 20.=20:\n+ await start(resolveRemote());\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Awaiting async start in cli launchTui (completed)
+  kind: edit
+  input: {"input":"[manager/src/cli.ts#1089]\nPUT 20.=20:\n+ await start(resolveRemote());\n"}
+  files: /home/smh/myskills/manager/src/cli.ts
+  output:
+    [manager/src/cli.ts#5437]
+    14:async function launchTui(): Promise<void> {
+    15:  if (!process.stdout.isTTY) {
+    
+    18:  }
+    19:  const { start } = await import('./tui.ts');
+    20:  await start(resolveRemote());
+    21:}
+    22:
+    
+    diff /home/smh/myskills/manager/src/cli.ts (line count unchanged)
+    
+    [manager/src/cli.ts#5437]
+    14:async function launchTui(): Promise<void> {
+    15:  if (!process.stdout.isTTY) {
+    
+    18:  }
+    19:  const { start } = await import('./tui.ts');
+    20:  await start(resolveRemote());
+    21:}
+    22:
+
+[tool] Wiring startup prompt in tui.ts start (pending)
+  input: {"input":"[manager/src/tui.ts#9943]\nPUT 810.=815:\n+export async function start(remote: string) {\n+ const cwd = process.cwd();\n+ const root = core.findRepoRoot();\n+ // 启动确认：顶层未知非技能文件夹引导进 presets/（非交互环境只提示不动手），\n+ ...
+
+[client] fs/write_text_file (running)
+
+[tool] Wiring startup prompt in tui.ts start (completed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#9943]\nPUT 810.=815:\n+export async function start(remote: string) {\n+ const cwd = process.cwd();\n+ const root = core.findRepoRoot();\n+ // 启动确认：顶层未知非技能文件夹引导进 presets/（非交互环境只提示不动手），\n+ ...
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#8A1D]
+    808:
+    809:// 直接运行时渲染；也供 cli.ts 的 tui 子命令调用。启动目录向上找到 .myskills.json 时进入项目模式
+    810:export async function start(remote: string) {
+    811:  const cwd = process.cwd();
+    812:  const root = core.findRepoRoot();
+    813:  // 启动确认：顶层未知非技能文件夹引导进 presets/（非交互环境只提示不动手），
+    814:  // 先于 reconcile——同意移入的文件夹立即被 reconcile 建链
+    815:  for (const line of await core.promptUnknownTopDirs(root, { tty: process.stdin.isTTY === true, confirm: core.confirmOnTty })) console.log(line);
+    816:  core.reconcilePresets(root);
+    817:  render(h(App, { root, remote, project: core.findProjectRoot(cwd), cwd }));
+    818:}
+    
+    820:if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*\//, ''))) {
+    821:  const remoteIdx = process.argv.indexOf('--remote');
+    822:  const remote = remoteIdx > -1 ? process.argv[remoteIdx + 1] : (process.env.MYSKILLS_REMOTE ?? 'origin');
+    823:  await start(remote);
+    824:}
+    
+    Warnings:
+    Auto-repaired a replacement boundary echo at line 810: dropped 1 trailing body line(s) already present outside the range. Issue the body as final content for the selected range only.
+
+[thinking] The tui.ts edit applied but with a boundary repair warning — "dropped 1 trailing body line(s) already present outside the range". The original start() was lines 810-816 (7 lines: 810 signature, 811 cwd, 812 root, 813 comment, 814 reconcile, 815 render, 816 `}`). My replacement range was 810-815 and my body had 9 lines including `}`. The repair dropped the trailing `}` from my body since line 816 already had `}`. Result shown: 810-818 looks correct — start() ends at 818 with `}`? Lines shown: 810-818 = signature through `}`. Line 819 blank, 820 if-block. Looks right. Let me verify by running the tests now.
+配置看起来正确。正在运行新测试：
+
+[client] session/request_permission (running)
+
+[tool] $ node --test test/startup-prompt.test.ts 2>&1 | tail -25 (pending)
+  input: node --test test/startup-prompt.test.ts 2>&1 | tail -25
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ node --test test/startup-prompt.test.ts 2>&1 | tail -25 (completed)
+  kind: execute
+  input: node --test test/startup-prompt.test.ts 2>&1 | tail -25
+  output:
+    ✔ 同意：文件夹移入 presets/ 成为预设，随后 reconcile 成员获得顶层链接，不写拒绝名单 (6.458973ms)
+    ✔ 拒绝：写入持久化名单，文件夹不动，连续启动不再询问；手工清空名单后重新询问 (0.975095ms)
+    ✔ 豁免：manager/machines/testdir/presets、空目录、技能目录、隐藏目录与普通文件从不触发询问 (0.62505ms)
+    ✔ 非交互（stdin 非 TTY）：不询问、不移动，输出一行提示列出待确认文件夹 (0.438067ms)
+    ✔ 同意但 presets/ 下同名预设已存在：提示后留在原地且不记名单（下次启动仍会询问） (0.415066ms)
+    ✔ 同意但文件夹名不是合法预设名：提示后留在原地 (0.337425ms)
+    ✔ cli: 非交互启动（spawnSync 下 stdin 非 TTY）输出提示行且不动仓库 (55.39589ms)
+    ✔ cli: 没有待确认文件夹时不输出提示 (50.673144ms)
+    ℹ tests 8
+    ℹ suites 0
+    ℹ pass 8
+    ℹ fail 0
+    ℹ cancelled 0
+    ℹ skipped 0
+    ℹ todo 0
+    ℹ duration_ms 181.508971
+    
+    
+    Wall time: 0.22 seconds
+    
+    $ node --test test/startup-prompt.test.ts 2>&1 | tail -25
+    
+    ✔ 同意：文件夹移入 presets/ 成为预设，随后 reconcile 成员获得顶层链接，不写拒绝名单 (6.458973ms)
+    ✔ 拒绝：写入持久化名单，文件夹不动，连续启动不再询问；手工清空名单后重新询问 (0.975095ms)
+    ✔ 豁免：manager/machines/testdir/presets、空目录、技能目录、隐藏目录与普通文件从不触发询问 (0.62505ms)
+    ✔ 非交互（stdin 非 TTY）：不询问、不移动，输出一行提示列出待确认文件夹 (0.438067ms)
+    ✔ 同意但 presets/ 下同名预设已存在：提示后留在原地且不记名单（下次启动仍会询问） (0.415066ms)
+    ✔ 同意但文件夹名不是合法预设名：提示后留在原地 (0.337425ms)
+    ... (13 more lines)
+
+[thinking] All 8 new tests pass. Now full suite to check no regressions.
+全部 8 个新测试通过。完整套件：
+
+[client] session/request_permission (running)
+
+[tool] $ npm test 2>&1 | tail -12 (pending)
+  input: npm test 2>&1 | tail -12
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ npm test 2>&1 | tail -12 (completed)
+  kind: execute
+  input: npm test 2>&1 | tail -12
+  output:
+    ✔ tui: 编辑 agent 路径清空后保存被拒绝，agents.json 不变 (309.940695ms)
+    ✔ tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝 (612.594102ms)
+    ✔ tui: 删除预设，成员真身回顶层 (188.172345ms)
+    ✔ tui: 把已归属其他预设的技能加入第二个预设被拒绝并提示 (367.58573ms)
+    ℹ tests 120
+    ℹ suites 0
+    ℹ pass 120
+    ℹ fail 0
+    ℹ cancelled 0
+    ℹ skipped 0
+    ℹ todo 0
+    ℹ duration_ms 5496.545403
+    
+    
+    Wall time: 5.59 seconds
+    
+    $ npm test 2>&1 | tail -12
+    
+    ✔ tui: 编辑 agent 路径清空后保存被拒绝，agents.json 不变 (309.940695ms)
+    ✔ tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝 (612.594102ms)
+    ✔ tui: 删除预设，成员真身回顶层 (188.172345ms)
+    ✔ tui: 把已归属其他预设的技能加入第二个预设被拒绝并提示 (367.58573ms)
+    ℹ tests 120
+    ℹ suites 0
+    ℹ pass 120
+    ℹ fail 0
+    ℹ cancelled 0
+    ℹ skipped 0
+    ... (5 more lines)
+
+[thinking] 120/120 pass, no regressions.
+           
+           Now verify the actual CLI end-to-end on a fixture (smoke): non-interactive run already covered by test. Interactive branch on real TTY — can't in this env, but I can simulate the confirmOnTty readline helper with a piped stdin? confirmOnTty uses process.stdin directly — in a spawned child with piped stdin, isTTY is false so the wiring gate prevents it. The core interactive branch is covered with injected confirm. The readline helper itself: test it manually with a quick script where I temporarily... Actually I can write a throwaway check: spawn `node -e` that imports core.ts and calls confirmOnTty with stdin piped "y\n" — readline works fine on pipes too (it just reads). isTTY gate is at the wiring level, not inside confirmOnTty. Quick smoke to prove confirmOnTty works:
+           
+           ```js
+           const { confirmOnTty } = await import('./src/core.ts');
+           process.exit(await con...
+120/120 测试全部通过。冒烟测试：`confirmOnTty` 的实际 readline 行为，以及确认真实仓库未受影响：
+
+[client] session/request_permission (running)
+
+[client] session/request_permission (running)
+
+[tool] $ node --input-type=module -e "const { confirmOnTty } = await import('/home/smh/myskills/manager/src/core.ts'); process.exit(await confirmOnTty('移入预设') ? 0 : 7)" <<< $'y\n'; echo "y-exit=$?"; node --input-type=module -e "const { confirmOnTty } = await import('/home/smh/myskills/manager/src/core.ts'); process.exit(await confirmOnTty('移入预设') ? 0 : 7)" <<< $'\n'; echo "enter-exit=$?" (pending)
+  input: node --input-type=module -e "const { confirmOnTty } = await import('/home/smh/myskills/manager/src/core.ts'); process.exit(await confirmOnTty('移入预设') ? 0 : 7)" <<< $'y\n'; echo "y-exit=$?"; node --input-type=module -e...
+
+[tool] $ cd /home/smh/myskills && git status --porcelain | grep -v '^??' ; echo '--- untracked:'; git status --porcelain | grep '^??' (pending)
+  input: cd /home/smh/myskills && git status --porcelain | grep -v '^??' ; echo '--- untracked:'; git status --porcelain | grep '^??'
+
+[client] terminal/create (running)
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /home/smh/myskills && git status --porcelain | grep -v '^??' ; echo '--- untracked:'; git status --porcelain | grep '^??' (completed)
+  kind: execute
+  input: cd /home/smh/myskills && git status --porcelain | grep -v '^??' ; echo '--- untracked:'; git status --porcelain | grep '^??'
+  output:
+    M acpx/SKILL.md
+     M acpxtodo/SKILL.md
+     D ascii-art/SKILL.md
+     D ascii-video/README.md
+     D ascii-video/SKILL.md
+     D ascii-video/references/architecture.md
+     D ascii-video/references/composition.md
+     D ascii-video/references/effects.md
+     D ascii-video/references/inputs.md
+     D ascii-video/references/optimization.md
+     D ascii-video/references/scenes.md
+     D ascii-video/references/shaders.md
+     D ascii-video/references/troubleshooting.md
+     D backup_ask-matt-zh/PHASE-BOUNDARIES.md
+     D backup_ask-matt-zh/SKILL.md
+     D backup_ask-matt-zh/agents/openai.yaml
+     D backup_claude-handoff-zh/SKILL.md
+     D backup_claude-handoff-zh/agents/openai.yaml
+     D backup_code-review-zh/SKILL.md
+     D backup_code-review-zh/agents/openai.yaml
+     D backup_codebase-design-zh/DEEPENING.md
+     D backup_codebase-design-zh/DESIGN-IT-TWICE.md
+     D backup_codebase-design-zh/SKILL.md
+     D backup_codebase-design-zh/agents/openai.yaml
+     D backup_diagnosing-bugs-zh/SKILL.md
+     D backup_diagnosing-bugs-zh/agents/openai.yaml
+     D backup_diagnosing-bugs-zh/scripts/hitl-loop.template.sh
+     D backup_domain-modeling-zh/ADR-FORMAT.md
+    ... (493 more lines)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ node --input-type=module -e "const { confirmOnTty } = await import('/home/smh/myskills/manager/src/core.ts'); process.exit(await confirmOnTty('移入预设') ? 0 : 7)" <<< $'y\n'; echo "y-exit=$?"; node --input-type=module -e "const { confirmOnTty } = await import('/home/smh/myskills/manager/src/core.ts'); process.exit(await confirmOnTty('移入预设') ? 0 : 7)" <<< $'\n'; echo "enter-exit=$?" (completed)
+  kind: execute
+  input: node --input-type=module -e "const { confirmOnTty } = await import('/home/smh/myskills/manager/src/core.ts'); process.exit(await confirmOnTty('移入预设') ? 0 : 7)" <<< $'y\n'; echo "y-exit=$?"; node --input-type=module -e...
+  output:
+    移入预设 [y/N] y-exit=0
+    移入预设 [y/N] enter-exit=7
+    
+    
+    Wall time: 0.12 seconds
+    
+    $ node --input-type=module -e "const { confirmOnTty } = await import('/home/smh/myskills/manager/src/core.ts'); process.exit(await confirmOnTty('移入预设') ? 0 : 7)" <<< $'y\n'; echo "y-exit=$?"; node --input-type=module -e "const { confirmOnTty } = await import('/home/smh/myskills/manager/src/core.ts'); process.exit(await confirmOnTty('移入预设') ? 0 : 7)" <<< $'\n'; echo "enter-exit=$?"
+    
+    移入预设 [y/N] y-exit=0
+    移入预设 [y/N] enter-exit=7
+    
+    
+    Wall time: 0.12 seconds
+
+[thinking] The git status shows massive D (deleted) entries and untracked dirs — these are pre-existing workspace changes from other tickets/users (ticket 04 seems to have moved skill dirs into presets/ or elsewhere — e.g. many skill dirs deleted at top and new untracked dirs). My changes are only: `M manager/src/cli.ts`, `M manager/src/core.ts`, `M manager/src/tui.ts`, `?? manager/test/startup-prompt.test.ts`. Those D/untracked entries predate my work (the task said "the existing uncommitted changes in the workspace are unrelated to you, don't touch them"). Nothing in the real repo was modified by me beyond manager/src files. Good — and importantly, my test runs didn't touch the real repo (cli.test.ts spawns against real repo root but only non-interactive prompt + idempotent reconcile, same as before this ticket; no new files appeared — no `.preset-prompt.json` in untracked list, confirming no ...
+`git status` 确认我的工作仅限于 `manager/src/{cli,core,tui}.ts` + `manager/test/startup-prompt.test.ts`；那大量的 `D`/未追踪条目在此任务之前就已存在（票据 04 领域），未予处理。注意，真实仓库中没有 `.preset-ppt.json`，也没有新的仓库顶层变更——我的运行没有触及真实仓库（非交互式 = 不移动）。
+
+清理一个遗留问题（删除 `saveDismissed` 后的双重空行），然后完成：
+
+[tool] Removing double blank line (pending)
+  input: {"input":"[manager/src/core.ts#0763]\nPUT 1018.=1018:\n+\n"}
+
+[tool] Removing double blank line (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#0763]\nPUT 1018.=1018:\n+\n"}
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    Edits to manager/src/core.ts parsed and applied cleanly, but produced no change: your body row(s) are byte-identical to the file at the targeted lines. The bug is somewhere else — re-read the file before issuing another edit. Do NOT widen the payload or add lines; verify the anchor first.
+
+[tool] Checking blank lines after loadDismissed (pending)
+  input: /home/smh/myskills/manager/src/core.ts:1005-1020
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Checking blank lines after loadDismissed (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/core.ts:1005-1020
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#0763]
+    1004:export const PRESET_PROMPT_FILE = '.preset-prompt.json';
+    1005:
+    1006:// 名单损坏时按空处理（不拦截询问），不因文件本身报错
+    1007:function loadDismissed(repoRoot: string): string[] {
+    1008:  const p = join(repoRoot, PRESET_PROMPT_FILE);
+    1009:  if (!existsSync(p)) return [];
+    1010:  try {
+    1011:    const raw = readJson<{ dismissed?: unknown }>(p);
+    1012:    return Array.isArray(raw.dismissed) ? raw.dismissed.filter((x): x is string => typeof x === 'string') : [];
+    1013:  } catch {
+    1014:    return [];
+    1015:  }
+    1016:}
+    1017:
+    1018:
+    1019:// 顶层待确认文件夹：真实目录（非符号链接）、非空、自身无 SKILL.md、不在豁免与拒绝名单
+    1020:export function listPromptableTopDirs(repoRoot: string): string[] {
+    1021:  const dismissed = new Set(loadDismissed(repoRoot));
+    1022:  return readdirSync(repoRoot, { withFileTypes: true })
+    1023:    .filter((e) => !e.name.startsWith('.'))
+    1024:    .filter((e) => e.isDirectory())
+    1025:    .filter((e) => !TOP_DIR_EXEMPTIONS[e.name])
+    1026:    .filter((e) => !dismissed.has(e.name))
+    1027:    .filter((e) => !isSkillDir(join(repoRoot, e.name)))
+    1028:    .filter((e) => readdirSync(join(repoRoot, e.name)).length > 0)
+    1029:    .map((e) => e.name)
+    1030:    .sort();
+    ... (3 more lines)
+
+[tool] Deleting extra blank line (pending)
+  input: {"input":"[manager/src/core.ts#0763]\nCUT 1018.=1018\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Deleting extra blank line (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#0763]\nCUT 1018.=1018\n"}
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#9C3E]
+    1007:function loadDismissed(repoRoot: string): string[] {
+    
+    1016:}
+    1017:
+    1018:// 顶层待确认文件夹：真实目录（非符号链接）、非空、自身无 SKILL.md、不在豁免与拒绝名单
+    1019:export function listPromptableTopDirs(repoRoot: string): string[] {
+    
+    1030:}
+
+[client] session/request_permission (running)
+
+[tool] $ npm test 2>&1 | tail -8 (pending)
+  input: npm test 2>&1 | tail -8
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ npm test 2>&1 | tail -8 (completed)
+  kind: execute
+  input: npm test 2>&1 | tail -8
+  output:
+    ℹ tests 120
+    ℹ suites 0
+    ℹ pass 120
+    ℹ fail 0
+    ℹ cancelled 0
+    ℹ skipped 0
+    ℹ todo 0
+    ℹ duration_ms 5483.476401
+    
+    
+    Wall time: 5.58 seconds
+    
+    $ npm test 2>&1 | tail -8
+    
+    ℹ tests 120
+    ℹ suites 0
+    ℹ pass 120
+    ℹ fail 0
+    ℹ cancelled 0
+    ℹ skipped 0
+    ℹ todo 0
+    ℹ duration_ms 5483.476401
+    
+    
+    Wall time: 5.58 seconds
+
+[tool] Marking all ticket 05 items done (pending)
+  input: {"op":"done","task":"写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）"}
+
+[tool] Marking all ticket 05 items done (completed)
+  kind: think
+  input: {"op":"done","task":"写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）"}
+  output:
+    Remaining items (3):
+      - core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty [in_progress] (["ticket-05"])
+      - 接线 cli.ts 与 tui.ts（prompt 先于 reconcile） [pending] (["ticket-05"])
+      - 跑新测试与全量 npm test 验证 [pending] (["ticket-05"])
+    Overall: 1/4 done, 3 open.
+    Active phase 1/1 "["ticket-05"]" (1/4).
+      ["ticket-05"]:
+        - [X] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）
+        - [ ] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty (in progress)
+        - [ ] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile）
+        - [ ] 跑新测试与全量 npm test 验证
+
+[plan]
+  - [completed] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）
+  - [in_progress] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty
+  - [pending] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile）
+  - [pending] 跑新测试与全量 npm test 验证
+
+[tool] Closing remaining done items (pending)
+  input: {"task":"core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty"}
+
+[tool] Closing remaining done items (failed)
+  kind: think
+  input: {"task":"core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty"}
+  output:
+    Invalid todo arguments: op must be "init", "start", "done", "rm", "drop", "block", "unblock", "append" or "view" (was missing)
+
+[tool] Closing remaining done items (pending)
+  input: {"op":"done","task":"core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty"}
+
+[tool] Closing remaining done items (completed)
+  kind: think
+  input: {"op":"done","task":"core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty"}
+  output:
+    Remaining items (2):
+      - 接线 cli.ts 与 tui.ts（prompt 先于 reconcile） [in_progress] (["ticket-05"])
+      - 跑新测试与全量 npm test 验证 [pending] (["ticket-05"])
+    Overall: 2/4 done, 2 open.
+    Active phase 1/1 "["ticket-05"]" (2/4).
+      ["ticket-05"]:
+        - [X] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）
+        - [X] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty
+        - [ ] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile） (in progress)
+        - [ ] 跑新测试与全量 npm test 验证
+
+[plan]
+  - [completed] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）
+  - [completed] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty
+  - [in_progress] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile）
+  - [pending] 跑新测试与全量 npm test 验证
+
+[tool] Closing wiring item (pending)
+  input: {"op":"done","task":"接线 cli.ts 与 tui.ts（prompt 先于 reconcile）"}
+
+[tool] Closing wiring item (completed)
+  kind: think
+  input: {"op":"done","task":"接线 cli.ts 与 tui.ts（prompt 先于 reconcile）"}
+  output:
+    Remaining items (1):
+      - 跑新测试与全量 npm test 验证 [in_progress] (["ticket-05"])
+    Overall: 3/4 done, 1 open.
+    Active phase 1/1 "["ticket-05"]" (3/4).
+      ["ticket-05"]:
+        - [X] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）
+        - [X] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty
+        - [X] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile）
+        - [ ] 跑新测试与全量 npm test 验证 (in progress)
+
+[plan]
+  - [completed] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）
+  - [completed] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty
+  - [completed] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile）
+  - [in_progress] 跑新测试与全量 npm test 验证
+
+[tool] Closing verification item (pending)
+  input: {"op":"done","task":"跑新测试与全量 npm test 验证"}
+
+[tool] Closing verification item (completed)
+  kind: think
+  input: {"op":"done","task":"跑新测试与全量 npm test 验证"}
+  output:
+    Remaining items: none.
+    Overall: 4/4 done, 0 open.
+    Active phase 1/1 "["ticket-05"]" (4/4).
+      ["ticket-05"]:
+        - [X] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）
+        - [X] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty
+        - [X] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile）
+        - [X] 跑新测试与全量 npm test 验证
+
+[plan]
+  - [completed] 写 startup-prompt 失败测试（同意/拒绝/豁免/非交互/重名/非法名/CLI 接线）
+  - [completed] core.ts 实现 promptUnknownTopDirs + 豁免/拒绝名单 + confirmOnTty
+  - [completed] 接线 cli.ts 与 tui.ts（prompt 先于 reconcile）
+  - [completed] 跑新测试与全量 npm test 验证
+
+[thinking] All done. Deliver the summary: changed files, key functions, test results, notes on limitations (interactive TUI path not e2e-testable without pty — covered via injectable confirm; AGENTS.md docs deferred to ticket 06; no git operations performed).
+票 05 完成。TDD 流程：先写测试确认失败，再实现到绿。
+
+## 改动文件与关键函数
+
+**`manager/src/core.ts`**（新增「启动确认」段，~100 行，位于 `moveSkillToTop` 之后）
+- `TOP_DIR_EXEMPTIONS: Record<string, true>` — 预置豁免：`manager`、`machines`、`testdir`、`presets`（自身）；点开头目录、技能目录（`isSkillDir`）、空目录、符号链接在候选过滤中天然排除
+- `PRESET_PROMPT_FILE = '.preset-prompt.json'` — 拒绝名单，仓库根小 JSON（`{ dismissed: [...] }`），跨进程持久、用户可手工编辑清空
+- `loadDismissed()` — 名单读取，损坏时按空处理（不拦截询问）
+- `listPromptableTopDirs()` — 候选判定：真实目录、非空、无 SKILL.md、不在豁免/拒绝名单
+- `promptUnknownTopDirs(repoRoot, { tty, confirm })` — 主流程：交互时逐个确认，同意→`validateSkillName` 过验后 `renameSync` 进 `presets/<名>/`（重名或非法名→提示留原地、不记名单、下次仍问）；拒绝→记名单。非交互（`tty !== true` 或无 `confirm`）→ 不问不动，返回一行提示列出全部待确认文件夹。返回报告行不打印（core 惯例）
+- `confirmOnTty()` — readline/promises 是非题默认实现（y/yes=同意，空回车=拒绝），供 cli/tui 接线
+
+**`manager/src/cli.ts`** — try 块首：`promptUnknownTopDirs`（`tty: process.stdin.isTTY === true`）→ 打印报告行 → `reconcilePresets`，确认严格先于 reconcile，移入的文件夹立即建链；`launchTui` 改 `await start(...)`
+**`manager/src/tui.ts`** — `start()` 改 async，同样的 prompt→reconcile 顺序；自启动处 `await start(remote)`
+**`manager/test/startup-prompt.test.ts`**（新）— 8 个测试
+
+## 测试结果
+
+- 新文件 8/8 通过：同意（移入 presets/ + reconcile 后成员获顶层链接、不写名单）、拒绝（写名单、二次启动不再问、手工清空后重问）、豁免（manager/machines/testdir/presets/空目录/技能/隐藏/文件）、非交互（一行提示、不动、不写名单）、重名留原地、非法名留原地、CLI 非交互接线、CLI 无候选时无输出
+- 全量 `npm test`：**120/120 通过**，无回归
+- `confirmOnTty` 冒烟：管道喂 `y` → true，空回车 → false
+
+## 边界说明
+
+- 交互用注入 confirm 测试（票面要求），真实 TTY 端到端未模拟（需 pty）；CLI 非交互分支经 spawnSync 真实走通
+- 未在真仓执行任何移动：测试全在 tmp fixture；git status 确认改动仅上述 4 个文件，工作区原有未提交改动未动，无 git 操作
+- `AGENTS.md` 对新启动行为/`.preset-prompt.json` 的文档属票 06（docs）范围，本票未碰
+
+[done] end_turn

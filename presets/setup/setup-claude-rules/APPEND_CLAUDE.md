@@ -3,7 +3,7 @@
 Use specialized code search tools instead of shell `grep`/`find` or built-in `Grep`/`Glob`:
 
 - File discovery: `rg --files`
-- Content search: `zg` (semantic default — embedding model, tolerates paraphrase) · `zg --rg` (exact text / regex) · `zg` index missing/stale → rebuild with `zg index`, don't degrade to rg
+- Content search: `jg` (semantic first stop — natural-language question, returns file list + declaration locations; verify with `jg doctor`) · `zg` (fallback, local embedding index) · `zg --rg` (exact text / regex) · `zg` index missing/stale → rebuild with `zg index`, don't degrade to rg
 - Structural matching: `ast-grep`
 - Symbols (definitions, references, types, call hierarchy): LSP
 - Graph relations (call chains, dependencies, impact analysis, architecture): `GitNexus`

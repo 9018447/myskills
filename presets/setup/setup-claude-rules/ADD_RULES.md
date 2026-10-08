@@ -8,8 +8,8 @@ Use the following routing policy for repository search and code navigation. Pref
 |---|---|
 | Find files by name, extension, or path | `rg --files` |
 | Exact text, literal, regex, exhaustive content search | `zg --rg` |
-| General code search with unclear naming | `zg` |
-| Semantic / intent-based search | `zg` |
+| General code search with unclear naming | `jg` |
+| Semantic / intent-based search | `jg` |
 | Lexical / BM25 ranked search | `zg` |
 | AST or syntax-structure matching | `ast-grep` |
 | Definition / references / implementations | LSP |
@@ -20,7 +20,9 @@ Use the following routing policy for repository search and code navigation. Pref
 
 ## Search policy
 
-Use `zg` as the default repository content search engine. It is semantic retrieval backed by an embedding model, so it tolerates paraphrase and finds matches by meaning rather than exact names. `zg --rg` is a separate exact-text engine, not the default for conceptual queries.
+Use `jg` as the first stop for content search with uncertain wording. `jg "natural-language question" [root]` is a semantic source retriever backed by the Jev service (OpenRouter; verify with `jg doctor`, auth via `jg auth`). It needs no local index — it scans on demand and returns a relevant-file list with declaration locations (`file@start-end`) plus role hints; follow up with `Read` on the listed files. Retrieval order across tools: `jg → GitNexus → zg`, and prefer these over native `grep`/`find`/built-in `Grep`/`Glob` wherever one fits.
+
+`zg` is the fallback content search when `jg` is unavailable (auth/quota/network) or when lexical/BM25 ranking over a local index is specifically what the task needs. It is semantic retrieval backed by an embedding index, so it also tolerates paraphrase. `zg --rg` is a separate exact-text engine, not a substitute for conceptual queries.
 
 `zg` owns its repository index. If `zg status` reports the index missing or stale, rebuild with `zg index` instead of silently falling back to plain `rg` — a fresh semantic index is what `zg` queries depend on.
 
@@ -38,12 +40,12 @@ Use `GitNexus` when the task requires graph-level reasoning across symbols, modu
 
 For ambiguous code questions, start with:
 
-`zg → LSP/GitNexus → zg --rg verification`
+`jg → LSP/GitNexus → zg --rg verification`
 
 Typical flow:
 
-`zg`
-→ locate likely files and symbols  
+`jg`
+→ ask the question in natural language, get file list + declaration locations  
 → `LSP` for precise symbol navigation, or `GitNexus` for graph relationships  
 → `zg --rg` to verify exact source occurrences  
 → `Read` the relevant source ranges
@@ -89,7 +91,8 @@ Do not replace `Read` with search tools. Search tools locate code; `Read` retrie
 ## Tool boundaries
 
 `rg --files` = file discovery  
-`zg` = default lexical + semantic repository retrieval  
+`jg` = first-stop semantic retrieval, natural-language question → file list + declaration locations (no local index, needs auth)  
+`zg` = fallback lexical + semantic repository retrieval (local embedding index)  
 `zg --rg` = exhaustive exact text / regex search  
 `ast-grep` = syntax and AST structure  
 `LSP` = precise language-level symbol navigation  
@@ -106,3 +109,9 @@ When several tools could answer the question, choose the narrowest specialized t
    - `rg` 用于 `rg --files` 文件发现；内容层面的精确匹配走 `zg --rg`，不要用 `rg` 内容扫描替代。
    - 按语法结构找代码（调用形态、AST 模式、结构化重构候选）必须用 `ast-grep`，不要用文本匹配凑合。
    - 涉及调用链、依赖关系、多跳关系、变更影响面的问题必须用 `GitNexus`；它返回空结果时先用 `zg --rg` 复核再下结论，因为索引可能没有解析到该符号。
+
+2. **2026-10-08 — jg 升为语义检索第一选择**：引入 `jg`（Jevgrep，Jev/OpenRouter 后端的语义源码检索 CLI，auth 已配置，`jg doctor` 可验证）。自本条起：
+
+   - 措辞不确定的内容检索第一选择是 `jg "自然语言问题" [root]`；它返回相关文件清单 + 声明位置，随后 `Read` 精读。整条检索链为 `jg → GitNexus → zg`。
+   - `zg` 降为 jg 不可用（auth/配额/网络）或明确需要本地索引 BM25 排序时的备选；`zg --rg` 的精确/穷举匹配职责不变。
+   - 原生 `grep`/`find`、内置 `Grep`/`Glob` 的限制维持第 1 条不变：jg/zg/GitNexus 能覆盖时不得退回。

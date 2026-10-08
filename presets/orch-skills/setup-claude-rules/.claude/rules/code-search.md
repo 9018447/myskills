@@ -1,1 +1,0 @@
-/home/smh/.claude/skills/setup-claude-rules/ADD_RULES.md

@@ -1,0 +1,65 @@
+{
+  "state": {
+    "goal": "复审 myskills manager 票 05：启动交互确认顶层非技能文件夹移入 presets/，评估四分支正确性、接线顺序、与既有事实衔接与验收覆盖",
+    "facts": [
+      "验收标准：①顶层新的非空无SKILL.md文件夹启动时确认，同意后位于presets/下且成员获顶层链接；②拒绝写名单不再问；③manager/machines/testdir不询问；④非交互不询问不动有提示；⑤测试覆盖四分支",
+      "diff（4文件）：core.ts新增启动确认段core.ts:1000-1091：TOP_DIR_EXEMPTIONS={manager,machines,testdir,presets}（presets自身豁免）；PRESET_PROMPT_FILE='.preset-prompt.json'（{dismissed:[...]}，损坏按空处理不拦截询问）；listPromptableTopDirs过滤：非点开头、isDirectory（符号链接天然排除，isDirectory对symlink为false）、非豁免、非已拒绝、!isSkillDir、非空、排序；promptUnknownTopDirs(repoRoot,{tty,confirm})：interactive=tty===true且有confirm；非交互返回一行提示列出候选不移动；同意路径validateSkillName(name,'预设名')→目标existsSync拒绝提示留原地不记名单下次仍问→mkdirSync recursive→renameSync移入presets/<名>/；拒绝→dismissed.add+写盘；返回报告行由cli/tui打印（core惯例）",
+      "confirmOnTty：readline是/非题 y/yes同意空回车拒绝，finally关rl",
+      "接线：cli.ts:27与tui.ts:815均await promptUnknownTopDirs(tty: process.stdin.isTTY===true, confirm: confirmOnTty)→打印报告行→reconcilePresets，确认严格先于reconcile；tui start()改async；launchTui改await start(...)",
+      "测试：新manager/test/startup-prompt.test.ts 8例（同意：移入+reconcile建链+不写名单；拒绝：写名单二次启动不再问+手工清空重问；豁免/隐藏/文件/空目录；非交互一行提示不动不写；重名留原地；非法名留原地；CLI非交互spawnSync真实走通；CLI无候选无输出）",
+      "测试实测（编排者复跑）：cd manager && npm test → pass 120, fail 0",
+      "编排者直读核验：core.ts:1001豁免含presets自身；core.ts:1058-1067同意路径先validateSkillName后existsSync检查，重名/非法名均留原地不记名单；confirmOnTty finally rl.close()",
+      "边界：真实TTY端到端未模拟（需pty），交互用注入confirm测试；未在真仓执行移动；AGENTS.md文档归票06",
+      "已知行为面（编排者识别，属设计预期）：同意后文件夹名即预设名，rename后其子技能经reconcile成为预设成员获顶层链接；真仓13个集合目录在票04迁移前每次交互启动都会被询问，迁移后消失"
+    ],
+    "evidence": [
+      "npm test 复跑：pass 120 / fail 0",
+      "日志 .agent-results/omp-t05-startup-prompt.log 以 [done] end_turn 结尾，无 AccountQuotaExceeded，acpx进程已退出",
+      "git diff --numstat：cli.ts +7-4、core.ts +96-0、tui.ts +5-3、startup-prompt.test.ts 新增",
+      "编排者直读 core.ts:1000-1091 全段核对上述行为"
+    ],
+    "open_questions": []
+  },
+  "questions": {
+    "four_branches": {
+      "type": "noul",
+      "instructions": "同意/拒绝/豁免/非交互四分支是否都正确实现且有测试：同意移入+reconcile建链、拒绝持久化不再问、豁免目录不询问、非交互不动作有提示？",
+      "criteria": {
+        "true": "四分支实现正确且各有断言",
+        "false": "有分支行为错误或缺测试"
+      }
+    },
+    "rejection_persistence": {
+      "type": "noul",
+      "instructions": "拒绝名单是否可靠：.preset-prompt.json跨进程持久、损坏文件按空处理不拦截、手工删除条目可重新询问？",
+      "criteria": {
+        "true": "持久化+容错+可重置三点齐备",
+        "false": "名单丢失、崩溃或无法重置"
+      }
+    },
+    "wiring_order": {
+      "type": "noul",
+      "instructions": "CLI/TUI接线是否正确：确认在reconcile之前执行、移动后立即建链、非交互tty判定无误？",
+      "criteria": {
+        "true": "prompt→reconcile顺序正确，isTTY===true判定合理",
+        "false": "顺序错或非交互误判为交互"
+      }
+    },
+    "safety": {
+      "type": "noul",
+      "instructions": "移动是否安全：仅真实目录（符号链接排除）、重名/非法名留原地不丢失数据、名单写入原子性可接受？",
+      "criteria": {
+        "true": "rename前有存在性检查，异常路径不丢数据",
+        "false": "有覆盖、丢失或崩溃路径"
+      }
+    },
+    "acceptance_complete": {
+      "type": "noul",
+      "instructions": "票05五条验收标准是否全部被实现与测试覆盖？",
+      "criteria": {
+        "true": "五条验收各有对应实现与断言",
+        "false": "有验收项未覆盖"
+      }
+    }
+  }
+}

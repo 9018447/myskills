@@ -1,0 +1,3641 @@
+[client] initialize (running)
+
+[client] session/new (running)
+
+[thinking] Let me start by reading the ticket file and the relevant source files.
+
+[tool] Reading ticket 03 (pending)
+  input: /home/smh/myskills/.scratch/preset-folders/issues/03-tui-folder-ops.md
+  files: /home/smh/myskills/.scratch/preset-folders/issues/03-tui-folder-ops.md
+
+[tool] Reading core.ts (pending)
+  input: /home/smh/myskills/manager/src/core.ts
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading ticket 03 (completed)
+  kind: read
+  input: /home/smh/myskills/.scratch/preset-folders/issues/03-tui-folder-ops.md
+  files: /home/smh/myskills/.scratch/preset-folders/issues/03-tui-folder-ops.md
+  output:
+    [.scratch/preset-folders/issues/03-tui-folder-ops.md#6683]
+    1:# 03 — TUI/CLI 预设操作改走文件夹，JSON presets 字段废弃
+    2:
+    3:**构建内容：** TUI 与 CLI 的预设管理从改 JSON 数组改为操作文件夹：新建预设 = 在 `presets/` 下建文件夹；添加成员 = 把顶层技能真身移入文件夹；移除成员 = 真身移回顶层；删除预设 = 成员全部移回顶层后删除文件夹。`skills-manifest.json` 中的 `presets` 字段删除，成员列表一律读文件夹；`presetApplied`（应用关系）保留在 JSON。整条「管理预设 → 应用到 agent → link 分发」通路端到端生效。
+    4:
+    5:**运行预算：** `离线`
+    6:
+    7:**被以下阻塞：** 02
+    8:
+    9:## 验收标准
+    10:
+    11:- [ ] TUI 内新建预设、加减成员、删除预设，每步操作后 `presets/` 下文件夹状态与界面显示一致
+    12:- [ ] 应用预设到 agent 并 link 后，agent 目录内符号链接齐全且指向顶层链接最终解析到真身
+    13:- [ ] 改动预设成员后再次 link，已应用 agent 的链接随之增减
+    14:- [ ] `skills-manifest.json` 不再含 `presets` 字段；`presetApplied` 行为与此前一致
+    15:- [ ] 同名技能试图加入第二个预设时，界面给出拒绝提示（复用 02 的报错）
+    16:
+    17:## 被以下阻塞
+    18:
+    19:- 02
+
+[tool] Reading core.ts (completed)
+  kind: read
+  input: /home/smh/myskills/manager/src/core.ts
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E9C3]
+    1:// myskills 核心逻辑：link / init / status / sync / install / migrate 及清单、注册表读写。
+    2:// link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
+    3:// 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
+    4:import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync, renameSync } from 'node:fs';
+    …
+    8:import { spawnSync } from 'node:child_process';
+    9:
+    10-14:export interface AgentDef { … }
+    15:
+    16-24:export interface Manifest { … }
+    25:
+    26-30:export function expandHome(p: string): string { … }
+    31:
+    32:// 仓库根定位：MYSKILLS_ROOT 优先；否则取本模块真实路径上溯（manager/src/core.ts → 仓库根）。
+    33:// 不看 cwd——命令在任何目录下都作用于安装它的中心仓库，不会误操作别的同名清单仓库。
+    34-42:export function findRepoRoot(): string { … }
+    43:
+    44-50:export function readJson<T>(path: string): T { … }
+    51:
+    52-56:export function git(repoRoot: string, args: string[]): string { … }
+    57:
+    58:export function loadAgents(repoRoot: string): AgentDef[] {
+    59:  return readJson<{ agents: AgentDef[] }>(join(repoRoot, 'agents.json')).agents;
+    60:}
+    61:
+    62:export function saveAgents(repoRoot: string, agents: AgentDef[]): void {
+    63:  writeFileSync(join(repoRoot, 'agents.json'), JSON.stringify({ agents }, null, 2) + '\n');
+    ... (288 more lines)
+
+[thinking] Let me read the elided parts of core.ts, especially the Manifest interface, link function, setPreset, deletePreset, applyPreset, migrateBakedPresets. Let me read specific ranges.
+
+[tool] Reading Manifest definition (pending)
+  input: manager/src/core.ts:5-30
+  files: /home/smh/myskills/manager/src/core.ts
+
+[tool] Reading link function (pending)
+  input: manager/src/core.ts:160-222
+  files: /home/smh/myskills/manager/src/core.ts
+
+[tool] Reading preset functions (pending)
+  input: manager/src/core.ts:767-856
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading preset functions (completed)
+  kind: read
+  input: manager/src/core.ts:767-856
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E9C3]
+    766:
+    767:// 预设集 CRUD 与应用
+    768:export function setPreset(repoRoot: string, name: string, skills: string[]): void {
+    769:  const manifest = loadManifest(repoRoot);
+    770:  (manifest.presets ??= {})[name] = [...new Set(skills)].sort();
+    771:  saveManifest(repoRoot, manifest);
+    772:}
+    773:
+    774:export function deletePreset(repoRoot: string, name: string): void {
+    775:  const manifest = loadManifest(repoRoot);
+    776:  if (manifest.presets) delete manifest.presets[name];
+    777:  if (manifest.presetApplied) delete manifest.presetApplied[name];
+    778:  saveManifest(repoRoot, manifest);
+    779:}
+    780:
+    781:export interface ApplyResult {
+    782:  added: Record<string, number>; // 各 agent 新增数量
+    783:  missing: string[]; // 预设里但仓库中不存在的技能
+    784:}
+    785:
+    786:// 应用预设：只记录 presetApplied（覆盖为本次勾选的完整 agent 集合），不并入 agents 清单。
+    787:// 互斥接管：应用的技能改由预设管，从该 agent 的个人清单移出——一个技能只属于一处；
+    788:// 撤销应用后个人清单也不恢复，重装需重新应用预设或手工勾选。
+    789:// 链接由 link 按「个人清单 ∪ 已应用预设」生成（接管后两者不重叠）——每个预设是独立单元：
+    790:// 改动成员随 link/sync 传播，取消勾选即撤销
+    791:export function applyPreset(repoRoot: string, name: string, agentIds: string[]): ApplyResult {
+    792:  const manifest = loadManifest(repoRoot);
+    ... (158 more lines)
+
+[tool] Reading link function (completed)
+  kind: read
+  input: manager/src/core.ts:160-222
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E9C3]
+    159:
+    160:export interface LinkReport {
+    161:  lines: string[];
+    162:  skippedAgents: string[];
+    163:  missingSkills: string[];
+    164:}
+    165:
+    166:// 把 wanted 技能同步进一个 skills 目录：建链/重建，并清理指向 repoRoot 的孤儿链接与断链。
+    167:// 全局 link（按 agent）与项目 link（按项目内目标目录）共用同一套"清单即真相"语义。
+    168:function syncSkillsIntoDir(label: string, skillsDir: string, wanted: string[], repoRoot: string, report: LinkReport): void {
+    169:  mkdirSync(skillsDir, { recursive: true });
+    170:  for (const name of wanted) {
+    171:    const target = join(repoRoot, name);
+    172:    if (!existsSync(target)) {
+    173:      report.missingSkills.push(name);
+    174:      report.lines.push(`警告: 清单中的 ${name} 在仓库中不存在，跳过`);
+    175:      continue;
+    176:    }
+    177:    const linkPath = join(skillsDir, name);
+    178:    if (existsSync(linkPath) && lstatSync(linkPath).isDirectory() && !lstatSync(linkPath).isSymbolicLink()) {
+    179:      // 真实目录挡路是 migrate 的职责（conflict 需人工取舍），跳过并提示，不让整个 link 中断
+    180:      report.lines.push(`跳过 ${label}/${name}（真实目录挡路，先跑 myskills migrate --apply）`);
+    181:      continue;
+    182:    }
+    183:    rmSync(linkPath, { force: true });
+    184:    symlinkSync(target, linkPath, 'dir');
+    185:    report.lines.push(`链接 ${label}/${name}`);
+    ... (42 more lines)
+
+[tool] Reading Manifest definition (completed)
+  kind: read
+  input: manager/src/core.ts:5-30
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E9C3]
+    4:import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync, renameSync } from 'node:fs';
+    5:import { homedir, hostname, tmpdir } from 'node:os';
+    6:import { join, dirname, resolve, sep, relative } from 'node:path';
+    7:import { fileURLToPath } from 'node:url';
+    8:import { spawnSync } from 'node:child_process';
+    9:
+    10:export interface AgentDef {
+    11:  id: string;
+    12:  name: string;
+    13:  skillsPath: string; // 支持 ~ 展开
+    14:}
+    15:
+    16:export interface Manifest {
+    17:  agents: Record<string, string[]>;
+    18:  // 技能来源仓库："owner/repo" 或 "owner/repo/subdir"；install 时记录，存量由 skillSources 从 git 历史推断
+    19:  sources?: Record<string, string>;
+    20:  // 预设集：名字 → 技能列表；应用到 agent 时并集追加
+    21:  presets?: Record<string, string[]>;
+    22:  // 预设应用记录：预设名 → 已应用到的 agent id；link 时把这些 agent 的清单与预设技能重新取并集
+    23:  presetApplied?: Record<string, string[]>;
+    24:}
+    25:
+    26:export function expandHome(p: string): string {
+    27:  if (p === '~') return homedir();
+    28:  if (p.startsWith('~/')) return join(homedir(), p.slice(2));
+    29:  return p;
+    30:}
+    ... (5 more lines)
+
+[thinking] Now let me read the folder model section (856-982) and find all references to `manifest.presets` / `presets` field across the codebase (tui.ts, cli.ts, tests).
+
+[tool] Reading folder model section (pending)
+  input: manager/src/core.ts:856-995
+  files: /home/smh/myskills/manager/src/core.ts
+
+[tool] Finding presets field usages (pending)
+  input: manager/src
+  files: /home/smh/myskills/manager/src
+
+[client] fs/read_text_file (running)
+
+[tool] Reading folder model section (completed)
+  kind: read
+  input: manager/src/core.ts:856-995
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E9C3]
+    855:
+    856:// ---------- 预设集文件夹事实模型：presets/<预设名>/<技能名>/ 存真身，仓库顶层留相对符号链接 ----------
+    857:
+    858:export const PRESETS_DIR = 'presets';
+    859:
+    860:// 预设成员：name = 技能名（= 顶层链接名）；preset = 所属预设名；dir = 真身目录（相对仓库根）
+    861:export interface PresetMember {
+    862:  name: string;
+    863:  preset: string;
+    864:  dir: string;
+    865:}
+    866:
+    867:// 递归下探识别成员：目录自身含 SKILL.md 即成员（找到即止，不再深入其内部）；
+    868:// 不含则继续向下。预设文件夹里的非技能残留（CHANGELOG、docs 等）不参与识别
+    869:function collectMembers(preset: string, dir: string, repoRoot: string, out: PresetMember[]): void {
+    870:  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    871:    if (entry.name.startsWith('.')) continue;
+    872:    const abs = join(dir, entry.name);
+    873:    if (isSkillDir(abs)) {
+    874:      out.push({ name: entry.name, preset, dir: relative(repoRoot, abs) });
+    875:      continue;
+    876:    }
+    877:    try {
+    878:      if (statSync(abs).isDirectory()) collectMembers(preset, abs, repoRoot, out);
+    879:    } catch {
+    880:      // 断链等不可访问条目跳过
+    881:    }
+    ... (219 more lines)
+
+[tool] Finding presets field usages (completed)
+  kind: search
+  input: manager/src
+  files: /home/smh/myskills/manager/src
+  output:
+    # manager/src/
+    ## core.ts#E9C3
+     20:  // 预设集：名字 → 技能列表；应用到 agent 时并集追加
+    *21:  presets?: Record<string, string[]>;
+     22:  // 预设应用记录：预设名 → 已应用到的 agent id；link 时把这些 agent 的清单与预设技能重新取并集
+     23:  presetApplied?: Record<string, string[]>;
+     24:}
+    ...
+     214:    for (const [preset, ids] of Object.entries(manifest.presetApplied ?? {})) {
+    *215:      if (ids.includes(agent.id)) for (const s of manifest.presets?.[preset] ?? []) presetSkills.add(s);
+     216:    }
+     217:    const wanted = [...new Set([...(manifest.agents[agent.id] ?? []), ...presetSkills])];
+     218:    syncSkillsIntoDir(agent.id, skillsPath, wanted, repoRoot, report);
+    ...
+     769:  const manifest = loadManifest(repoRoot);
+    *770:  (manifest.presets ??= {})[name] = [...new Set(skills)].sort();
+     771:  saveManifest(repoRoot, manifest);
+     772:}
+     773:
+    ...
+     775:  const manifest = loadManifest(repoRoot);
+    *776:  if (manifest.presets) delete manifest.presets[name];
+     777:  if (manifest.presetApplied) delete manifest.presetApplied[name];
+     778:  saveManifest(repoRoot, manifest);
+     779:}
+    ...
+     792:  const manifest = loadManifest(repoRoot);
+    *793:  const skills = manifest.presets?.[name];
+    ... (33 more lines)
+
+[thinking] Now let me look at the TUI code around the presets panel (lines 320-500 or so), and cli.ts usage of setPreset/deletePreset/applyPreset. Also the tests.
+
+[tool] Reading TUI presets panel (pending)
+  input: manager/src/tui.ts:300-470
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[tool] Finding preset function usages (pending)
+  input: manager/src
+  files: /home/smh/myskills/manager/src
+
+[client] fs/read_text_file (running)
+
+[tool] Finding preset function usages (completed)
+  kind: search
+  input: manager/src
+  files: /home/smh/myskills/manager/src
+  output:
+    # manager/src/
+    ## cli.ts#76CD
+     4:import { hostname } from 'node:os';
+    *5:import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, migrateBakedPresets, reconcilePresets } from './core.ts';
+     6:
+     7:function resolveRemote(): string {
+     8:  const idx = process.argv.indexOf('--remote');
+    ...
+     24:  // 启动 reconcile：把 presets/ 文件夹事实同步到仓库顶层（幂等；重名冲突时拒绝执行）
+    *25:  reconcilePresets(findRepoRoot());
+     26:  switch (command) {
+     27:    case 'tui':
+     28:      await launchTui();
+    ...
+     64:      if (process.argv.includes('--presets')) {
+    *65:        const r = migrateBakedPresets(findRepoRoot());
+     66:        console.log('补记 presetApplied（个人清单含预设全部成员的 agent）:');
+     67:        for (const [name, ids] of Object.entries(r.backfilled)) console.log(`  ${name}: ${ids.join(', ')}`);
+     68:        console.log('从个人清单移出的已应用预设成员:');
+    ## core.ts#E9C3
+     767:// 预设集 CRUD 与应用
+    *768:export function setPreset(repoRoot: string, name: string, skills: string[]): void {
+     769:  const manifest = loadManifest(repoRoot);
+     770:  (manifest.presets ??= {})[name] = [...new Set(skills)].sort();
+     771:  saveManifest(repoRoot, manifest);
+    ...
+     773:
+    *774:export function deletePreset(repoRoot: string, name: string): void {
+    ... (157 more lines)
+
+[tool] Reading TUI presets panel (completed)
+  kind: read
+  input: manager/src/tui.ts:300-470
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#1E64]
+    291:function MachinesView({ root, tick }: { root: string; tick: number }) {
+    …
+    293:  return h(
+    …
+    296:    machines.length === 0
+    …
+    298:      : machines.map((m) =>
+    299:          h(
+    300:            Text, { key: m.host },
+    301:            `${m.host}  ${m.branch}@${m.sha.slice(0, 7)}  断链 ${m.brokenLinks}  ${m.updatedAt}`,
+    302:          ),
+    303:        ),
+    304:  );
+    305:}
+    306:
+    307:type PresetMode = 'list' | 'new' | 'members' | 'apply';
+    308:
+    309:function PresetsView({
+    310:  root, agents, tick, onNotice, bumpTick, setBusy,
+    311:}: {
+    312:  root: string;
+    313:  agents: core.AgentDef[];
+    314:  tick: number;
+    315:  onNotice: (s: string) => void;
+    316:  bumpTick: () => void;
+    317:  setBusy: (b: boolean) => void;
+    318:}) {
+    ... (274 more lines)
+
+[thinking] Now let me look at the tests: preset.test.ts and preset-folders.test.ts, and the TUI group view (line ~106 presets usage for group browsing). Let me read those.
+
+[tool] Listing manager tests (pending)
+  input: manager
+  files: /home/smh/myskills/manager
+
+[tool] Reading TUI group view section (pending)
+  input: manager/src/tui.ts:95-180
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Listing manager tests (completed)
+  kind: search
+  input: manager
+  files: /home/smh/myskills/manager
+  output:
+    # manager/
+    package-lock.json
+    package.json
+    ## src/
+    tui.ts
+    cli.ts
+    core.ts
+    ## test/
+    preset-folders.test.ts
+    preset.test.ts
+    core.test.ts
+    tui.test.ts
+    project.test.ts
+    install.test.ts
+    migrate.test.ts
+    sync.test.ts
+    link.test.ts
+    status.test.ts
+    cli.test.ts
+    sources.test.ts
+
+[tool] Reading TUI group view section (completed)
+  kind: read
+  input: manager/src/tui.ts:95-180
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#1E64]
+    94:  const [filter, setFilter] = useState('');
+    95:  const [pos, setPos] = useState(0); // 在「可选中的技能行」序列中的位置（分组模式下同一技能可出现多次，按行实例导航）
+    96:  const [focus, setFocus] = useState<Focus>('list');
+    97:  const [agentCursor, setAgentCursor] = useState(0);
+    98:  const [groupMode, setGroupMode] = useState<GroupMode>('none');
+    99:
+    100:  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+    101:  const shown = useMemo(
+    102:    () => (filter ? skills.filter((s) => s.toLowerCase().includes(filter.toLowerCase())) : skills),
+    103:    [skills, filter],
+    104:  );
+    105:
+    106:  const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
+    107:  const sources = useMemo(() => (groupMode === 'source' ? core.skillSources(root) : {}), [root, tick, groupMode]);
+    108:  // 项目级 agent（注册表家目录 agent 去 ~/ 派生）及开启状态；显式 targets 优先，省略时默认全开
+    109:  const projAgentRows = useMemo(
+    110:    () => (scope === 'project' && projectRoot ? core.projectTargetStates(projectRoot, root) : []),
+    111:    [scope, projectRoot, root, tick],
+    112:  );
+    113:
+    114:  // 分组浏览：把技能列表渲染成「分组头 + 技能」行序列；同一技能可出现在多个组下
+    115:  const rows = useMemo<Row[]>(() => {
+    116:    if (groupMode === 'none') return shown.map((s) => ({ skill: s }));
+    117:    const shownSet = new Set(shown);
+    118:    const skillSet = new Set(skills);
+    119:    const assigned = new Set<string>();
+    120:    const groups: [string, string[]][] = [];
+    ... (153 more lines)
+
+[tool] Reading preset tests (pending)
+  input: manager/test/preset.test.ts
+  files: /home/smh/myskills/manager/test/preset.test.ts
+
+[tool] Reading preset folder tests (pending)
+  input: manager/test/preset-folders.test.ts
+  files: /home/smh/myskills/manager/test/preset-folders.test.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading preset tests (completed)
+  kind: read
+  input: manager/test/preset.test.ts
+  files: /home/smh/myskills/manager/test/preset.test.ts
+  output:
+    [manager/test/preset.test.ts#EF42]
+    1:import { test } from 'node:test';
+    …
+    6:import { setPreset, deletePreset, applyPreset, migrateBakedPresets, loadManifest, link } from '../src/core.ts';
+    7:
+    8-16:function makeRepo(skills: string[], manifest: object = { agents: {} }) { … }
+    17:
+    18:// 带 agent 注册表与已安装 skills 目录的 fixture，供 link 传播测试用
+    19-32:function makeLinkedRepo(skills: string[], manifest: object) { … }
+    33:
+    34-39:test('setPreset: 新建预设，去重并排序', () => { … });
+    40:
+    41-45:test('setPreset: 同名覆盖', () => { … });
+    46:
+    47-51:test('deletePreset: 删除存在的预设', () => { … });
+    52:
+    53-66:test('applyPreset: 互斥接管——应用后预设成员从个人清单移出，改由预设管', () => { … });
+    67:
+    68-74:test('applyPreset: 预设中仓库不存在的技能跳过并计入 missing', () => { … });
+    75:
+    76-83:test('applyPreset: 预设成员目录存在但无 SKILL.md（非技能）与枚举同判，计入 missing', () => { … });
+    84:
+    85-88:test('applyPreset: 预设不存在时抛错', () => { … });
+    89:
+    90-95:test('applyPreset: 记录 presetApplied，重复应用不重复记录', () => { … });
+    96:
+    97-113:test('applyPreset: 取消勾选即撤销应用，link 移除该预设的链接，其他预设不受影响', () => { … });
+    114:
+    ... (11 more lines)
+
+[tool] Reading preset folder tests (completed)
+  kind: read
+  input: manager/test/preset-folders.test.ts
+  files: /home/smh/myskills/manager/test/preset-folders.test.ts
+  output:
+    [manager/test/preset-folders.test.ts#597F]
+    1:// 票 02：预设集文件夹事实模型——presets/<预设>/<技能>/ 存真身、顶层留相对符号链接。
+    2:// 覆盖：递归成员识别、启动 reconcile 幂等、断链清除、顶层重名冲突拒绝、移入预设的拒绝语义、CLI 启动接线
+    3:import { test } from 'node:test';
+    …
+    10:import { reconcilePresets, moveSkillToPreset, listPresets, presetMembers } from '../src/core.ts';
+    11:
+    12:const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'cli.ts');
+    13:
+    14-23:function makeRepo(skills: string[]) { … }
+    24:
+    25:// 在仓库内相对路径 rel 处造一个技能真身
+    26-29:function makeSkill(repo: string, rel: string) { … }
+    30:
+    31:// 顶层全部符号链接的 readlink 原始目标（幂等性对比用）
+    32-38:function topLinks(repo: string): Record<string, string> { … }
+    39:
+    40-54:test('presetMembers: 递归下探识别成员；预设内非技能残留不参与', () => { … });
+    55:
+    56-60:test('presetMembers: 没有 presets/ 目录时返回空', () => { … });
+    61:
+    62-74:test('reconcile: 手工 mv 顶层技能进 presets/foo/ 后，顶层出现指向真身的相对符号链接；重复运行无变化', () => { … });
+    75:
+    76-82:test('reconcile: 嵌套一层中间目录也能识别成员并在顶层建链', () => { … });
+    83:
+    84-91:test('reconcile: 顶层已有指向成员的正确链接时不重复创建（内容不变）', () => { … });
+    92:
+    93-100:test('reconcile: 删除预设成员后，顶层残留断链在下次启动时被清除', () => { … });
+    ... (18 more lines)
+
+[tool] Reading preset tests detail (pending)
+  input: manager/test/preset.test.ts:1-180
+  files: /home/smh/myskills/manager/test/preset.test.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading preset tests detail (completed)
+  kind: read
+  input: manager/test/preset.test.ts:1-180
+  files: /home/smh/myskills/manager/test/preset.test.ts
+  output:
+    [manager/test/preset.test.ts#EF42]
+    1:import { test } from 'node:test';
+    2:import assert from 'node:assert/strict';
+    3:import { mkdtempSync, mkdirSync, writeFileSync, existsSync, lstatSync } from 'node:fs';
+    4:import { tmpdir } from 'node:os';
+    5:import { join } from 'node:path';
+    6:import { setPreset, deletePreset, applyPreset, migrateBakedPresets, loadManifest, link } from '../src/core.ts';
+    7:
+    8:function makeRepo(skills: string[], manifest: object = { agents: {} }) {
+    9:  const repo = mkdtempSync(join(tmpdir(), 'myskills-preset-'));
+    10:  for (const s of skills) {
+    11:    mkdirSync(join(repo, s), { recursive: true });
+    12:    writeFileSync(join(repo, s, 'SKILL.md'), `---\nname: ${s}\n---\n`);
+    13:  }
+    14:  writeFileSync(join(repo, 'skills-manifest.json'), JSON.stringify(manifest, null, 2));
+    15:  return repo;
+    16:}
+    17:
+    18:// 带 agent 注册表与已安装 skills 目录的 fixture，供 link 传播测试用
+    19:function makeLinkedRepo(skills: string[], manifest: object) {
+    20:  const tmp = mkdtempSync(join(tmpdir(), 'myskills-preset-link-'));
+    21:  const repo = join(tmp, 'repo');
+    22:  mkdirSync(repo, { recursive: true });
+    23:  for (const s of skills) {
+    24:    mkdirSync(join(repo, s), { recursive: true });
+    25:    writeFileSync(join(repo, s, 'SKILL.md'), `---\nname: ${s}\n---\n`);
+    26:  }
+    27:  const skillsDir = join(tmp, 'claude-skills');
+    ... (245 more lines)
+
+[thinking] Now I understand the current state. Let me check `saveManifest` — if we delete the `presets` field from the Manifest type, `saveManifest` writes the whole manifest JSON. Since the real manifest currently has a `presets` field, saving would preserve it (JSON round-trip preserves unknown fields... actually `readJson<Manifest>` returns the parsed JSON with all fields, so `presets` data would be preserved in real manifest until ticket 04). The ticket says: "真实 manifest 里现存的 presets 数据票 04 才迁移，本票只需保证缺字段/旧字段共存时代码不崩".
+           
+           Design decisions for ticket 03:
+           
+           1. **Manifest type**: remove `presets?: Record<string, string[]>` field from the interface.
+           
+           2. **link()**: change presetSkills to read from `presetMembers()` filtered by applied presets:
+           ```ts
+           const allMembers = presetMembers(repoRoot); // computed once outside loop
+           ...
+           const presetSkills = new Set<string>();
+           for (const [preset, ids] of Object...
+现在让我看看其余的部分：`cli.ts`、TUI 测试、工单列表以及真实的仓库状态。
+
+[tool] Reading cli.ts (pending)
+  input: manager/src/cli.ts
+  files: /home/smh/myskills/manager/src/cli.ts
+
+[tool] Listing ticket files (pending)
+  input: .scratch/preset-folders/issues
+  files: /home/smh/myskills/.scratch/preset-folders/issues
+
+[tool] Finding presets references in tests (pending)
+  input: manager/test
+  files: /home/smh/myskills/manager/test
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Listing ticket files (completed)
+  kind: search
+  input: .scratch/preset-folders/issues
+  files: /home/smh/myskills/.scratch/preset-folders/issues
+  output:
+    # .scratch/preset-folders/issues/
+    02-preset-layout-core.md
+    01-skill-discriminator.md
+    06-docs.md
+    05-startup-prompt.md
+    04-migration.md
+    03-tui-folder-ops.md
+
+[tool] Finding presets references in tests (completed)
+  kind: search
+  input: manager/test
+  files: /home/smh/myskills/manager/test
+  output:
+    # manager/test/
+    ## preset-folders.test.ts#597F
+    *1:// 票 02：预设集文件夹事实模型——presets/<预设>/<技能>/ 存真身、顶层留相对符号链接。
+     2:// 覆盖：递归成员识别、启动 reconcile 幂等、断链清除、顶层重名冲突拒绝、移入预设的拒绝语义、CLI 启动接线
+     3:import { test } from 'node:test';
+     4:import assert from 'node:assert/strict';
+    ...
+     9:import { spawnSync } from 'node:child_process';
+    *10:import { reconcilePresets, moveSkillToPreset, listPresets, presetMembers } from '../src/core.ts';
+     11:
+     12:const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'cli.ts');
+     13:
+    ...
+     41:  const repo = makeRepo([]);
+    *42:  makeSkill(repo, 'presets/foo/bar');
+    *43:  makeSkill(repo, 'presets/foo/skills/baz'); // 嵌套一层中间目录
+    *44:  writeFileSync(join(repo, 'presets/foo/CHANGELOG.md'), 'x');
+    *45:  mkdirSync(join(repo, 'presets/foo/docs'), { recursive: true }); // 无 SKILL.md 的空目录
+    *46:  assert.deepEqual(listPresets(repo), ['foo']);
+     47:  assert.deepEqual(
+     48:    presetMembers(repo).map((m) => ({ name: m.name, preset: m.preset, dir: m.dir })),
+     49:    [
+    *50:      { name: 'bar', preset: 'foo', dir: 'presets/foo/bar' },
+    *51:      { name: 'baz', preset: 'foo', dir: 'presets/foo/skills/baz' },
+     52:    ],
+     53:  );
+     54:});
+     55:
+    ... (205 more lines)
+
+[tool] Reading cli.ts (completed)
+  kind: read
+  input: manager/src/cli.ts
+  files: /home/smh/myskills/manager/src/cli.ts
+  output:
+    [manager/src/cli.ts#76CD]
+    1:#!/usr/bin/env node
+    2:// myskills 管理 CLI：link / status / sync / install / init / migrate（薄封装，逻辑在 core.ts）
+    3:// link 在含 .myskills.json 的目录下自动切项目模式，--global 强制全局
+    4:import { hostname } from 'node:os';
+    5:import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, migrateBakedPresets, reconcilePresets } from './core.ts';
+    6:
+    7:function resolveRemote(): string {
+    8:  const idx = process.argv.indexOf('--remote');
+    9:  return idx > -1 ? process.argv[idx + 1] : (process.env.MYSKILLS_REMOTE ?? 'origin');
+    10:}
+    11:
+    12:const command = process.argv[2];
+    13:
+    14:async function launchTui(): Promise<void> {
+    15:  if (!process.stdout.isTTY) {
+    16:    console.log('用法: myskills [link|status|sync|install|init|migrate|tui]（直接敲 myskills 进 TUI）');
+    17:    return;
+    18:  }
+    19:  const { start } = await import('./tui.ts');
+    20:  start(resolveRemote());
+    21:}
+    22:
+    23:try {
+    24:  // 启动 reconcile：把 presets/ 文件夹事实同步到仓库顶层（幂等；重名冲突时拒绝执行）
+    25:  reconcilePresets(findRepoRoot());
+    26:  switch (command) {
+    27:    case 'tui':
+    ... (57 more lines)
+
+[thinking] Let me read tui.test.ts around those preset tests (lines 60-120 and 320-400), and also check the real repo state (presets/ folder existence, real skills-manifest.json presets content), plus ticket 04 to see boundaries.
+
+[client] session/request_permission (running)
+
+[tool] Reading TUI preset tests (pending)
+  input: manager/test/tui.test.ts:55-130
+  files: /home/smh/myskills/manager/test/tui.test.ts
+
+[tool] Reading TUI preset group tests (pending)
+  input: manager/test/tui.test.ts:320-410
+  files: /home/smh/myskills/manager/test/tui.test.ts
+
+[tool] Reading ticket 04 and 06 (pending)
+  input: .scratch/preset-folders/issues/04-migration.md
+  files: /home/smh/myskills/.scratch/preset-folders/issues/04-migration.md
+
+[tool] $ ls /home/smh/myskills/presets 2>/dev/null; echo "---"; ls /home/smh/myskills/ | head -30; echo "---"; node -e "const m=require('/home/smh/myskills/skills-manifest.json'); console.log(JSON.stringify({presets:m.presets,presetApplied:m.presetApplied},null,1))" (pending)
+  input: ls /home/smh/myskills/presets 2>/dev/null; echo "---"; ls /home/smh/myskills/ | head -30; echo "---"; node -e "const m=require('/home/smh/myskills/skills-manifest.json'); console.log(JSON.stringify({presets:m.presets,...
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading ticket 04 and 06 (completed)
+  kind: read
+  input: .scratch/preset-folders/issues/04-migration.md
+  files: /home/smh/myskills/.scratch/preset-folders/issues/04-migration.md
+  output:
+    [.scratch/preset-folders/issues/04-migration.md#343F]
+    1:# 04 — 存量迁移：JSON 预设落地 + 集合目录归位
+    2:
+    3:**构建内容：** 一次性迁移把现有仓库收敛到 presets/ 布局：7 个 JSON 预设的成员真身移入 `presets/<预设名>/`（成员均为顶层技能，唯一失效引用 `backup_retro-zh` 剔除并在报告中说明）；含子技能的集合目录原样移入 `presets/<集合名>/`；嵌套集合（mattpocock-skills-zh、matlab-skills-catalog，子技能在中间层下）拆除中间文件夹层，子技能平铺到 `presets/<集合名>/` 第一层；平铺后残留的非技能文件（CHANGELOG、docs、点文件等）留在预设文件夹内，不参与成员识别。`manager/`、`machines/` 等无子技能的基础设施目录不动。迁移后各 agent 已装链接数不减少。与 03 无依赖，可并行。
+    4:
+    5:**运行预算：** `离线`
+    6:
+    7:**被以下阻塞：** 02
+    8:
+    9:## 验收标准
+    10:
+    11:- [ ] 迁移在测试 fixture 上完整跑通：预设成员、平铺集合、普通集合三类都有覆盖
+    12:- [ ] 迁移后 JSON `presets` 字段清空；`presetApplied` 键名不变（预设名未改）
+    13:- [ ] `backup_retro-zh` 被剔除且出现在迁移报告中
+    14:- [ ] 迁移后运行 link：各 agent 目录符号链接数量不少于迁移前（校验：迁移前后各跑一次 link 对比）
+    15:- [ ] 嵌套集合平铺后其子技能在顶层获得符号链接；mattpocock-skills-zh 的 CHANGELOG 等残留文件不被识别为成员
+    16:- [ ] 迁移幂等：重复执行无副作用
+    17:
+    18:## 被以下阻塞
+    19:
+    20:- 02
+
+[tool] Reading TUI preset group tests (completed)
+  kind: read
+  input: manager/test/tui.test.ts:320-410
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#32A9]
+    316:test('tui: 分组浏览按行实例导航，初始光标落在第一组的第一个技能行', async () => {
+    …
+    319:  writeFileSync(join(repo, 'skills-manifest.json'), JSON.stringify({ agents: { claude: ['beta'] } }, null, 2));
+    320:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    321:  await tick();
+    322:  stdin.write('g'); // 分组：按agent
+    323:  await tick();
+    324:  assert.match(lastFrame()!, /❯ beta/, '初始应高亮第一组的 beta，而非平铺列表的第一个 alpha');
+    325:  stdin.write('\x1b[B'); // ↓
+    326:  await tick();
+    327:  assert.match(lastFrame()!, /❯ alpha/, '↓ 应移到下一技能行 alpha');
+    328:  stdin.write('\x1b[A'); // ↑
+    329:  await tick();
+    330:  assert.match(lastFrame()!, /❯ beta/);
+    331:  unmount();
+    332:});
+    333:
+    334:test('tui: 同一技能出现在多个组时，只有光标所在行实例高亮', async () => {
+    335:  const { repo } = makeFixture();
+    336:  writeFileSync(
+    337:    join(repo, 'skills-manifest.json'),
+    338:    JSON.stringify({ agents: {}, presets: { p1: ['alpha'], p2: ['alpha'] } }, null, 2),
+    339:  );
+    340:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    341:  await tick();
+    342:  for (let i = 0; i < 4; i++) stdin.write('g'); // 切到「按预设集」
+    343:  await tick();
+    ... (24 more lines)
+
+[tool] Reading TUI preset tests (completed)
+  kind: read
+  input: manager/test/tui.test.ts:55-130
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#32A9]
+    54:test('tui: 搜索模式屏蔽全局键，q 不退出而是进入过滤词', async () => {
+    55:  const { repo } = makeFixture();
+    56:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    57:  await tick();
+    58:  stdin.write('/');
+    59:  await tick();
+    60:  stdin.write('b');
+    61:  await tick();
+    62:  assert.match(lastFrame()!, /beta/);
+    63:  assert.doesNotMatch(lastFrame()!, /❯ alpha/);
+    64:  stdin.write('q'); // 若泄漏到全局键会直接退出
+    65:  await tick();
+    66:  assert.match(lastFrame()!, /技能（0\/2）/); // 过滤词 bq 无匹配，证明 q 进了搜索框
+    67:  unmount();
+    68:});
+    69:
+    70:test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {
+    71:  const { repo } = makeFixture();
+    72:  writeFileSync(
+    73:    join(repo, 'skills-manifest.json'),
+    74:    JSON.stringify({ agents: {}, presets: { base: ['alpha'] } }, null, 2),
+    75:  );
+    76:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    77:  await tick();
+    78:  stdin.write('p'); // 预设视图
+    79:  await tick();
+    80:  stdin.write('a'); // 应用第一个预设
+    ... (57 more lines)
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ ls /home/smh/myskills/presets 2>/dev/null; echo "---"; ls /home/smh/myskills/ | head -30; echo "---"; node -e "const m=require('/home/smh/myskills/skills-manifest.json'); console.log(JSON.stringify({presets:m.presets,presetApplied:m.presetApplied},null,1))" (completed)
+  kind: execute
+  input: ls /home/smh/myskills/presets 2>/dev/null; echo "---"; ls /home/smh/myskills/ | head -30; echo "---"; node -e "const m=require('/home/smh/myskills/skills-manifest.json'); console.log(JSON.stringify({presets:m.presets,...
+  output:
+    ---
+    academic-paper
+    academic-paper-access
+    academic-paper-reviewer
+    academic-writing
+    acpx
+    acpxtodo
+    agent-browser
+    agentic-jujutsu
+    agents.json
+    AGENTS.md
+    agent-workflow
+    aider-zh
+    airtable
+    algorithmic-art
+    apple-notes
+    apple-reminders
+    architecture-diagram
+    arxiv
+    ask-matt
+    atomistic-workflows
+    audiocraft-audio-generation
+    biosteam
+    biosteam-cosmosac
+    biosteam-process-builder
+    biosteam-skill
+    blogwatcher
+    bootstrap.sh
+    ... (269 more lines)
+
+[thinking] Key facts:
+           - Real repo: no `presets/` folder yet (ticket 04 creates it). Real manifest has `presets` JSON data (7 presets) + `presetApplied`. So after my change: TUI shows presets from folder → real repo shows NO presets until ticket 04 runs migration. That's expected per the ticket series (03 doesn't migrate data; 04 does).
+           - Ticket 04 will "清空 JSON presets 字段" — interesting, ticket 04 acceptance says "迁移后 JSON `presets` 字段清空" — so ticket 04 handles removing the data from real manifest. My ticket only removes the field from the type and stops reading it.
+           
+           Important interplay: with the Manifest type no longer declaring `presets`, `saveManifest` still round-trips unknown fields (readJson returns full parsed object). So real manifest's presets data survives until ticket 04 clears it. Good — "缺字段/旧字段共存时代码不崩".
+           
+           Wait, but one wrinkle: `saveManifest(repoRoot, manifest)` — the manifest objec...
+
+[tool] Reading TUI preset list render (pending)
+  input: manager/src/tui.ts:474-560
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[tool] Reading package.json (pending)
+  input: manager/package.json
+  files: /home/smh/myskills/manager/package.json
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Reading TUI preset list render (completed)
+  kind: read
+  input: manager/src/tui.ts:474-560
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#1E64]
+    309:function PresetsView({
+    …
+    318:}) {
+    …
+    462:  if (mode === 'apply') {
+    463:    return h(
+    …
+    473:      h(Text, { dimColor: true }, '勾选=应用该预设，取消勾选=撤销；按 l 生效；esc 取消'),
+    474:    );
+    475:  }
+    476:  return h(
+    477:    Box, { flexDirection: 'column', borderStyle: 'round', paddingX: 1 },
+    478:    h(Text, { bold: true }, `预设集（${names.length}）`),
+    479:    names.length === 0 && mode === 'list' ? h(Text, { dimColor: true }, '暂无预设，按 n 新建') : null,
+    480:    ...names.map((n, i) => {
+    481:      const ap = applied[n] ?? [];
+    482:      return h(
+    483:        Text, { key: n, color: i === cursor ? 'cyan' : undefined },
+    484:        `${i === cursor ? '❯' : ' '} ${n}（${presets[n].length}）: ${presets[n].join(', ')}${ap.length ? `  → 已应用: ${ap.join(', ')}` : '  → 未应用'}`,
+    485:      );
+    486:    }),
+    487:    mode === 'new' ? h(Text, { color: 'yellow' }, `预设名: ${buffer}▌`) : null,
+    488:  );
+    489:}
+    490:
+    491:function AgentsView({ root, onNotice, bumpTick, setBusy }: { root: string; onNotice: (s: string) => void; bumpTick: () => void; setBusy: (b: boolean) => void }) {
+    492:  const [agents, setAgents] = useState<core.AgentDef[]>(() => core.loadAgents(root));
+    ... (173 more lines)
+
+[tool] Reading package.json (completed)
+  kind: read
+  input: manager/package.json
+  files: /home/smh/myskills/manager/package.json
+  output:
+    [manager/package.json#D098]
+    1:{
+    2:  "name": "myskills-manager",
+    3:  "version": "0.1.0",
+    4:  "private": true,
+    5:  "type": "module",
+    6:  "description": "myskills 仓库的多机分发管理工具：link/status/sync/install/migrate",
+    7:  "bin": {
+    8:    "myskills": "src/cli.ts",
+    9:    "myskills-tui": "src/tui.ts"
+    10:  },
+    11:  "scripts": {
+    12:    "test": "node --test \"test/*.test.ts\""
+    13:  },
+    14:  "dependencies": {
+    15:    "ink": "^7.1.1",
+    16:    "react": "^19.3.0"
+    17:  },
+    18:  "devDependencies": {
+    19:    "@types/react": "^19.3.0",
+    20:    "ink-testing-library": "^4.0.0"
+    21:  }
+    22:}
+
+[thinking] No tsc in scripts; node runs TS via type stripping (no type checking at runtime). Still, I'll keep types clean and maybe run `npx tsc --noEmit` if tsconfig exists. Let me check for tsconfig. Actually glob earlier showed only package files in manager root: package-lock.json, package.json, src/, test/. No tsconfig — so no typecheck step. Node type stripping means type errors don't fail tests, but I should still write type-correct code.
+           
+           Now let me plan the todo and write tests first (TDD).
+           
+           Plan:
+           1. Rewrite preset.test.ts to folder semantics (failing tests first).
+           2. Update tui.test.ts preset tests (line 70 apply test, line 334 group test) to folder semantics.
+           3. Implement core.ts changes:
+              - Manifest: remove presets field.
+              - link(): membersByPreset from presetMembers.
+              - Extract assertSkillMovable from moveSkillToPreset.
+              - setPreset → folder diff sync.
+              - createPreset new.
+           ...
+
+[tool] Reading tui test fixtures (pending)
+  input: manager/test/tui.test.ts:1-53
+  files: /home/smh/myskills/manager/test/tui.test.ts
+
+[tool] Checking GroupMode cycling (pending)
+  input: manager/src/tui.ts
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Checking GroupMode cycling (completed)
+  kind: search
+  input: manager/src/tui.ts
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#1E64]
+     12:type Focus = 'list' | 'dist';
+    *13:type GroupMode = 'none' | 'agent' | 'source' | 'project' | 'preset';
+     14:type Scope = 'global' | 'project';
+     15:
+    *16:const GROUP_ORDER: GroupMode[] = ['none', 'agent', 'source', 'project', 'preset'];
+    *17:const GROUP_LABEL: Record<GroupMode, string> = {
+     18:  none: '',
+     19:  agent: '按agent',
+     20:  source: '按来源',
+     21:  project: '按项目路径',
+    *22:  preset: '按预设集',
+     23:};
+     24:
+     25:interface AppProps {
+    ...
+     97:  const [agentCursor, setAgentCursor] = useState(0);
+    *98:  const [groupMode, setGroupMode] = useState<GroupMode>('none');
+     99:
+     100:  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+     101:  const shown = useMemo(
+    ...
+     194:    if (input === 'g') {
+    *195:      setGroupMode((m) => GROUP_ORDER[(GROUP_ORDER.indexOf(m) + 1) % GROUP_ORDER.length]);
+     196:      setPos(0);
+     197:      return;
+     198:    }
+
+[tool] Reading tui test fixtures (completed)
+  kind: read
+  input: manager/test/tui.test.ts:1-53
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#32A9]
+    1:import { test } from 'node:test';
+    2:import assert from 'node:assert/strict';
+    3:import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, lstatSync, existsSync } from 'node:fs';
+    4:import { tmpdir } from 'node:os';
+    5:import { dirname, join } from 'node:path';
+    6:import { createElement as h } from 'react';
+    7:import { render } from 'ink-testing-library';
+    8:import { App } from '../src/tui.ts';
+    9:
+    10:function makeFixture() {
+    11:  const tmp = mkdtempSync(join(tmpdir(), 'myskills-tui-'));
+    12:  const repo = join(tmp, 'repo');
+    13:  const home = join(tmp, 'home');
+    14:  mkdirSync(repo, { recursive: true });
+    15:  mkdirSync(join(home, '.claude'), { recursive: true });
+    16:  for (const s of ['alpha', 'beta']) {
+    17:    mkdirSync(join(repo, s));
+    18:    writeFileSync(join(repo, s, 'SKILL.md'), `---\nname: ${s}\ndescription: ${s} 描述\n---\n`);
+    19:  }
+    20:  writeFileSync(
+    21:    join(repo, 'agents.json'),
+    22:    JSON.stringify({ agents: [{ id: 'claude', name: 'Claude Code', skillsPath: join(home, '.claude', 'skills') }] }, null, 2),
+    23:  );
+    24:  writeFileSync(join(repo, 'skills-manifest.json'), JSON.stringify({ agents: {} }, null, 2));
+    25:  return { repo, home };
+    26:}
+    27:
+    ... (33 more lines)
+
+[thinking] makeFixture: skills alpha, beta; one agent claude. Group cycle: none → agent → source → project → preset (4 presses = preset).
+           
+           For the multi-group row-instance test: agent mode won't give multiple groups with ONE agent. Options: add a second agent to fixture (write agents.json with claude + cursor, manifest agents both ['alpha']), press g once → agent mode → alpha appears under both agent groups. That preserves the navigation-intent test.
+           
+           Now let me set up todos and start. TDD: write the new preset.test.ts first (it will fail), then tui.test.ts changes, then implement.
+           
+           Todo:
+           1. Rewrite preset.test.ts to folder semantics (red)
+           2. Update tui.test.ts preset tests to folder model (red)
+           3. core.ts: folder-model management + distribution paths, drop Manifest.presets & migrateBakedPresets
+           4. cli.ts: remove --presets branch
+           5. tui.ts: presets panel + group view switch to folders
+           6. Full te...
+状态已明确。在编写测试之前，让我先检查一下剩下的几个细节。
+
+[tool] Reading validateSkillName (pending)
+  input: manager/src/core.ts:516-522
+  files: /home/smh/myskills/manager/src/core.ts
+
+[tool] Checking notice rendering and summary (pending)
+  input: manager/src/tui.ts
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Checking notice rendering and summary (completed)
+  kind: search
+  input: manager/src/tui.ts
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#1E64]
+     34:// link 摘要（勾选即建链：勾选/应用预设后立即调用，替代“按 l 生效”）
+    *35:function userLinkSummary(root: string): string {
+     36:  const r = core.link(root);
+     37:  return `用户级 link 完成：${r.lines.length} 条动作${r.skippedAgents.length ? `，跳过未安装: ${r.skippedAgents.join('/')}` : ''}${r.missingSkills.length ? `，缺技能: ${r.missingSkills.join('/')}` : ''}`;
+     38:}
+    ...
+     233:      const on = core.toggleSkill(root, agentId, current);
+    *234:      onNotice(`${on ? '勾选' : '取消'} ${current} → ${agentId}；${userLinkSummary(root)}（按 s 提交推送）`);
+     235:      bumpTick();
+     236:    }
+     237:  });
+    ...
+     389:        core.setPreset(root, editing, [...sel]);
+    *390:        const summary = userLinkSummary(root);
+     391:        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能）；${summary}`);
+     392:        bumpTick();
+     393:        setMode('list');
+    ...
+     416:        const r = core.applyPreset(root, editing, [...applySel]);
+    *417:        const summary = userLinkSummary(root);
+     418:        const parts = Object.entries(r.added).map(([id, n]) => `${id}+${n}`);
+     419:        onNotice(`已保存预设 ${editing} 的应用范围：${parts.length ? `新增 ${parts.join('  ')}` : '无新增'}${r.missing.length ? `；仓库中不存在已跳过: ${r.missing.join('/')}` : ''}；${summary}（按 s 提交推送；改动预设成员会随 link 传播，取消勾选后回车即撤销该 agent 的应用）`);
+     420:        bumpTick();
+    ...
+     625:  const [view, setView] = useState<View>('skills');
+    *626:  const [notice, setNotice] = useState('');
+     627:  const [tick, setTick] = useState(0);
+    ... (14 more lines)
+
+[tool] Reading validateSkillName (completed)
+  kind: read
+  input: manager/src/core.ts:516-522
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E9C3]
+    515:
+    516:// 技能名必须是一个安全的单目录段：字母数字开头，只含字母数字与 ._-，杜绝 ../ 逃逸与隐藏目录。
+    517:// label 用于报错文案（技能名 / 预设名共用同一套约束）
+    518:export function validateSkillName(name: string, label = '技能名'): void {
+    519:  if (!/^[A-Za-z0-9_-][A-Za-z0-9._-]*$/.test(name)) {
+    520:    throw new Error(`非法${label} "${name}"：只能由字母、数字、点、下划线、连字符组成，且不能以点开头`);
+    521:  }
+    522:}
+    523:
+    524:export function install(repoRoot: string, input: string, nameOverride: string | undefined, remote: string): string {
+    525:  const { owner, repo, ref, subdir } = parseGitHubUrl(input);
+    …
+    561:}
+    
+    [467 more lines in file. Use :526 to continue]
+
+[thinking] Notice renders at App bottom (line 772) regardless of view — visible in members mode too. 
+           
+           One catch: in members-save error path, onNotice shows error and we stay in members mode — the frame still shows the members editor AND the notice. Test C4 asserts /已归属预设 p1/ in frame. 
+           
+           Also `userLinkSummary` calls `core.link(root)` — runs on every preset save/apply. With folder model that's the propagation. Fine.
+           
+           Now — TDD. Write tests first. Todo list, then write new preset.test.ts, run to see failures, then tui.test.ts updates, then implement.
+           
+           Let me write the todos and the test file in one go.
+研究已完成。计划：优先采用 TDD —— 将 `preset.test.ts` 重写为文件夹语义，调整两个受影响的 TUI 测试并添加 TUI 文件夹操作测试，然后重新调整 core/cli/tui。
+
+[tool] Planning ticket 03 work (pending)
+  input: {"list":[{"phase":"red","items":["Rewrite preset.test.ts to folder semantics (failing first)","Update tui.test.ts: apply test, group test, new folder-op tests"]},{"phase":"implement","items":["core.ts: folder-model se...
+
+[tool] Planning ticket 03 work (completed)
+  kind: think
+  input: {"list":[{"phase":"red","items":["Rewrite preset.test.ts to folder semantics (failing first)","Update tui.test.ts: apply test, group test, new folder-op tests"]},{"phase":"implement","items":["core.ts: folder-model se...
+  output:
+    Remaining items (7):
+      - Rewrite preset.test.ts to folder semantics (failing first) [in_progress] (red)
+      - Update tui.test.ts: apply test, group test, new folder-op tests [pending] (red)
+      - core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets [pending] (implement)
+      - cli.ts: remove --presets branch [pending] (implement)
+      - tui.ts: presets panel + group view read folders [pending] (implement)
+      - npm test full suite green [pending] (verify)
+      - Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest [pending] (verify)
+    Overall: 0/7 done, 7 open.
+    Active phase 1/3 "red" (0/2).
+      red:
+        - [ ] Rewrite preset.test.ts to folder semantics (failing first) (in progress)
+        - [ ] Update tui.test.ts: apply test, group test, new folder-op tests
+      implement:
+        - [ ] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+        - [ ] cli.ts: remove --presets branch
+        - [ ] tui.ts: presets panel + group view read folders
+      verify:
+        - [ ] npm test full suite green
+        - [ ] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[plan]
+  - [in_progress] Rewrite preset.test.ts to folder semantics (failing first)
+  - [pending] Update tui.test.ts: apply test, group test, new folder-op tests
+  - [pending] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+  - [pending] cli.ts: remove --presets branch
+  - [pending] tui.ts: presets panel + group view read folders
+  - [pending] npm test full suite green
+  - [pending] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[tool] Rewriting preset tests for folder model (pending)
+  input: manager/test/preset.test.ts
+  files: /home/smh/myskills/manager/test/preset.test.ts
+
+[client] fs/write_text_file (running)
+
+[tool] Rewriting preset tests for folder model (completed)
+  kind: edit
+  input: manager/test/preset.test.ts
+  files: /home/smh/myskills/manager/test/preset.test.ts
+  output:
+    [manager/test/preset.test.ts#431E]
+    Successfully wrote 10676 bytes to manager/test/preset.test.ts
+
+[thinking] Now update tui.test.ts: rewrite the apply test (line 70-93) and group test (line 334-349), and add new folder-op tests. Let me write the edits.
+           
+           First the apply test: replace manifest write with moveSkillToPreset. Need import of moveSkillToPreset from core. Current imports line 8: `import { App } from '../src/tui.ts';` — add `import { moveSkillToPreset } from '../src/core.ts';`.
+现在进行 TUI 测试更新：
+
+[tool] Adding core import to tui tests (pending)
+  input: {"input":"[manager/test/tui.test.ts#32A9]\nPUT >8:\n+import { moveSkillToPreset, presetMembers } from '../src/core.ts';\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Adding core import to tui tests (completed)
+  kind: edit
+  input: {"input":"[manager/test/tui.test.ts#32A9]\nPUT >8:\n+import { moveSkillToPreset, presetMembers } from '../src/core.ts';\n"}
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#3D66]
+    7:import { render } from 'ink-testing-library';
+    8:import { App } from '../src/tui.ts';
+    9:import { moveSkillToPreset, presetMembers } from '../src/core.ts';
+    10:
+    11:function makeFixture() {
+    
+    27:}
+    
+    diff /home/smh/myskills/manager/test/tui.test.ts (+1 lines)
+    
+    [manager/test/tui.test.ts#3D66]
+    7:import { render } from 'ink-testing-library';
+    8:import { App } from '../src/tui.ts';
+    9:import { moveSkillToPreset, presetMembers } from '../src/core.ts';
+    10:
+    11:function makeFixture() {
+    
+    27:}
+
+[tool] Rewriting apply test to folder model (pending)
+  input: {"input":"[manager/test/tui.test.ts#3D66]\nPUT 71-94*:\n+test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {\n+ const { repo } = makeFixture();\n+ moveSkillToPreset(repo, 'base', 'alpha'); // 预设成员真身进 prese...
+
+[tool] Rewriting apply test to folder model (failed)
+  kind: edit
+  input: {"input":"[manager/test/tui.test.ts#3D66]\nPUT 71-94*:\n+test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {\n+ const { repo } = makeFixture();\n+ moveSkillToPreset(repo, 'base', 'alpha'); // 预设成员真身进 prese...
+  output:
+    line 1: payload line has no preceding hunk header. Use `PUT N.=M:`, `CUT N.=M`, or `PUT <N:`/`PUT >N:` above the body. Got "PUT 71-94*:".
+
+[thinking] The `*` block form requires a multi-line opener... Actually `PUT N.=M:` replaces inclusive N–M. Let me use `PUT 71.=93:` for the test block (lines 70-93 in the original — wait, line numbers: test starts at line 70 `test('tui: 应用预设后...` and ends at line 93 `});`. Let me re-verify from the earlier read: line 70 is the test start, line 93 is `});`. Since I added one import line at the top, current numbering shifted by 1: the test is now at 71-94. The read after edit showed up to line 27 only. Let me re-read the region to be precise.
+
+[tool] Locating shifted test lines (pending)
+  input: manager/test/tui.test.ts:69-96
+  files: /home/smh/myskills/manager/test/tui.test.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Locating shifted test lines (completed)
+  kind: read
+  input: manager/test/tui.test.ts:69-96
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#3D66]
+    55:test('tui: 搜索模式屏蔽全局键，q 不退出而是进入过滤词', async () => {
+    …
+    68:  unmount();
+    69:});
+    70:
+    71:test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {
+    72:  const { repo } = makeFixture();
+    73:  writeFileSync(
+    74:    join(repo, 'skills-manifest.json'),
+    75:    JSON.stringify({ agents: {}, presets: { base: ['alpha'] } }, null, 2),
+    76:  );
+    77:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    78:  await tick();
+    79:  stdin.write('p'); // 预设视图
+    80:  await tick();
+    81:  stdin.write('a'); // 应用第一个预设
+    82:  await tick();
+    83:  stdin.write(' '); // 勾选 claude
+    84:  await tick();
+    85:  stdin.write('\r'); // 确认应用
+    86:  await tick();
+    87:  stdin.write('\x1b'); // 返回技能页
+    88:  await tick();
+    89:  const m = JSON.parse(readFileSync(join(repo, 'skills-manifest.json'), 'utf8'));
+    90:  assert.deepEqual(m.presetApplied, { base: ['claude'] }); // 应用关系必须落盘，而不是旧快照
+    91:  assert.deepEqual(m.agents, {}); // 预设是独立单元，不并集烘焙进 agent 清单
+    92:  assert.doesNotMatch(lastFrame()!, /\[x\] claude/); // 分发面板只反映清单勾选，预设应用在预设页展示
+    ... (11 more lines)
+
+[tool] Rewriting apply test to folder model (pending)
+  input: {"input":"[manager/test/tui.test.ts#3D66]\nPUT 71.=94:\n+test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {\n+ const { repo } = makeFixture();\n+ moveSkillToPreset(repo, 'base', 'alpha'); // 预设成员真身进 prese...
+
+[client] fs/write_text_file (running)
+
+[tool] Rewriting apply test to folder model (completed)
+  kind: edit
+  input: {"input":"[manager/test/tui.test.ts#3D66]\nPUT 71.=94:\n+test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {\n+ const { repo } = makeFixture();\n+ moveSkillToPreset(repo, 'base', 'alpha'); // 预设成员真身进 prese...
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#444E]
+    71:test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {
+    72:  const { repo } = makeFixture();
+    73:  moveSkillToPreset(repo, 'base', 'alpha'); // 预设成员真身进 presets/base/，顶层留链接
+    74:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    75:  await tick();
+    87:  assert.deepEqual(m.presetApplied, { base: ['claude'] }); // 应用关系必须落盘，而不是旧快照
+    88:  assert.deepEqual(m.agents, {}); // 预设是独立单元，不并集烘焙进 agent 清单
+    89:  assert.equal(m.presets, undefined, '清单不再写 presets 字段');
+    90:  assert.doesNotMatch(lastFrame()!, /\[x\] claude/); // 分发面板只反映清单勾选，预设应用在预设页展示
+    91:  unmount();
+    92:});
+    
+    diff /home/smh/myskills/manager/test/tui.test.ts (-2 lines)
+    
+    [manager/test/tui.test.ts#444E]
+    71:test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {
+    72:  const { repo } = makeFixture();
+    73:  moveSkillToPreset(repo, 'base', 'alpha'); // 预设成员真身进 presets/base/，顶层留链接
+    74:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    75:  await tick();
+    87:  assert.deepEqual(m.presetApplied, { base: ['claude'] }); // 应用关系必须落盘，而不是旧快照
+    88:  assert.deepEqual(m.agents, {}); // 预设是独立单元，不并集烘焙进 agent 清单
+    89:  assert.equal(m.presets, undefined, '清单不再写 presets 字段');
+    90:  assert.doesNotMatch(lastFrame()!, /\[x\] claude/); // 分发面板只反映清单勾选，预设应用在预设页展示
+    91:  unmount();
+    92:});
+
+[thinking] Now the group test (was at 334-349, now shifted +1 → 335-350). Let me read the current location and rewrite it.
+
+[tool] Locating group test (pending)
+  input: manager/test/tui.test.ts:330-352
+  files: /home/smh/myskills/manager/test/tui.test.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Locating group test (completed)
+  kind: read
+  input: manager/test/tui.test.ts:330-352
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#444E]
+    315:test('tui: 分组浏览按行实例导航，初始光标落在第一组的第一个技能行', async () => {
+    …
+    329:  assert.match(lastFrame()!, /❯ beta/);
+    330:  unmount();
+    331:});
+    332:
+    333:test('tui: 同一技能出现在多个组时，只有光标所在行实例高亮', async () => {
+    334:  const { repo } = makeFixture();
+    335:  writeFileSync(
+    336:    join(repo, 'skills-manifest.json'),
+    337:    JSON.stringify({ agents: {}, presets: { p1: ['alpha'], p2: ['alpha'] } }, null, 2),
+    338:  );
+    339:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    340:  await tick();
+    341:  for (let i = 0; i < 4; i++) stdin.write('g'); // 切到「按预设集」
+    342:  await tick();
+    343:  const frame = lastFrame()!;
+    344:  assert.match(frame, /预设: p1/);
+    345:  assert.match(frame, /预设: p2/);
+    346:  assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
+    347:  unmount();
+    348:});
+    349:
+    350:test('tui: 编辑 agent 路径清空后保存被拒绝，agents.json 不变', async () => {
+    351:  const { repo } = makeFixture();
+    352:  const original = readFileSync(join(repo, 'agents.json'), 'utf8');
+    353:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    ... (6 more lines)
+
+[tool] Rewriting multi-group test to agent grouping (pending)
+  input: {"input":"[manager/test/tui.test.ts#444E]\nPUT 333.=348:\n+test('tui: 同一技能出现在多个组时，只有光标所在行实例高亮', async () => {\n+ // 预设改为文件夹模型后成员互斥，同一技能不会再出现在多个预设组；用两个 agent 共有同一技能覆盖同一导航逻辑\n+ const { repo, home } = makeFixture();\n+ w...
+
+[client] fs/write_text_file (running)
+
+[tool] Rewriting multi-group test to agent grouping (completed)
+  kind: edit
+  input: {"input":"[manager/test/tui.test.ts#444E]\nPUT 333.=348:\n+test('tui: 同一技能出现在多个组时，只有光标所在行实例高亮', async () => {\n+ // 预设改为文件夹模型后成员互斥，同一技能不会再出现在多个预设组；用两个 agent 共有同一技能覆盖同一导航逻辑\n+ const { repo, home } = makeFixture();\n+ w...
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#8225]
+    332:
+    333:test('tui: 同一技能出现在多个组时，只有光标所在行实例高亮', async () => {
+    334:  // 预设改为文件夹模型后成员互斥，同一技能不会再出现在多个预设组；用两个 agent 共有同一技能覆盖同一导航逻辑
+    335:  const { repo, home } = makeFixture();
+    336:  writeFileSync(
+    337:    join(repo, 'agents.json'),
+    338:    JSON.stringify({
+    …
+    344:  );
+    345:  writeFileSync(
+    346:    join(repo, 'skills-manifest.json'),
+    347:    JSON.stringify({ agents: { claude: ['alpha'], cursor: ['alpha'] } }, null, 2),
+    348:  );
+    349:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    350:  await tick();
+    351:  stdin.write('g'); // 切到「按agent」
+    352:  await tick();
+    353:  const frame = lastFrame()!;
+    354:  assert.equal(frame.match(/alpha/g)?.length ?? 0, 2, 'alpha 应出现在两个 agent 组');
+    355:  assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
+    356:  unmount();
+    357:});
+    
+    diff /home/smh/myskills/manager/test/tui.test.ts (+9 lines)
+    
+    [manager/test/tui.test.ts#8225]
+    332:
+    ... (21 more lines)
+
+[thinking] Now append new TUI folder-op tests. Where? After the multi-group test or at end of file. Let me check the end of file (lines 358-377).
+
+[tool] Reading end of tui tests (pending)
+  input: manager/test/tui.test.ts:358-378
+  files: /home/smh/myskills/manager/test/tui.test.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading end of tui tests (completed)
+  kind: read
+  input: manager/test/tui.test.ts:358-378
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#8225]
+    333:test('tui: 同一技能出现在多个组时，只有光标所在行实例高亮', async () => {
+    …
+    357:});
+    358:
+    359:test('tui: 编辑 agent 路径清空后保存被拒绝，agents.json 不变', async () => {
+    360:  const { repo } = makeFixture();
+    361:  const original = readFileSync(join(repo, 'agents.json'), 'utf8');
+    362:  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+    363:  await tick();
+    364:  stdin.write('a'); // 进 agent 注册表视图
+    365:  await tick();
+    366:  stdin.write('e'); // 编辑当前 agent 的路径（预填原路径）
+    367:  await tick();
+    368:  stdin.write('\x7f'.repeat(300)); // 清空
+    369:  await tick();
+    370:  stdin.write('\r');
+    371:  await tick();
+    372:  assert.match(lastFrame()!, /路径不能为空/);
+    373:  assert.equal(readFileSync(join(repo, 'agents.json'), 'utf8'), original, '空路径不应写入 agents.json');
+    374:  unmount();
+    375:});
+
+[tool] Appending TUI preset folder-op tests (pending)
+  input: {"input":"[manager/test/tui.test.ts#8225]\nPUT >$:\n+\n+test('tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝', async () => {\n+ const { repo } = makeFixture();\n+ const { lastFrame, stdin, unmount } = render(h(App, { root: ...
+
+[client] fs/write_text_file (running)
+
+[tool] Appending TUI preset folder-op tests (completed)
+  kind: edit
+  input: {"input":"[manager/test/tui.test.ts#8225]\nPUT >$:\n+\n+test('tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝', async () => {\n+ const { repo } = makeFixture();\n+ const { lastFrame, stdin, unmount } = render(h(App, { root: ...
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#BF9A]
+    359:test('tui: 编辑 agent 路径清空后保存被拒绝，agents.json 不变', async () => {
+    
+    374:  unmount();
+    375:});
+    376:
+    377:test('tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝', async () => {
+    …
+    444:  unmount();
+    445:});
+    
+    diff /home/smh/myskills/manager/test/tui.test.ts (+70 lines)
+    
+    [manager/test/tui.test.ts#BF9A]
+    359:test('tui: 编辑 agent 路径清空后保存被拒绝，agents.json 不变', async () => {
+    
+    374:  unmount();
+    375:});
+    376:
+    377:test('tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝', async () => {
+    …
+    444:  unmount();
+    445:});
+
+[thinking] Now run the tests to confirm they fail (red phase). Then implement.
+已写入红色测试。确认它们会失败：
+
+[client] session/request_permission (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | tail -40 (pending)
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | tail -40
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | tail -40 (completed)
+  kind: execute
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | tail -40
+  output:
+    test at test/tui.test.ts:406:1
+    ✖ tui: 删除预设，成员真身回顶层 (186.994535ms)
+      AssertionError [ERR_ASSERTION]: 预设文件夹应删除
+      
+      true !== false
+      
+          at TestContext.<anonymous> (file:///home/smh/myskills/manager/test/tui.test.ts:415:10)
+          at async Test.run (node:internal/test_runner/test:1313:7)
+          at async Test.processPendingSubtests (node:internal/test_runner/test:897:7) {
+        generatedMessage: false,
+        code: 'ERR_ASSERTION',
+        actual: true,
+        expected: false,
+        operator: 'strictEqual',
+        diff: 'simple'
+      }
+    
+    test at test/tui.test.ts:422:1
+    ✖ tui: 把已归属其他预设的技能加入第二个预设被拒绝并提示 (369.580978ms)
+      AssertionError [ERR_ASSERTION]: The input did not match the regular expression /已归属预设 p1/. Input:
+      
+      'myskills 管理｜全局（编辑用户级 skills-manifest.json）\n' +
+        '当前作用域：用户级 · /tmp/myskills-tui-OusFO8/repo/skills-manifest.json（o 在本项目建立项目级）\n' +
+        '╭──────────────────────────────────────────────────────────────────────────────────────────────────╮\n' +
+        '│ 预设集（0）                                                                                      │\n' +
+        '│ 暂无预设，按 n 新建                                                                              │\n' +
+        '╰──────────────────────────────────────────────────────────────────────────────────────────────────╯\n' +
+        'git 状态读取失败\n' +
+    ... (61 more lines)
+
+[thinking] Red confirmed (TUI shows 预设集（0）because it still reads JSON). preset.test.ts failures presumably too (let me check quickly the count). Let me see summary of failures to know all red tests behave as expected (not erroring weirdly).
+
+[client] session/request_permission (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|^ℹ (tests|pass|fail)" | head -40 (pending)
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|^ℹ (tests|pass|fail)" | head -40
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|^ℹ (tests|pass|fail)" | head -40 (completed)
+  kind: execute
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|^ℹ (tests|pass|fail)" | head -40
+  output:
+    ✖ test/preset.test.ts (74.949535ms)
+    ✖ tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选 (380.079202ms)
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (126.771501ms)
+    ✖ tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝 (428.643402ms)
+    ✖ tui: 删除预设，成员真身回顶层 (186.116808ms)
+    ✖ tui: 把已归属其他预设的技能加入第二个预设被拒绝并提示 (369.508959ms)
+    ℹ tests 97
+    ℹ pass 91
+    ℹ fail 6
+    ✖ failing tests:
+    ✖ test/preset.test.ts (74.949535ms)
+    ✖ tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选 (380.079202ms)
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (126.771501ms)
+    ✖ tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝 (428.643402ms)
+    ✖ tui: 删除预设，成员真身回顶层 (186.116808ms)
+    ✖ tui: 把已归属其他预设的技能加入第二个预设被拒绝并提示 (369.508959ms)
+    
+    
+    Wall time: 5.42 seconds
+    
+    $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|^ℹ (tests|pass|fail)" | head -40
+    
+    ✖ test/preset.test.ts (74.949535ms)
+    ✖ tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选 (380.079202ms)
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (126.771501ms)
+    ✖ tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝 (428.643402ms)
+    ✖ tui: 删除预设，成员真身回顶层 (186.116808ms)
+    ✖ tui: 把已归属其他预设的技能加入第二个预设被拒绝并提示 (369.508959ms)
+    ... (13 more lines)
+
+[thinking] Red as expected: preset.test.ts fails wholesale (module-level error probably — importing moveSkillToPreset? no, that exists... `createPreset`/`moveSkillToTop` don't exist yet → import error). The tui multi-group test fails — interesting: it fails BEFORE implementation? It's an agent-group test independent of presets... let me check why. `assert.equal(frame.match(/alpha/g)?.length ?? 0, 2)` — maybe with 2 agents the frame shows more 'alpha' occurrences (distribution panel on the right shows alpha row with checkboxes for claude/cursor?). The main view shows skill list (left) + dist panel. In agent group mode rows show alpha twice, but the dist panel might also show 'alpha'... Actually in non-focused state the dist panel shows skills list too? The frame in the error output for another test shows the full app. Hmm, the first frame assertion (alpha count 2) probably fails because dist pane...
+多组 TUI 测试也失败了（与预设无关）—— 可能是 dist 面板也渲染了 "alpha"。正在检查：
+
+[client] session/request_permission (running)
+
+[tool] $ cd /home/smh/myskills/manager && node --test test/tui.test.ts 2>&1 | grep -A 12 "同一技能出现在多个组" | head -30 (pending)
+  input: cd /home/smh/myskills/manager && node --test test/tui.test.ts 2>&1 | grep -A 12 "同一技能出现在多个组" | head -30
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /home/smh/myskills/manager && node --test test/tui.test.ts 2>&1 | grep -A 12 "同一技能出现在多个组" | head -30 (completed)
+  kind: execute
+  input: cd /home/smh/myskills/manager && node --test test/tui.test.ts 2>&1 | grep -A 12 "同一技能出现在多个组" | head -30
+  output:
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.353387ms)
+    ✔ tui: 编辑 agent 路径清空后保存被拒绝，agents.json 不变 (309.136621ms)
+    ✖ tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝 (427.485687ms)
+    ✖ tui: 删除预设，成员真身回顶层 (187.10626ms)
+    ✖ tui: 把已归属其他预设的技能加入第二个预设被拒绝并提示 (367.529518ms)
+    ℹ tests 23
+    ℹ suites 0
+    ℹ pass 18
+    ℹ fail 5
+    ℹ cancelled 0
+    ℹ skipped 0
+    ℹ todo 0
+    ℹ duration_ms 5293.533744
+    --
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.353387ms)
+      AssertionError [ERR_ASSERTION]: alpha 应出现在两个 agent 组
+      
+      4 !== 2
+      
+          at TestContext.<anonymous> (file:///home/smh/myskills/manager/test/tui.test.ts:354:10)
+          at async Test.run (node:internal/test_runner/test:1313:7)
+          at async Test.processPendingSubtests (node:internal/test_runner/test:897:7) {
+        generatedMessage: false,
+        code: 'ERR_ASSERTION',
+        actual: 4,
+        expected: 2,
+        operator: 'strictEqual',
+    
+    ... (35 more lines)
+
+[thinking] 4 occurrences of "alpha": 2 from group rows + 2 from the distribution panel (which lists each skill with per-agent checkmarks — alpha appears there once per... hmm, or the dist panel shows one alpha row). Actually likely: group rows 2 + dist panel 1 + maybe title? Let me think: 4 = 2 group rows + 2 dist-panel rows? The dist panel shows skills × agents matrix? Let me look at the SkillsView render to count. Simpler fix for the test: count highlighted `❯ alpha` occurrences = 1 (that's the core assertion), and assert `/全局 \/ claude/` and `/全局 \/ cursor/` headers exist. Drop the exact total count of alpha. The essential property "same skill in multiple groups, only one row instance highlighted" is carried by `❯ alpha` count == 1 combined with two group headers... but wait — if alpha appeared in only ONE group, `❯ alpha` count would still be 1. To prove alpha is in both groups, I can assert...
+4 = 2 行分组 + 2 行分布面板。优化断言以匹配原始测试的严谨度（表头 + 单个高亮行）：
+
+[tool] Fixing over-broad alpha count assertion (pending)
+  input: {"input":"[manager/test/tui.test.ts#BF9A]\nPUT 354.=354:\n+ assert.match(frame, /全局 \\/ claude/);\n+ assert.match(frame, /全局 \\/ cursor/);\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Fixing over-broad alpha count assertion (completed)
+  kind: edit
+  input: {"input":"[manager/test/tui.test.ts#BF9A]\nPUT 354.=354:\n+ assert.match(frame, /全局 \\/ claude/);\n+ assert.match(frame, /全局 \\/ cursor/);\n"}
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#08CF]
+    352:  await tick();
+    353:  const frame = lastFrame()!;
+    354:  assert.match(frame, /全局 \/ claude/);
+    355:  assert.match(frame, /全局 \/ cursor/);
+    356:  assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
+    357:  unmount();
+    
+    diff /home/smh/myskills/manager/test/tui.test.ts (+1 lines)
+    
+    [manager/test/tui.test.ts#08CF]
+    352:  await tick();
+    353:  const frame = lastFrame()!;
+    354:  assert.match(frame, /全局 \/ claude/);
+    355:  assert.match(frame, /全局 \/ cursor/);
+    356:  assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
+    357:  unmount();
+
+[thinking] Now implement core.ts. Changes:
+           
+           1. Manifest interface (lines 16-24): remove presets field, update comment.
+           2. link() (lines 199-221): membersByPreset from presetMembers.
+           3. Section 767-854: rewrite CRUD (createPreset, setPreset, deletePreset, applyPreset), delete migrateBakedPresets + MigratePresetsReport.
+           4. Folder section: extract assertSkillMovable from moveSkillToPreset; add moveSkillToTop.
+           
+           Let me make the edits.
+正在实现 core.ts — 清单类型：
+
+[tool] Removing presets field from Manifest (pending)
+  input: {"input":"[manager/src/core.ts#E9C3]\nPUT 16.=24:\n+export interface Manifest {\n+ agents: Record<string, string[]>;\n+ // 技能来源仓库：\"owner/repo\" 或 \"owner/repo/subdir\"；install 时记录，存量由 skillSources 从 git 历史推断\n+ sourc...
+
+[client] fs/write_text_file (running)
+
+[tool] Removing presets field from Manifest (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#E9C3]\nPUT 16.=24:\n+export interface Manifest {\n+ agents: Record<string, string[]>;\n+ // 技能来源仓库：\"owner/repo\" 或 \"owner/repo/subdir\"；install 时记录，存量由 skillSources 从 git 历史推断\n+ sourc...
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#33F7]
+    16:export interface Manifest {
+    
+    18:  // 技能来源仓库："owner/repo" 或 "owner/repo/subdir"；install 时记录，存量由 skillSources 从 git 历史推断
+    19:  sources?: Record<string, string>;
+    20:  // 预设应用记录：预设名 → 已应用到的 agent id；预设成员读 presets/ 文件夹（见下方文件夹事实模型段），
+    21:  // link 时把这些 agent 的清单与预设当前成员取并集。
+    22:  // 旧版清单里的 presets 字段（名字 → 技能列表）已废弃：类型不再声明，读清单会原样带过、写清单不增不改，
+    23:  // 存量数据由一次性迁移收敛
+    24:  presetApplied?: Record<string, string[]>;
+    25:}
+link() — 从文件夹中读取预设成员：
+
+[tool] Switching link preset merge to folders (pending)
+  input: {"input":"[manager/src/core.ts#33F7]\nPUT 199.=221:\n+export function link(repoRoot: string): LinkReport {\n+ const agents = loadAgents(repoRoot);\n+ const manifest = loadManifest(repoRoot);\n+ const report: LinkRepor...
+
+[tool] Switching link preset merge to folders (failed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#33F7]\nPUT 199.=221:\n+export function link(repoRoot: string): LinkReport {\n+ const agents = loadAgents(repoRoot);\n+ const manifest = loadManifest(repoRoot);\n+ const report: LinkRepor...
+  output:
+    This edit anchors to lines 199-221 of manager/src/core.ts that [manager/src/core.ts#33F7] never displayed (it showed a partial range, a search hit, or a folded summary). Actual file content at those lines:
+      199:
+      200:export function link(repoRoot: string): LinkReport {
+      201:  const agents = loadAgents(repoRoot);
+      202:  const manifest = loadManifest(repoRoot);
+      203:  const report: LinkReport = { lines: [], skippedAgents: [], missingSkills: [] };
+      204:
+      205:  for (const agent of agents) {
+      206:    const skillsPath = expandHome(agent.skillsPath);
+      207:    // agent 是否安装：skills 目录的父目录存在即视为已安装
+      208:    if (!existsSync(dirname(skillsPath))) {
+      209:      report.skippedAgents.push(agent.id);
+      210:      report.lines.push(`跳过 ${agent.id}（未安装）`);
+      211:      continue;
+      212:    }
+      213:    // 预设集传播：agent 应用过某预设，则把该预设的当前成员并入其清单（并集），预设改动随 link/sync 生效
+      214:    const presetSkills = new Set<string>();
+      215:    for (const [preset, ids] of Object.entries(manifest.presetApplied ?? {})) {
+      216:      if (ids.includes(agent.id)) for (const s of manifest.presets?.[preset] ?? []) presetSkills.add(s);
+      217:    }
+      218:    const wanted = [...new Set([...(manifest.agents[agent.id] ?? []), ...presetSkills])];
+      219:    syncSkillsIntoDir(agent.id, skillsPath, wanted, repoRoot, report);
+      220:  }
+      221:  return report;
+    Verify the content matches what you intend to touch, then re-issue the edit with the same [path#tag] header — a straight retry now succeeds without a re-read. If the content does NOT match, fix your line numbers.
+
+[thinking] The edit failed because the anchor lines 199-221 were never displayed in full from the [manager/src/core.ts#33F7] snapshot (that tag came from the Manifest edit which showed only lines 16-25). Wait — actually the error says the edit anchors to lines 199-221 that #33F7 never displayed. The earlier read of 160-222 was under tag #E9C3, which is now stale (file changed by my Manifest edit). But the error shows the actual current content at those lines, which matches exactly what I intend to replace. Straight retry with same tag should succeed.
+           
+           Also, a rule reminder about Set/Map usage: my code uses `new Set<string>()` for presetSkills (dynamic membership — correct usage per rule), and `new Map<string, string[]>()` for membersByPreset (dynamic insertion — correct). Both comply: dynamic membership/insertion → Set/Map is right. No change needed.
+           
+           Retry the edit with the same header.
+`presetSkills` `Set` 和 `membersByPreset` `Map` 是动态成员结构 —— 符合 `ts-set-map` 规则。正在使用相同的 anchor 重新尝试编辑（已验证内容匹配）：
+
+[tool] Switching link preset merge to folders (pending)
+  input: {"input":"[manager/src/core.ts#33F7]\nPUT 199.=221:\n+export function link(repoRoot: string): LinkReport {\n+ const agents = loadAgents(repoRoot);\n+ const manifest = loadManifest(repoRoot);\n+ const report: LinkRepor...
+
+[client] fs/write_text_file (running)
+
+[tool] Switching link preset merge to folders (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#33F7]\nPUT 199.=221:\n+export function link(repoRoot: string): LinkReport {\n+ const agents = loadAgents(repoRoot);\n+ const manifest = loadManifest(repoRoot);\n+ const report: LinkRepor...
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#C423]
+    169:function syncSkillsIntoDir(label: string, skillsDir: string, wanted: string[], repoRoot: string, report: LinkReport): void {
+    
+    189:  for (const entry of readdirSync(skillsDir)) {
+    
+    197:  }
+    198:}
+    199:export function link(repoRoot: string): LinkReport {
+    200:  const agents = loadAgents(repoRoot);
+    201:  const manifest = loadManifest(repoRoot);
+    202:  const report: LinkReport = { lines: [], skippedAgents: [], missingSkills: [] };
+    203:  // 预设成员按文件夹现读（预设名 → 成员技能名），已应用预设的当前成员并入 agent 清单，
+    204:  // 预设成员改动随 link/sync 生效；presetApplied 指向已不存在的预设时按空成员处理
+    …
+    209:    membersByPreset.set(m.preset, list);
+    210:  }
+    211:
+    212:  for (const agent of agents) {
+    
+    215:    if (!existsSync(dirname(skillsPath))) {
+    
+    218:      continue;
+    219:    }
+    220:    const presetSkills = new Set<string>();
+    221:    for (const [preset, ids] of Object.entries(manifest.presetApplied ?? {})) {
+    222:      if (ids.includes(agent.id)) for (const s of membersByPreset.get(preset) ?? []) presetSkills.add(s);
+    223:    }
+    224:    const wanted = [...new Set([...(manifest.agents[agent.id] ?? []), ...presetSkills])];
+    ... (7 more lines)
+
+[thinking] The edit applied but there's a warning: "dropped 1 trailing body line(s) already present outside the range" — my PUT 199.=221 replaced lines 199-221, but the original function had 23 lines (199-221 ends at `return report;`? Original: 199 function start, 221 was `}`? Let me recount: original link() spanned 199-221 per my first read (line 199 `export function link...` to 221 `}`). Wait the first read showed:
+           
+           199: export function link...
+           ...
+           220:    syncSkillsIntoDir(...)
+           221:  }
+           222:  return report;  — no wait. Let me recheck the original read: 
+           
+           ```
+           199:export function link(repoRoot: string): LinkReport {
+           ...
+           218:    syncSkillsIntoDir(agent.id, skillsPath, wanted, repoRoot, report);
+           219:  }
+           220:  return report;
+           221:}
+           ```
+           
+           Ah right: 219 `}` closes for loop, 220 `return report;`, 221 `}` closes function. My range 199.=221 covered through `}`. But the error message earlier said "anchors ...
+边界自动修复 —— 正在验证生成的函数：
+
+[tool] Verifying link function result (pending)
+  input: manager/src/core.ts:196-230
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Verifying link function result (completed)
+  kind: read
+  input: manager/src/core.ts:196-230
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#C423]
+    169:function syncSkillsIntoDir(label: string, skillsDir: string, wanted: string[], repoRoot: string, report: LinkReport): void {
+    …
+    189:  for (const entry of readdirSync(skillsDir)) {
+    …
+    195:    rmSync(entryPath, { force: true });
+    196:    report.lines.push(`移除 ${label}/${entry}（孤儿或断链）`);
+    197:  }
+    198:}
+    199:export function link(repoRoot: string): LinkReport {
+    200:  const agents = loadAgents(repoRoot);
+    201:  const manifest = loadManifest(repoRoot);
+    202:  const report: LinkReport = { lines: [], skippedAgents: [], missingSkills: [] };
+    203:  // 预设成员按文件夹现读（预设名 → 成员技能名），已应用预设的当前成员并入 agent 清单，
+    204:  // 预设成员改动随 link/sync 生效；presetApplied 指向已不存在的预设时按空成员处理
+    205:  const membersByPreset = new Map<string, string[]>();
+    206:  for (const m of presetMembers(repoRoot)) {
+    207:    const list = membersByPreset.get(m.preset) ?? [];
+    208:    list.push(m.name);
+    209:    membersByPreset.set(m.preset, list);
+    210:  }
+    211:
+    212:  for (const agent of agents) {
+    213:    const skillsPath = expandHome(agent.skillsPath);
+    214:    // agent 是否安装：skills 目录的父目录存在即视为已安装
+    215:    if (!existsSync(dirname(skillsPath))) {
+    216:      report.skippedAgents.push(agent.id);
+    217:      report.lines.push(`跳过 ${agent.id}（未安装）`);
+    ... (18 more lines)
+
+[thinking] link() is correct. Now the preset CRUD section. Current location shifted: was 767-854, now +1 → 768-855 approximately. Let me re-read that section to get exact current line numbers.
+link() 已完成。接下来处理 preset CRUD 部分 —— 重新读取其当前位置：
+
+[tool] Locating preset CRUD section (pending)
+  input: manager/src/core.ts:765-860
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Locating preset CRUD section (completed)
+  kind: read
+  input: manager/src/core.ts:765-860
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#C423]
+    740:export function skillSources(repoRoot: string): Record<string, string> {
+    …
+    748:  if (missing.length > 0) {
+    …
+    754:    if (r.status === 0) {
+    …
+    756:      for (const line of r.stdout.split('\n')) {
+    …
+    764:        if (m) result[top] = m[3] ? `${m[1]}/${m[2]}/${m[3]}` : `${m[1]}/${m[2]}`;
+    765:      }
+    766:    }
+    767:  }
+    768:  for (const s of skills) {
+    769:    if (!result[s]) result[s] = 'local';
+    770:  }
+    771:  return result;
+    772:}
+    773:
+    774:// 预设集 CRUD 与应用
+    775:export function setPreset(repoRoot: string, name: string, skills: string[]): void {
+    776:  const manifest = loadManifest(repoRoot);
+    777:  (manifest.presets ??= {})[name] = [...new Set(skills)].sort();
+    778:  saveManifest(repoRoot, manifest);
+    779:}
+    780:
+    781:export function deletePreset(repoRoot: string, name: string): void {
+    782:  const manifest = loadManifest(repoRoot);
+    ... (179 more lines)
+
+[tool] Rewriting preset CRUD to folder model (pending)
+  input: {"input":"[manager/src/core.ts#C423]\nPUT 774.=861:\n+// ---------- 预设集管理与应用：presets/ 文件夹是成员的唯一事实，应用关系（presetApplied）记在 JSON ----------\n+\n+// 新建预设：presets/ 下建空文件夹。成员为空的预设也是预设（listPresets 按文件夹判定）\n+export function cr...
+
+[client] fs/write_text_file (running)
+
+[tool] Rewriting preset CRUD to folder model (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#C423]\nPUT 774.=861:\n+// ---------- 预设集管理与应用：presets/ 文件夹是成员的唯一事实，应用关系（presetApplied）记在 JSON ----------\n+\n+// 新建预设：presets/ 下建空文件夹。成员为空的预设也是预设（listPresets 按文件夹判定）\n+export function cr...
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#07CE]
+    740:export function skillSources(repoRoot: string): Record<string, string> {
+    
+    772:}
+    773:
+    774:// ---------- 预设集管理与应用：presets/ 文件夹是成员的唯一事实，应用关系（presetApplied）记在 JSON ----------
+    775:
+    …
+    784:// 把预设成员同步成 skills：新增成员从顶层移入文件夹，去掉的移回顶层。
+    785:// 先整体校验所有新增（复用移入判据，含归属拒绝），任一失败则报错且完全不动，避免部分应用
+    786:export function setPreset(repoRoot: string, name: string, skills: string[]): void {
+    787:  validateSkillName(name, '预设名');
+    788:  const members = presetMembers(repoRoot);
+    …
+    793:  for (const s of current.filter((s) => !want.includes(s))) moveSkillToTop(repoRoot, name, s);
+    794:  for (const s of adds) moveSkillToPreset(repoRoot, name, s);
+    795:}
+    796:
+    797:// 删除预设：成员全部移回顶层，删除 presets/<name>/ 文件夹（含非技能残留），并清除 presetApplied 记录
+    798:export function deletePreset(repoRoot: string, name: string): void {
+    799:  for (const m of presetMembers(repoRoot).filter((m) => m.preset === name)) {
+    800:    moveSkillToTop(repoRoot, name, m.name);
+    801:  }
+    802:  rmSync(join(repoRoot, PRESETS_DIR, name), { recursive: true, force: true });
+    803:  const manifest = loadManifest(repoRoot);
+    804:  if (manifest.presetApplied) delete manifest.presetApplied[name];
+    805:  saveManifest(repoRoot, manifest);
+    806:}
+    ... (30 more lines)
+
+[thinking] Continue implementing. Next: refactor moveSkillToPreset (extract assertSkillMovable) and add moveSkillToTop in the folder section. The folder section is now at ~844+. Let me read it.
+
+[tool] Reading folder section after edits (pending)
+  input: manager/src/core.ts:844-975
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading folder section after edits (completed)
+  kind: read
+  input: manager/src/core.ts:844-975
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#07CE]
+    843:
+    844:// ---------- 预设集文件夹事实模型：presets/<预设名>/<技能名>/ 存真身，仓库顶层留相对符号链接 ----------
+    845:
+    846:export const PRESETS_DIR = 'presets';
+    847:
+    848:// 预设成员：name = 技能名（= 顶层链接名）；preset = 所属预设名；dir = 真身目录（相对仓库根）
+    849:export interface PresetMember {
+    850:  name: string;
+    851:  preset: string;
+    852:  dir: string;
+    853:}
+    854:
+    855:// 递归下探识别成员：目录自身含 SKILL.md 即成员（找到即止，不再深入其内部）；
+    856:// 不含则继续向下。预设文件夹里的非技能残留（CHANGELOG、docs 等）不参与识别
+    857:function collectMembers(preset: string, dir: string, repoRoot: string, out: PresetMember[]): void {
+    858:  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    859:    if (entry.name.startsWith('.')) continue;
+    860:    const abs = join(dir, entry.name);
+    861:    if (isSkillDir(abs)) {
+    862:      out.push({ name: entry.name, preset, dir: relative(repoRoot, abs) });
+    863:      continue;
+    864:    }
+    865:    try {
+    866:      if (statSync(abs).isDirectory()) collectMembers(preset, abs, repoRoot, out);
+    867:    } catch {
+    868:      // 断链等不可访问条目跳过
+    869:    }
+    ... (221 more lines)
+
+[tool] Extracting assertSkillMovable and adding moveSkillToTop (pending)
+  input: {"input":"[manager/src/core.ts#07CE]\nPUT 954.=970:\n+// 移入预设的可执行判据：名称合法、不归属任何预设、顶层是技能、目标位空闲。\n+// moveSkillToPreset 与 setPreset 的整体预检共用同一套报错（含归属拒绝文案）\n+function assertSkillMovable(repoRoot: string, preset: string, sk...
+
+[client] fs/write_text_file (running)
+
+[tool] Extracting assertSkillMovable and adding moveSkillToTop (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#07CE]\nPUT 954.=970:\n+// 移入预设的可执行判据：名称合法、不归属任何预设、顶层是技能、目标位空闲。\n+// moveSkillToPreset 与 setPreset 的整体预检共用同一套报错（含归属拒绝文案）\n+function assertSkillMovable(repoRoot: string, preset: string, sk...
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#B172]
+    903:export function reconcilePresets(repoRoot: string): string[] {
+    
+    952:}
+    953:
+    954:// 移入预设的可执行判据：名称合法、不归属任何预设、顶层是技能、目标位空闲。
+    955:// moveSkillToPreset 与 setPreset 的整体预检共用同一套报错（含归属拒绝文案）
+    956:function assertSkillMovable(repoRoot: string, preset: string, skill: string, members: PresetMember[]): void {
+    957:  validateSkillName(skill);
+    958:  validateSkillName(preset, '预设名');
+    959:  const owner = members.find((m) => m.name === skill);
+    960:  if (owner) {
+    961:    throw new Error(`技能 ${skill} 已归属预设 ${owner.preset}（${join(repoRoot, owner.dir)}），请先移回顶层`);
+    962:  }
+    
+    965:  const dest = join(repoRoot, PRESETS_DIR, preset, skill);
+    966:  if (existsSync(dest)) throw new Error(`目标已存在: ${dest}`);
+    967:}
+    968:
+    …
+    973:  const top = join(repoRoot, skill);
+    974:  const dest = join(repoRoot, PRESETS_DIR, preset, skill);
+    975:  mkdirSync(dirname(dest), { recursive: true });
+    976:  renameSync(top, dest);
+    978:}
+    979:
+    980:// 技能移回顶层：预设文件夹里的真身（含嵌套成员）mv 回仓库顶层，替换 reconcile 留下的符号链接；
+    981:// 顶层被真实目录/文件占用时拒绝（不覆盖、不删除占用方）。预设文件夹保留（空预设仍是预设）
+    ... (7 more lines)
+
+[thinking] Rule: don't use `ReturnType<typeof lstatSync>`. In moveSkillToTop I wrote `let st: ReturnType<typeof lstatSync> | undefined;`. I should name a concrete type. lstatSync returns `Stats`. Fix: `let st: Stats | undefined;` and import Stats from 'node:fs' (type-only usage — import type { Stats }). The file imports from 'node:fs' at top (line 4, value imports). I can add `import type { Stats } from 'node:fs';` or add Stats to the existing import — Stats is a class (value), but using it only as type is fine; node:fs exports Stats. Simplest: extend existing import with Stats? That would import it as a value — fine. But cleaner as type import. Let me just add Stats to the main import list.
+           
+           Also note reconcilePresets (line 916-923) uses inline try/lstatSync without the ReturnType pattern — my new code is the only offender. Fix it.
+正在修复 `moveSkillToTop` 中对 `ReturnType<typeof lstatSync>` 的使用 —— 直接命名为具体类型：
+
+[tool] Naming Stats type explicitly (pending)
+  input: {"input":"[manager/src/core.ts#B172]\nPUT 990.=990:\n+ let st: Stats | undefined;\n"}
+
+[tool] Naming Stats type explicitly (failed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#B172]\nPUT 990.=990:\n+ let st: Stats | undefined;\n"}
+  output:
+    This edit anchors to lines 990 of manager/src/core.ts that [manager/src/core.ts#B172] never displayed (it showed a partial range, a search hit, or a folded summary). Actual file content at those lines:
+      990:    // 顶层无条目（未 reconcile），直接落位
+    Verify the content matches what you intend to touch, then re-issue the edit with the same [path#tag] header — a straight retry now succeeds without a re-read. If the content does NOT match, fix your line numbers.
+
+[tool] Adding Stats import (pending)
+  input: {"input":"[manager/src/core.ts#B172]\nPUT 4.=4:\n+import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync, re...
+
+[client] fs/write_text_file (running)
+
+[tool] Adding Stats import (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#B172]\nPUT 4.=4:\n+import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync, re...
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#0994]
+    2:// link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
+    3:// 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
+    4:import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync, renameSync, type Stats } from 'node:fs';
+    5:import { homedir, hostname, tmpdir } from 'node:os';
+    6:import { join, dirname, resolve, sep, relative } from 'node:path';
+
+[thinking] Import fixed. The Stats line edit failed because the displayed range in tag #B172 didn't include line 990 precisely (it showed lines around 990 as context, and line 990 itself was `// 顶层无条目（未 reconcile），直接落位`? The message says actual content at line 990 is the comment. The `let st: ReturnType...` line must be at 989. Let me read the moveSkillToTop function to get exact lines.
+
+[tool] Reading moveSkillToTop body (pending)
+  input: manager/src/core.ts#0994:980-996
+
+[tool] Reading moveSkillToTop body (failed)
+  kind: read
+  input: manager/src/core.ts#0994:980-996
+  output:
+    Path 'manager/src/core.ts#0994' not found
+
+[tool] Reading moveSkillToTop body (pending)
+  input: manager/src/core.ts:980-996
+  files: /home/smh/myskills/manager/src/core.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading moveSkillToTop body (completed)
+  kind: read
+  input: manager/src/core.ts:980-996
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#0994]
+    979:
+    980:// 技能移回顶层：预设文件夹里的真身（含嵌套成员）mv 回仓库顶层，替换 reconcile 留下的符号链接；
+    981:// 顶层被真实目录/文件占用时拒绝（不覆盖、不删除占用方）。预设文件夹保留（空预设仍是预设）
+    982:export function moveSkillToTop(repoRoot: string, preset: string, skill: string): void {
+    983:  const m = presetMembers(repoRoot).find((x) => x.preset === preset && x.name === skill);
+    984:  if (!m) throw new Error(`预设 ${preset} 里没有技能 ${skill}`);
+    985:  const top = join(repoRoot, skill);
+    986:  let st: ReturnType<typeof lstatSync> | undefined;
+    987:  try {
+    988:    st = lstatSync(top);
+    989:  } catch {
+    990:    // 顶层无条目（未 reconcile），直接落位
+    991:  }
+    992:  if (st && !st.isSymbolicLink()) throw new Error(`顶层 ${top} 已被占用，请手动取舍`);
+    993:  if (st) rmSync(top, { force: true });
+    994:  renameSync(join(repoRoot, m.dir), top);
+    995:}
+    996:
+    997:// agent 的项目分组键：skillsPath 里第一个点开头的段之前是项目路径；直接在家目录下的算「全局」
+    998:export function agentProjectGroup(agent: AgentDef): string {
+    999:  const p = expandHome(agent.skillsPath);
+    …
+    1005:}
+    
+    [6 more lines in file. Use :1000 to continue]
+
+[tool] Naming Stats type explicitly (pending)
+  input: {"input":"[manager/src/core.ts#0994]\nPUT 986.=986:\n+ let st: Stats | undefined;\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Naming Stats type explicitly (completed)
+  kind: edit
+  input: {"input":"[manager/src/core.ts#0994]\nPUT 986.=986:\n+ let st: Stats | undefined;\n"}
+  files: /home/smh/myskills/manager/src/core.ts
+  output:
+    [manager/src/core.ts#E500]
+    984:  if (!m) throw new Error(`预设 ${preset} 里没有技能 ${skill}`);
+    985:  const top = join(repoRoot, skill);
+    986:  let st: Stats | undefined;
+    987:  try {
+    988:    st = lstatSync(top);
+    989:  } catch {
+    
+    991:  }
+
+[thinking] core.ts done. Now cli.ts: remove migrateBakedPresets import + --presets branch.
+现在处理 `cli.ts` —— 删除 `--presets` 分支：
+
+[tool] Removing migrateBakedPresets from cli (pending)
+  input: {"input":"[manager/src/cli.ts#76CD]\nPUT 5.=5:\n+import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets } from './core.ts';\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Removing migrateBakedPresets from cli (completed)
+  kind: edit
+  input: {"input":"[manager/src/cli.ts#76CD]\nPUT 5.=5:\n+import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets } from './core.ts';\n"}
+  files: /home/smh/myskills/manager/src/cli.ts
+  output:
+    [manager/src/cli.ts#036F]
+    3:// link 在含 .myskills.json 的目录下自动切项目模式，--global 强制全局
+    4:import { hostname } from 'node:os';
+    5:import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets } from './core.ts';
+    6:
+    7:function resolveRemote(): string {
+    
+    10:}
+    
+    diff /home/smh/myskills/manager/src/cli.ts (line count unchanged)
+    
+    [manager/src/cli.ts#036F]
+    3:// link 在含 .myskills.json 的目录下自动切项目模式，--global 强制全局
+    4:import { hostname } from 'node:os';
+    5:import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets } from './core.ts';
+    6:
+    7:function resolveRemote(): string {
+    
+    10:}
+
+[tool] Removing --presets branch (pending)
+  input: {"input":"[manager/src/cli.ts#036F]\nPUT 63.=73:\n+ case 'migrate':\n+ for (const line of migrate(findRepoRoot(), process.argv.includes('--apply')).lines) console.log(line);\n+ break;\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Removing --presets branch (completed)
+  kind: edit
+  input: {"input":"[manager/src/cli.ts#036F]\nPUT 63.=73:\n+ case 'migrate':\n+ for (const line of migrate(findRepoRoot(), process.argv.includes('--apply')).lines) console.log(line);\n+ break;\n"}
+  files: /home/smh/myskills/manager/src/cli.ts
+  output:
+    [manager/src/cli.ts#F5B1]
+    56:    case 'install': {
+    
+    62:    }
+    63:    case 'migrate':
+    64:      for (const line of migrate(findRepoRoot(), process.argv.includes('--apply')).lines) console.log(line);
+    65:      break;
+    66:    case undefined:
+    
+    68:      break;
+    
+    diff /home/smh/myskills/manager/src/cli.ts (-8 lines)
+    
+    [manager/src/cli.ts#F5B1]
+    56:    case 'install': {
+    
+    62:    }
+    63:    case 'migrate':
+    64:      for (const line of migrate(findRepoRoot(), process.argv.includes('--apply')).lines) console.log(line);
+    65:      break;
+    66:    case undefined:
+    
+    68:      break;
+
+[thinking] cli.ts done. Now tui.ts. Changes:
+           
+           1. Line 106 area (group view presets memo) — replace `core.loadManifest(root).presets ?? {}` with folder-derived Record.
+           2. PresetsView (lines ~329-489): replace presets/names with listPresets/presetMembers; 'new' flow calls createPreset with error notice; members save wraps setPreset in try/catch; 'd' wraps deletePreset in try/catch; render uses memberNames.
+           
+           Let me read current tui.ts lines 100-112 and 327-350 for exact content.
+现在处理 tui.ts。先实现分组视图数据源：
+
+[tool] Reading group view memo (pending)
+  input: manager/src/tui.ts:104-108
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading group view memo (completed)
+  kind: read
+  input: manager/src/tui.ts:104-108
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#1E64]
+    101:  const shown = useMemo(
+    …
+    103:    [skills, filter],
+    104:  );
+    105:
+    106:  const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
+    107:  const sources = useMemo(() => (groupMode === 'source' ? core.skillSources(root) : {}), [root, tick, groupMode]);
+    108:  // 项目级 agent（注册表家目录 agent 去 ~/ 派生）及开启状态；显式 targets 优先，省略时默认全开
+    109:  const projAgentRows = useMemo(
+    110:    () => (scope === 'project' && projectRoot ? core.projectTargetStates(projectRoot, root) : []),
+    111:    [scope, projectRoot, root, tick],
+    112:  );
+    
+    [680 more lines in file. Use :112 to continue]
+
+[tool] Switching group view to folder members (pending)
+  input: {"input":"[manager/src/tui.ts#1E64]\nPUT 106.=106:\n+ // 预设分组数据源：presets/ 文件夹现读（预设名 → 成员技能名）\n+ const presets = useMemo(() => {\n+ const byPreset: Record<string, string[]> = {};\n+ for (const m of core.presetMembers(r...
+
+[client] fs/write_text_file (running)
+
+[tool] Switching group view to folder members (completed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#1E64]\nPUT 106.=106:\n+ // 预设分组数据源：presets/ 文件夹现读（预设名 → 成员技能名）\n+ const presets = useMemo(() => {\n+ const byPreset: Record<string, string[]> = {};\n+ for (const m of core.presetMembers(r...
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#0F88]
+    101:  const shown = useMemo(
+    
+    104:  );
+    105:
+    106:  // 预设分组数据源：presets/ 文件夹现读（预设名 → 成员技能名）
+    107:  const presets = useMemo(() => {
+    …
+    110:    return byPreset;
+    111:  }, [root, tick]);
+    112:  const sources = useMemo(() => (groupMode === 'source' ? core.skillSources(root) : {}), [root, tick, groupMode]);
+    113:  // 项目级 agent（注册表家目录 agent 去 ~/ 派生）及开启状态；显式 targets 优先，省略时默认全开
+Now PresetsView — the data memos, openMembers, and the 'new' flow:
+
+[tool] Reading PresetsView current lines (pending)
+  input: manager/src/tui.ts:330-360
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading PresetsView current lines (completed)
+  kind: read
+  input: manager/src/tui.ts:330-360
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#0F88]
+    329:  const [applySel, setApplySel] = useState<Set<string>>(new Set()); // apply 模式勾选的 agent
+    330:  const [mCursor, setMCursor] = useState(0);
+    331:  const [mFilter, setMFilter] = useState('');
+    332:  const [mSearching, setMSearching] = useState(false);
+    333:
+    334:  const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
+    335:  const applied = useMemo(() => core.loadManifest(root).presetApplied ?? {}, [root, tick]);
+    336:  const names = useMemo(() => Object.keys(presets).sort(), [presets]);
+    337:  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+    338:  const mShown = useMemo(
+    339:    () => (mFilter ? skills.filter((s) => s.toLowerCase().includes(mFilter.toLowerCase())) : skills),
+    340:    [skills, mFilter],
+    341:  );
+    342:
+    343:  useEffect(() => {
+    344:    setBusy(mode !== 'list' || mSearching);
+    345:  }, [mode, mSearching, setBusy]);
+    346:  useEffect(() => () => setBusy(false), [setBusy]);
+    347:
+    348:  const openMembers = (name: string) => {
+    349:    setEditing(name);
+    350:    setSel(new Set(presets[name] ?? []));
+    351:    setMCursor(0);
+    352:    setMFilter('');
+    353:    setMSearching(false);
+    354:    setMode('members');
+    355:  };
+    ... (16 more lines)
+
+[tool] Switching PresetsView data to folders (pending)
+  input: {"input":"[manager/src/tui.ts#0F88]\nPUT 334.=355:\n+ // 预设与成员一律读 presets/ 文件夹；应用关系（presetApplied）仍读 JSON\n+ const applied = useMemo(() => core.loadManifest(root).presetApplied ?? {}, [root, tick]);\n+ const names = u...
+
+[client] fs/write_text_file (running)
+
+[tool] Switching PresetsView data to folders (completed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#0F88]\nPUT 334.=355:\n+ // 预设与成员一律读 presets/ 文件夹；应用关系（presetApplied）仍读 JSON\n+ const applied = useMemo(() => core.loadManifest(root).presetApplied ?? {}, [root, tick]);\n+ const names = u...
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#55E4]
+    332:  const [mSearching, setMSearching] = useState(false);
+    333:
+    334:  // 预设与成员一律读 presets/ 文件夹；应用关系（presetApplied）仍读 JSON
+    335:  const applied = useMemo(() => core.loadManifest(root).presetApplied ?? {}, [root, tick]);
+    336:  const names = useMemo(() => core.listPresets(root), [root, tick]);
+    337:  const members = useMemo(() => core.presetMembers(root), [root, tick]);
+    338:  const memberNames = (preset: string) => members.filter((m) => m.preset === preset).map((m) => m.name).sort();
+    339:  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+    340:  const mShown = useMemo(
+    
+    343:  );
+    
+    350:  const openMembers = (name: string) => {
+    351:    setEditing(name);
+    352:    setSel(new Set(memberNames(name)));
+    353:    setMCursor(0);
+    354:    setMFilter('');
+    
+    357:  };
+
+[thinking] The `memberNames` helper: used in openMembers, the members-save flow (no — save uses sel), and the render list (once per row? once in map). Call sites: openMembers (1), render (1). Two call sites... The rule allows tiny functions with 3+ call sites or durable contracts. `memberNames` filters+maps+sorts — it's not a pure rename (three chained ops + sort), and it names a domain concept (成员列表来自文件夹). The body is one expression though. Two call sites needing lockstep "members of preset from folder, sorted" — borderline. I could inline it:
+           
+           - In openMembers: `setSel(new Set(members.filter((m) => m.preset === name).map((m) => m.name)))`
+           - In render: same chain.
+           
+           That duplicates the chain twice. The rule says 3+ call sites for lockstep. Two sites… inlining duplicates logic. Hmm, but a third call site appears in the list render for each name? No — inside map per row, it's called once per prese...
+用 memoized record 替换 `memberNames` 微型函数（与 group-view 模式相同）：
+
+[tool] Replacing tiny helper with memo record (pending)
+  input: {"input":"[manager/src/tui.ts#55E4]\nPUT 337.=338:\n+ const members = useMemo(() => core.presetMembers(root), [root, tick]);\n+ // 预设名 → 成员技能名（presetMembers 已按技能名排序）\n+ const membersByPreset = useMemo(() => {\n+ const...
+
+[client] fs/write_text_file (running)
+
+[tool] Replacing tiny helper with memo record (completed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#55E4]\nPUT 337.=338:\n+ const members = useMemo(() => core.presetMembers(root), [root, tick]);\n+ // 预设名 → 成员技能名（presetMembers 已按技能名排序）\n+ const membersByPreset = useMemo(() => {\n+ const...
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#8DF3]
+    336:  const names = useMemo(() => core.listPresets(root), [root, tick]);
+    337:  const members = useMemo(() => core.presetMembers(root), [root, tick]);
+    338:  // 预设名 → 成员技能名（presetMembers 已按技能名排序）
+    339:  const membersByPreset = useMemo(() => {
+    …
+    342:    return by;
+    343:  }, [members]);
+    344:  const skills = useMemo(() => core.listRepoSkills(root), [root]);
+    345:  const mShown = useMemo(
+    
+    348:  );
+
+[tool] Using memo record in openMembers (pending)
+  input: {"input":"[manager/src/tui.ts#8DF3]\nPUT 355.=355:\n+ setSel(new Set(membersByPreset[name] ?? []));\n"}
+
+[tool] Using memo record in openMembers (failed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#8DF3]\nPUT 355.=355:\n+ setSel(new Set(membersByPreset[name] ?? []));\n"}
+  output:
+    This edit anchors to lines 355 of manager/src/tui.ts that [manager/src/tui.ts#8DF3] never displayed (it showed a partial range, a search hit, or a folded summary). Actual file content at those lines:
+      355:  const openMembers = (name: string) => {
+    Verify the content matches what you intend to touch, then re-issue the edit with the same [path#tag] header — a straight retry now succeeds without a re-read. If the content does NOT match, fix your line numbers.
+
+[thinking] Line 355 is the openMembers declaration now (shifted by +2 due to the memo insert). setSel is at 357. Let me read to confirm and edit precisely.
+
+[tool] Locating openMembers setSel line (pending)
+  input: manager/src/tui.ts:354-360
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Locating openMembers setSel line (completed)
+  kind: read
+  input: manager/src/tui.ts:354-360
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#8DF3]
+    353:  useEffect(() => () => setBusy(false), [setBusy]);
+    354:
+    355:  const openMembers = (name: string) => {
+    356:    setEditing(name);
+    357:    setSel(new Set(memberNames(name)));
+    358:    setMCursor(0);
+    359:    setMFilter('');
+    360:    setMSearching(false);
+    361:    setMode('members');
+    362:  };
+    363:
+    
+    [440 more lines in file. Use :364 to continue]
+
+[tool] Using memo record in openMembers (pending)
+  input: {"input":"[manager/src/tui.ts#8DF3]\nPUT 357.=357:\n+ setSel(new Set(membersByPreset[name] ?? []));\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Using memo record in openMembers (completed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#8DF3]\nPUT 357.=357:\n+ setSel(new Set(membersByPreset[name] ?? []));\n"}
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#6A1A]
+    355:  const openMembers = (name: string) => {
+    356:    setEditing(name);
+    357:    setSel(new Set(membersByPreset[name] ?? []));
+    358:    setMCursor(0);
+    359:    setMFilter('');
+    
+    362:  };
+现在处理输入处理器——'new'、成员保存、'd' 删除：
+
+[tool] Reading input handlers (pending)
+  input: manager/src/tui.ts:364-460
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading input handlers (completed)
+  kind: read
+  input: manager/src/tui.ts:364-460
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#6A1A]
+    363:
+    364:  useInput((input, key) => {
+    365:    if (mode === 'new') {
+    366:      if (key.escape) setMode('list');
+    367:      else if (key.return) {
+    368:        const name = buffer.trim();
+    369:        if (!name) return;
+    370:        openMembers(name);
+    371:      } else if (key.backspace || key.delete) setBuffer((b) => b.slice(0, -1));
+    372:      else if (input && !key.ctrl && !key.meta) setBuffer((b) => b + input);
+    373:      return;
+    374:    }
+    375:    if (mode === 'members') {
+    376:      if (mSearching) {
+    377:        if (key.escape || key.return) setMSearching(false);
+    378:        else if (key.backspace || key.delete) setMFilter((f) => f.slice(0, -1));
+    379:        else if (input && !key.ctrl && !key.meta) setMFilter((f) => f + input);
+    380:        setMCursor(0);
+    381:        return;
+    382:      }
+    383:      if (key.escape) {
+    384:        setMode('list');
+    385:        return;
+    386:      }
+    387:      if (input === '/') {
+    388:        setMSearching(true);
+    389:        return;
+    ... (78 more lines)
+
+[tool] Wiring createPreset into new flow (pending)
+  input: {"input":"[manager/src/tui.ts#6A1A]\nPUT 367.=370:\n+ else if (key.return) {\n+ const name = buffer.trim();\n+ if (!name) return;\n+ try {\n+ core.createPreset(root, name); // 新建预设 = presets/ 下建文件夹\n+ } catch (err) {\...
+
+[client] fs/write_text_file (running)
+
+[tool] Wiring createPreset into new flow (completed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#6A1A]\nPUT 367.=370:\n+ else if (key.return) {\n+ const name = buffer.trim();\n+ if (!name) return;\n+ try {\n+ core.createPreset(root, name); // 新建预设 = presets/ 下建文件夹\n+ } catch (err) {\...
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#F167]
+    367:      else if (key.return) {
+    368:        const name = buffer.trim();
+    369:        if (!name) return;
+    370:        try {
+    371:          core.createPreset(root, name); // 新建预设 = presets/ 下建文件夹
+    …
+    375:        }
+    376:        bumpTick();
+    377:        openMembers(name);
+    378:      } else if (key.backspace || key.delete) setBuffer((b) => b.slice(0, -1));
+    379:      else if (input && !key.ctrl && !key.meta) setBuffer((b) => b + input);
+    
+    Warnings:
+    Auto-repaired a replacement boundary echo at line 367: dropped 1 trailing body line(s) already present outside the range. Issue the body as final content for the selected range only.
+
+[tool] Guarding members save with error notice (pending)
+  input: {"input":"[manager/src/tui.ts#F167]\nPUT 401.=406:\n+ if (key.return) {\n+ try {\n+ core.setPreset(root, editing, [...sel]);\n+ } catch (err) {\n+ // 如技能已归属其他预设：提示后留在编辑页，修正勾选再保存（setPreset 整体校验，失败时完全不动）\n+ onNotice((er...
+
+[tool] Guarding members save with error notice (failed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#F167]\nPUT 401.=406:\n+ if (key.return) {\n+ try {\n+ core.setPreset(root, editing, [...sel]);\n+ } catch (err) {\n+ // 如技能已归属其他预设：提示后留在编辑页，修正勾选再保存（setPreset 整体校验，失败时完全不动）\n+ onNotice((er...
+  output:
+    This edit anchors to lines 401-406 of manager/src/tui.ts that [manager/src/tui.ts#F167] never displayed (it showed a partial range, a search hit, or a folded summary). Actual file content at those lines:
+      401:        const s = mShown[mCursor];
+      402:        const next = new Set(sel);
+      403:        if (next.has(s)) next.delete(s);
+      404:        else next.add(s);
+      405:        setSel(next);
+      406:      }
+    Verify the content matches what you intend to touch, then re-issue the edit with the same [path#tag] header — a straight retry now succeeds without a re-read. If the content does NOT match, fix your line numbers.
+
+[tool] Guarding preset deletion (pending)
+  input: {"input":"[manager/src/tui.ts#F167]\nPUT 445.=451:\n+ if (input === 'd' && names[cursor]) {\n+ const victim = names[cursor];\n+ try {\n+ core.deletePreset(root, victim); // 成员全部移回顶层后删除文件夹\n+ } catch (err) {\n+ onNotic...
+
+[tool] Guarding preset deletion (failed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#F167]\nPUT 445.=451:\n+ if (input === 'd' && names[cursor]) {\n+ const victim = names[cursor];\n+ try {\n+ core.deletePreset(root, victim); // 成员全部移回顶层后删除文件夹\n+ } catch (err) {\n+ onNotic...
+  output:
+    This edit anchors to lines 445-451 of manager/src/tui.ts that [manager/src/tui.ts#F167] never displayed (it showed a partial range, a search hit, or a folded summary). Actual file content at those lines:
+      445:    if (key.upArrow) setCursor((c) => Math.max(0, c - 1));
+      446:    if (key.downArrow) setCursor((c) => Math.min(names.length - 1, c + 1));
+      447:    if (input === 'n') {
+      448:      setBuffer('');
+      449:      setMode('new');
+      450:    }
+      451:    if (input === 'e' && names[cursor]) openMembers(names[cursor]);
+    Verify the content matches what you intend to touch, then re-issue the edit with the same [path#tag] header — a straight retry now succeeds without a re-read. If the content does NOT match, fix your line numbers.
+
+[thinking] The 'new' flow edit shifted lines +3. members save is now at ~408-413; 'd' at ~452-458. Let me re-read the current regions.
+
+[tool] Relocating shifted handler lines (pending)
+  input: manager/src/tui.ts:407-415
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[tool] Relocating delete handler lines (pending)
+  input: manager/src/tui.ts:450-462
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[client] fs/read_text_file (running)
+
+[client] fs/read_text_file (running)
+
+[tool] Relocating shifted handler lines (completed)
+  kind: read
+  input: manager/src/tui.ts:407-415
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#F167]
+    382:    if (mode === 'members') {
+    …
+    400:      if (input === ' ' && mShown[mCursor]) {
+    …
+    406:      }
+    407:      if (key.return) {
+    408:        core.setPreset(root, editing, [...sel]);
+    409:        const summary = userLinkSummary(root);
+    410:        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能）；${summary}`);
+    411:        bumpTick();
+    412:        setMode('list');
+    413:      }
+    414:      return;
+    415:    }
+    416:    if (mode === 'apply') {
+    417:      if (key.escape) {
+    418:        setMode('list');
+    …
+    420:      }
+    …
+    443:    }
+    
+    [392 more lines in file. Use :419 to continue]
+
+[tool] Relocating delete handler lines (completed)
+  kind: read
+  input: manager/src/tui.ts:450-462
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#F167]
+    364:  useInput((input, key) => {
+    …
+    447:    if (input === 'n') {
+    …
+    449:      setMode('new');
+    450:    }
+    451:    if (input === 'e' && names[cursor]) openMembers(names[cursor]);
+    452:    if (input === 'd' && names[cursor]) {
+    453:      const victim = names[cursor];
+    454:      core.deletePreset(root, victim);
+    455:      setCursor((c) => Math.max(0, c - 1));
+    456:      onNotice(`已删除预设 ${victim}`);
+    457:      bumpTick();
+    458:    }
+    459:    if (input === 'a' && names[cursor]) {
+    460:      setEditing(names[cursor]);
+    461:      setApplySel(new Set(applied[names[cursor]] ?? []));
+    462:      setMCursor(0);
+    463:      setMode('apply');
+    464:    }
+    465:  });
+    
+    [345 more lines in file. Use :466 to continue]
+
+[tool] Guarding members save with error notice (pending)
+  input: {"input":"[manager/src/tui.ts#F167]\nPUT 407.=413:\n+ if (key.return) {\n+ try {\n+ core.setPreset(root, editing, [...sel]);\n+ } catch (err) {\n+ // 如技能已归属其他预设：提示后留在编辑页，修正勾选再保存（setPreset 整体校验，失败时完全不动）\n+ onNotice((er...
+
+[client] fs/write_text_file (running)
+
+[tool] Guarding members save with error notice (completed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#F167]\nPUT 407.=413:\n+ if (key.return) {\n+ try {\n+ core.setPreset(root, editing, [...sel]);\n+ } catch (err) {\n+ // 如技能已归属其他预设：提示后留在编辑页，修正勾选再保存（setPreset 整体校验，失败时完全不动）\n+ onNotice((er...
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#98DA]
+    400:      if (input === ' ' && mShown[mCursor]) {
+    
+    406:      }
+    407:      if (key.return) {
+    408:        try {
+    409:          core.setPreset(root, editing, [...sel]);
+    …
+    413:          return;
+    414:        }
+    415:        const summary = userLinkSummary(root);
+    416:        onNotice(`预设 ${editing} 已保存（${sel.size} 个技能）；${summary}`);
+    
+    419:      }
+
+[tool] Guarding preset deletion (pending)
+  input: {"input":"[manager/src/tui.ts#F167]\nPUT 452.=458:\n+ if (input === 'd' && names[cursor]) {\n+ const victim = names[cursor];\n+ try {\n+ core.deletePreset(root, victim); // 成员全部移回顶层后删除文件夹\n+ } catch (err) {\n+ onNotic...
+
+[client] fs/write_text_file (running)
+
+[tool] Guarding preset deletion (completed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#F167]\nPUT 452.=458:\n+ if (input === 'd' && names[cursor]) {\n+ const victim = names[cursor];\n+ try {\n+ core.deletePreset(root, victim); // 成员全部移回顶层后删除文件夹\n+ } catch (err) {\n+ onNotic...
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#5597]
+    458:    if (input === 'd' && names[cursor]) {
+    459:      const victim = names[cursor];
+    460:      try {
+    461:        core.deletePreset(root, victim); // 成员全部移回顶层后删除文件夹
+    …
+    464:        return;
+    465:      }
+    466:      setCursor((c) => Math.max(0, c - 1));
+    467:      onNotice(`已删除预设 ${victim}`);
+    
+    469:    }
+    
+    Warnings:
+    Recovered by remapping stale line anchors to unchanged current lines (file changed since the tagged read). Verify the diff matches your intent.
+
+[thinking] Both edits applied. Now the render part: the list mode still uses `presets[n]` which no longer exists (I removed the `presets` memo). Let me read the render section and fix it to use membersByPreset.
+上一个 PresetsView 的修改 —— 列表渲染仍然引用了已移除的 `presets` memo：
+
+[tool] Reading preset list render (pending)
+  input: manager/src/tui.ts:495-515
+  files: /home/smh/myskills/manager/src/tui.ts
+
+[client] fs/read_text_file (running)
+
+[tool] Reading preset list render (completed)
+  kind: read
+  input: manager/src/tui.ts:495-515
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#5597]
+    492:  if (mode === 'apply') {
+    493:    return h(
+    494:      Box, { flexDirection: 'column', borderStyle: 'round', paddingX: 1 },
+    495:      h(Text, { bold: true }, `应用预设 ${editing} 到（空格勾选，回车确认）：`),
+    496:      ...agents.map((a, i) => {
+    497:        const active = i === mCursor;
+    498:        return h(
+    499:          Text, { key: a.id, color: active ? 'cyan' : undefined },
+    500:          `${active ? '❯' : ' '} [${applySel.has(a.id) ? 'x' : ' '}] ${a.id}  ${core.agentProjectGroup(a)}${core.agentInstalled(a) ? '' : '（未安装）'}`,
+    501:        );
+    502:      }),
+    503:      h(Text, { dimColor: true }, '勾选=应用该预设，取消勾选=撤销；按 l 生效；esc 取消'),
+    504:    );
+    505:  }
+    506:  return h(
+    507:    Box, { flexDirection: 'column', borderStyle: 'round', paddingX: 1 },
+    508:    h(Text, { bold: true }, `预设集（${names.length}）`),
+    509:    names.length === 0 && mode === 'list' ? h(Text, { dimColor: true }, '暂无预设，按 n 新建') : null,
+    510:    ...names.map((n, i) => {
+    511:      const ap = applied[n] ?? [];
+    512:      return h(
+    513:        Text, { key: n, color: i === cursor ? 'cyan' : undefined },
+    514:        `${i === cursor ? '❯' : ' '} ${n}（${presets[n].length}）: ${presets[n].join(', ')}${ap.length ? `  → 已应用: ${ap.join(', ')}` : '  → 未应用'}`,
+    515:      );
+    516:    }),
+    517:    mode === 'new' ? h(Text, { color: 'yellow' }, `预设名: ${buffer}▌`) : null,
+    518:  );
+    ... (2 more lines)
+
+[tool] Rendering member counts from folder record (pending)
+  input: {"input":"[manager/src/tui.ts#5597]\nPUT 510.=516:\n+ ...names.map((n, i) => {\n+ const ap = applied[n] ?? [];\n+ const ms = membersByPreset[n] ?? [];\n+ return h(\n+ Text, { key: n, color: i === cursor ? 'cyan' : und...
+
+[client] fs/write_text_file (running)
+
+[tool] Rendering member counts from folder record (completed)
+  kind: edit
+  input: {"input":"[manager/src/tui.ts#5597]\nPUT 510.=516:\n+ ...names.map((n, i) => {\n+ const ap = applied[n] ?? [];\n+ const ms = membersByPreset[n] ?? [];\n+ return h(\n+ Text, { key: n, color: i === cursor ? 'cyan' : und...
+  files: /home/smh/myskills/manager/src/tui.ts
+  output:
+    [manager/src/tui.ts#9943]
+    510:    ...names.map((n, i) => {
+    511:      const ap = applied[n] ?? [];
+    512:      const ms = membersByPreset[n] ?? [];
+    513:      return h(
+    514:        Text, { key: n, color: i === cursor ? 'cyan' : undefined },
+    515:        `${i === cursor ? '❯' : ' '} ${n}（${ms.length}）: ${ms.join(', ')}${ap.length ? `  → 已应用: ${ap.join(', ')}` : '  → 未应用'}`,
+    516:      );
+    517:    }),
+
+[thinking] All source edits done. Run the full test suite.
+
+[tool] Marking red phase done (pending)
+  input: {"op":"done","task":"Rewrite preset.test.ts to folder semantics (failing first)"}
+
+[tool] Marking red phase done (completed)
+  kind: think
+  input: {"op":"done","task":"Rewrite preset.test.ts to folder semantics (failing first)"}
+  output:
+    Remaining items (6):
+      - Update tui.test.ts: apply test, group test, new folder-op tests [in_progress] (red)
+      - core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets [pending] (implement)
+      - cli.ts: remove --presets branch [pending] (implement)
+      - tui.ts: presets panel + group view read folders [pending] (implement)
+      - npm test full suite green [pending] (verify)
+      - Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest [pending] (verify)
+    Overall: 1/7 done, 6 open.
+    Active phase 1/3 "red" (1/2).
+      red:
+        - [X] Rewrite preset.test.ts to folder semantics (failing first)
+        - [ ] Update tui.test.ts: apply test, group test, new folder-op tests (in progress)
+      implement:
+        - [ ] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+        - [ ] cli.ts: remove --presets branch
+        - [ ] tui.ts: presets panel + group view read folders
+      verify:
+        - [ ] npm test full suite green
+        - [ ] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[plan]
+  - [completed] Rewrite preset.test.ts to folder semantics (failing first)
+  - [in_progress] Update tui.test.ts: apply test, group test, new folder-op tests
+  - [pending] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+  - [pending] cli.ts: remove --presets branch
+  - [pending] tui.ts: presets panel + group view read folders
+  - [pending] npm test full suite green
+  - [pending] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[tool] Marking tui tests done (pending)
+  input: {"op":"done","task":"Update tui.test.ts: apply test, group test, new folder-op tests"}
+
+[tool] Marking tui tests done (completed)
+  kind: think
+  input: {"op":"done","task":"Update tui.test.ts: apply test, group test, new folder-op tests"}
+  output:
+    Remaining items (5):
+      - core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets [in_progress] (implement)
+      - cli.ts: remove --presets branch [pending] (implement)
+      - tui.ts: presets panel + group view read folders [pending] (implement)
+      - npm test full suite green [pending] (verify)
+      - Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest [pending] (verify)
+    Overall: 2/7 done, 5 open.
+    Active phase 2/3 "implement" (0/3).
+      red:
+        - [X] Rewrite preset.test.ts to folder semantics (failing first)
+        - [X] Update tui.test.ts: apply test, group test, new folder-op tests
+      implement:
+        - [ ] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets (in progress)
+        - [ ] cli.ts: remove --presets branch
+        - [ ] tui.ts: presets panel + group view read folders
+      verify:
+        - [ ] npm test full suite green
+        - [ ] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[plan]
+  - [completed] Rewrite preset.test.ts to folder semantics (failing first)
+  - [completed] Update tui.test.ts: apply test, group test, new folder-op tests
+  - [in_progress] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+  - [pending] cli.ts: remove --presets branch
+  - [pending] tui.ts: presets panel + group view read folders
+  - [pending] npm test full suite green
+  - [pending] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[client] session/request_permission (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|suites|pass|fail|cancelled)" | head -30 (pending)
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|suites|pass|fail|cancelled)" | head -30
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|suites|pass|fail|cancelled)" | head -30 (completed)
+  kind: execute
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|suites|pass|fail|cancelled)" | head -30
+  output:
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.907078ms)
+    ℹ tests 112
+    ℹ suites 0
+    ℹ pass 111
+    ℹ fail 1
+    ℹ cancelled 0
+    ✖ failing tests:
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.907078ms)
+    
+    
+    Wall time: 5.61 seconds
+    
+    $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|suites|pass|fail|cancelled)" | head -30
+    
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.907078ms)
+    ℹ tests 112
+    ℹ suites 0
+    ℹ pass 111
+    ℹ fail 1
+    ℹ cancelled 0
+    ✖ failing tests:
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.907078ms)
+    
+    
+    Wall time: 5.61 seconds
+
+[client] session/request_permission (running)
+
+[tool] $ cd /home/smh/myskills/manager && node --test test/tui.test.ts 2>&1 | grep -B2 -A 20 "AssertionError" | head -50 (pending)
+  input: cd /home/smh/myskills/manager && node --test test/tui.test.ts 2>&1 | grep -B2 -A 20 "AssertionError" | head -50
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /home/smh/myskills/manager && node --test test/tui.test.ts 2>&1 | grep -B2 -A 20 "AssertionError" | head -50 (completed)
+  kind: execute
+  input: cd /home/smh/myskills/manager && node --test test/tui.test.ts 2>&1 | grep -B2 -A 20 "AssertionError" | head -50
+  output:
+    test at test/tui.test.ts:333:1
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (128.496199ms)
+      AssertionError [ERR_ASSERTION]: The input did not match the regular expression /全局 \/ claude/. Input:
+      
+      'myskills 管理｜全局（编辑用户级 skills-manifest.json）\n' +
+        '当前作用域：用户级 · /tmp/myskills-tui-yr23YO/repo/skills-manifest.json（o 在本项目建立项目级）\n' +
+        '╭────────────────────────────────╮  ╭──────────────────────────────────────────────────────────────╮\n' +
+        '│ 技能（2/2）[用户级] [按agent]  │  │ alpha                                                        │\n' +
+        '│ ▸                              │  │ alpha 描述                                                   │\n' +
+        '│ /tmp/myskills-tui-yr23YO/home  │  │ 分发到用户级（中心仓库 skills-manifest.json）：              │\n' +
+        '│ / claude                       │  │   [x] claude                                                 │\n' +
+        '│ ❯ alpha                        │  │   [x] cursor（未安装）                                       │\n' +
+        '│ ▸                              │  │                                                              │\n' +
+        '│ /tmp/myskills-tui-yr23YO/home  │  │                                                              │\n' +
+        '│ / cursor                       │  │                                                              │\n' +
+        '│   alpha                        │  │                                                              │\n' +
+        '│ ▸ 未分发                       │  │                                                              │\n' +
+        '│   beta                         │  │                                                              │\n' +
+        '╰────────────────────────────────╯  ╰──────────────────────────────────────────────────────────────╯\n' +
+        'git 状态读取失败\n' +
+        '↑↓ 移动  / 搜索  g=分组  Tab 切到分发  空格 勾选  l=link  s=sync  f=fetch\n' +
+        'o=切项目/全局（无清单则建）  p=预设  m=机器  a=agent  i=安装  q=退出'
+      
+    
+    
+    Wall time: 5.47 seconds
+    
+    $ cd /home/smh/myskills/manager && node --test test/tui.test.ts 2>&1 | grep -B2 -A 20 "A...
+
+[thinking] The group headers are `${agentProjectGroup(a)} / ${a.id}` where agentProjectGroup returns the project path prefix — for fixture paths `/tmp/myskills-tui-yr23YO/home/.claude/skills`, the first dot-segment is `.claude`, so prefix = `/tmp/myskills-tui-yr23YO/home` (not 全局, since prefix != homedir()). The frame shows `/tmp/.../home / claude`. My regex /全局 \/ claude/ is wrong. Fix: match on the actual rendered header — assert `/ \/ claude$/m`-ish or just `claude` group headers distinct. Simplest: match `/\/ claude/` and `/\/ cursor/`. The frame contains `/tmp/.../home / claude` — regex `/\/ claude\b/` matches. And `/\/ cursor\b/`. Also `❯ alpha` count 1 passed presumably (frame shows ❯ alpha once, plain alpha twice in groups + once in detail panel). Update the two asserts.
+Group headers use the fixture home path, not `全局`. Fixing the assertions:
+
+[tool] Fixing group header regex (pending)
+  input: {"input":"[manager/test/tui.test.ts#08CF]\nPUT 354.=355:\n+ assert.match(frame, /\\/ claude$/m);\n+ assert.match(frame, /\\/ cursor$/m);\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Fixing group header regex (completed)
+  kind: edit
+  input: {"input":"[manager/test/tui.test.ts#08CF]\nPUT 354.=355:\n+ assert.match(frame, /\\/ claude$/m);\n+ assert.match(frame, /\\/ cursor$/m);\n"}
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#896F]
+    352:  await tick();
+    353:  const frame = lastFrame()!;
+    354:  assert.match(frame, /\/ claude$/m);
+    355:  assert.match(frame, /\/ cursor$/m);
+    356:  assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
+    357:  unmount();
+    
+    diff /home/smh/myskills/manager/test/tui.test.ts (line count unchanged)
+    
+    [manager/test/tui.test.ts#896F]
+    352:  await tick();
+    353:  const frame = lastFrame()!;
+    354:  assert.match(frame, /\/ claude$/m);
+    355:  assert.match(frame, /\/ cursor$/m);
+    356:  assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
+    357:  unmount();
+
+[client] session/request_permission (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10 (pending)
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10 (completed)
+  kind: execute
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10
+  output:
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.428198ms)
+    ℹ tests 112
+    ℹ pass 111
+    ℹ fail 1
+    ✖ failing tests:
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.428198ms)
+    
+    
+    Wall time: 5.61 seconds
+    
+    $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10
+    
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.428198ms)
+    ℹ tests 112
+    ℹ pass 111
+    ℹ fail 1
+    ✖ failing tests:
+    ✖ tui: 同一技能出现在多个组时，只有光标所在行实例高亮 (127.428198ms)
+    
+    
+    Wall time: 5.61 seconds
+
+[thinking] Still failing. The frame wraps header text: `│ /tmp/myskills-tui-yr23YO/home` newline `│ / claude` — the header string is `${group} / ${id}` = `/tmp/.../home / claude`, wrapped across lines by ink text wrapping in the narrow box. So `/ claude` IS on its own line ending... `│ / claude                       │` — with $ anchor and the box border after spaces: line is `│ / claude                       │`. My regex `/\/ claude$/m` requires end-of-line right after "claude" — but trailing spaces + border follow. Use `/\/ claude\b/` without anchor... but `\/ claude` could match within `/tmp/.../home / claude`? That's exactly what I want to match (the header). Does `\/ cursor` appear elsewhere? The dist panel shows `[x] cursor（未安装）` — no ` / cursor`. OK: drop the $m anchor, use word boundary.
+表头换行 — 去掉行尾锚点：
+
+[tool] Fixing group header regex anchor (pending)
+  input: {"input":"[manager/test/tui.test.ts#896F]\nPUT 354.=355:\n+ assert.match(frame, /\\/ claude\\b/);\n+ assert.match(frame, /\\/ cursor\\b/);\n"}
+
+[client] fs/write_text_file (running)
+
+[tool] Fixing group header regex anchor (completed)
+  kind: edit
+  input: {"input":"[manager/test/tui.test.ts#896F]\nPUT 354.=355:\n+ assert.match(frame, /\\/ claude\\b/);\n+ assert.match(frame, /\\/ cursor\\b/);\n"}
+  files: /home/smh/myskills/manager/test/tui.test.ts
+  output:
+    [manager/test/tui.test.ts#590C]
+    352:  await tick();
+    353:  const frame = lastFrame()!;
+    354:  assert.match(frame, /\/ claude\b/);
+    355:  assert.match(frame, /\/ cursor\b/);
+    356:  assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
+    357:  unmount();
+    
+    diff /home/smh/myskills/manager/test/tui.test.ts (line count unchanged)
+    
+    [manager/test/tui.test.ts#590C]
+    352:  await tick();
+    353:  const frame = lastFrame()!;
+    354:  assert.match(frame, /\/ claude\b/);
+    355:  assert.match(frame, /\/ cursor\b/);
+    356:  assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
+    357:  unmount();
+
+[client] session/request_permission (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10 (pending)
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10 (completed)
+  kind: execute
+  input: cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10
+  output:
+    ℹ tests 112
+    ℹ pass 112
+    ℹ fail 0
+    
+    
+    Wall time: 5.60 seconds
+    
+    $ cd /home/smh/myskills/manager && npm test 2>&1 | grep -E "^✖|ℹ (tests|pass|fail)" | head -10
+    
+    ℹ tests 112
+    ℹ pass 112
+    ℹ fail 0
+    
+    
+    Wall time: 5.60 seconds
+
+[thinking] All 112 tests green. Now verification phase:
+           
+           1. Full suite green ✓ (112/112).
+           2. Smoke on the real repo: 
+              - CLI: `node manager/src/cli.ts status`-ish? Careful: running CLI against the real repo runs reconcilePresets — idempotent, no presets/ folder exists → no-op. Safe. But `status` writes machines/<hostname>.json — that MUTATES the repo (creates/modifies a file). That's a real side effect; the instructions say don't touch unrelated uncommitted state. machines/ files are gitignored? Let me check — actually `myskills status` is a normal operation the user runs; but I shouldn't leave new modifications. Let me instead run a harmless command: `node manager/src/cli.ts tui` with no TTY prints usage (no mutation). Or `link`? link would rewrite symlinks in agent dirs — mutations outside repo (user's ~/.claude/skills etc.). Hmm — link is idempotent (already-linked stays), but it could remo...
+测试通过 — 112/112。验证阶段：遗留共存性冒烟测试（真实 manifest 仍包含 `presets` 数据；必须保证不崩溃且能完成完整流程）以及残留引用检查：
+
+[client] session/request_permission (running)
+
+[tool] $ cd /tmp && rm -rf myskills-coexist && mkdir -p myskills-coexist/repo myskills-coexist/claude && cd myskills-coexist/repo && for s in a b; do mkdir $s && printf -- "---\nname: $s\n---\n" > $s/SKILL.md; done && printf '{"agents":[{"id":"claude","name":"C","skillsPath":"/tmp/myskills-coexist/claude"}]}' > agents.json && printf '{"agents":{"claude":["a","b"]},"presets":{"web":["a"]},"presetApplied":{"web":["claude"]}}' > skills-manifest.json && node --input-type=module -e "
+import { link, loadManifest, deletePreset, applyPreset } from '/home/smh/myskills/manager/src/core.ts';
+const repo = '/tmp/myskills-coexist/repo';
+const r = link(repo);
+console.log('link lines:', r.lines);
+console.log('missing:', r.missingSkills, 'skipped:', r.skippedAgents);
+// 旧 presets 字段共存：applyPreset 报「不存在」（文件夹才是事实），不崩
+try { applyPreset(repo, 'web', ['claude']); } catch (e) { console.log('applyPreset throws:', e.message); }
+// deletePreset 清 presetApplied，旧 presets 数据原样带过（票 04 迁移）
+deletePreset(repo, 'web');
+console.log('after deletePreset:', JSON.stringify(loadManifest(repo)));
+" && ls -la /tmp/myskills-coexist/claude (pending)
+  input: cd /tmp && rm -rf myskills-coexist && mkdir -p myskills-coexist/repo myskills-coexist/claude && cd myskills-coexist/repo && for s in a b; do mkdir $s && printf -- "---\nname: $s\n---\n" > $s/SKILL.md; done && printf '...
+
+[tool] Checking for leftover presets-field references (pending)
+  input: manager
+  files: /home/smh/myskills/manager
+
+[client] terminal/create (running)
+
+[tool] Checking for leftover presets-field references (completed)
+  kind: search
+  input: manager
+  files: /home/smh/myskills/manager
+  output:
+    # manager/test/
+    ## sync.test.ts#10F9
+     132:  const remoteManifest = JSON.parse(git(remote, ['show', 'main:skills-manifest.json']));
+    *133:  assert.deepEqual(remoteManifest.presets, { base: ['alpha'] });
+     134:});
+     135:
+     136:// 用户全局配置 pull.rebase=true 时，pull 会走 rebase 分支并要求工作区干净，
+    ...
+     148:  const remoteManifest = JSON.parse(git(remote, ['show', 'main:skills-manifest.json']));
+    *149:  assert.deepEqual(remoteManifest.presets, { base: ['alpha'] });
+     150:});
+    ## tui.test.ts#590C
+     88:  assert.deepEqual(m.agents, {}); // 预设是独立单元，不并集烘焙进 agent 清单
+    *89:  assert.equal(m.presets, undefined, '清单不再写 presets 字段');
+     90:  assert.doesNotMatch(lastFrame()!, /\[x\] claude/); // 分发面板只反映清单勾选，预设应用在预设页展示
+     91:  unmount();
+     92:});
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /tmp && rm -rf myskills-coexist && mkdir -p myskills-coexist/repo myskills-coexist/claude && cd myskills-coexist/repo && for s in a b; do mkdir $s && printf -- "---\nname: $s\n---\n" > $s/SKILL.md; done && printf '{"agents":[{"id":"claude","name":"C","skillsPath":"/tmp/myskills-coexist/claude"}]}' > agents.json && printf '{"agents":{"claude":["a","b"]},"presets":{"web":["a"]},"presetApplied":{"web":["claude"]}}' > skills-manifest.json && node --input-type=module -e "
+import { link, loadManifest, deletePreset, applyPreset } from '/home/smh/myskills/manager/src/core.ts';
+const repo = '/tmp/myskills-coexist/repo';
+const r = link(repo);
+console.log('link lines:', r.lines);
+console.log('missing:', r.missingSkills, 'skipped:', r.skippedAgents);
+// 旧 presets 字段共存：applyPreset 报「不存在」（文件夹才是事实），不崩
+try { applyPreset(repo, 'web', ['claude']); } catch (e) { console.log('applyPreset throws:', e.message); }
+// deletePreset 清 presetApplied，旧 presets 数据原样带过（票 04 迁移）
+deletePreset(repo, 'web');
+console.log('after deletePreset:', JSON.stringify(loadManifest(repo)));
+" && ls -la /tmp/myskills-coexist/claude (completed)
+  kind: execute
+  input: cd /tmp && rm -rf myskills-coexist && mkdir -p myskills-coexist/repo myskills-coexist/claude && cd myskills-coexist/repo && for s in a b; do mkdir $s && printf -- "---\nname: $s\n---\n" > $s/SKILL.md; done && printf '...
+  output:
+    link lines: [ '链接 claude/a', '链接 claude/b' ]
+    missing: [] skipped: []
+    applyPreset throws: 预设集 web 不存在
+    after deletePreset: {"agents":{"claude":["a","b"]},"presets":{"web":["a"]},"presetApplied":{}}
+    总计 8
+    drwxrwxr-x 2 smh smh 4096 10月  8 14:26 .
+    drwxrwxr-x 4 smh smh 4096 10月  8 14:26 ..
+    lrwxrwxrwx 1 smh smh   28 10月  8 14:26 a -> /tmp/myskills-coexist/repo/a
+    lrwxrwxrwx 1 smh smh   28 10月  8 14:26 b -> /tmp/myskills-coexist/repo/b
+    
+    
+    Wall time: 0.07 seconds
+    
+    $ cd /tmp && rm -rf myskills-coexist && mkdir -p myskills-coexist/repo myskills-coexist/claude && cd myskills-coexist/repo && for s in a b; do mkdir $s && printf -- "---\nname: $s\n---\n" > $s/SKILL.md; done && printf '{"agents":[{"id":"claude","name":"C","skillsPath":"/tmp/myskills-coexist/claude"}]}' > agents.json && printf '{"agents":{"claude":["a","b"]},"presets":{"web":["a"]},"presetApplied":{"web":["claude"]}}' > skills-manifest.json && node --input-type=module -e "
+    import { link, loadManifest, deletePreset, applyPreset } from '/home/smh/myskills/manager/src/core.ts';
+    const repo = '/tmp/myskills-coexist/repo';
+    const r = link(repo);
+    console.log('link lines:', r.lines);
+    console.log('missing:', r.missingSkills, 'skipped:', r.skippedAgents);
+    // 旧 presets 字段共存：applyPreset 报「不存在」（文件夹才是事实），不崩
+    try { applyPreset(repo, 'web', ['claude']); } catch (e) { console.log('applyPreset throws:', e.message); }
+    // deletePreset 清 presetApplied，旧 presets 数据原样带过（票 04 迁移）
+    deletePreset(repo, 'web');
+    console.log('after deletePreset:', JSON.stringify(loadManifest(repo)));
+    " && ls -la /tmp/myskills-coexist/claude
+    
+    link lines: [ '链接 claude/a', '链接 claude/b' ]
+    missing: [] skipped: []
+    ... (10 more lines)
+
+[thinking] Coexistence smoke passes:
+           - link works with legacy manifest (personal list skills linked, no crash).
+           - applyPreset on JSON-only preset → clean "不存在" error (folder is the fact).
+           - deletePreset clears presetApplied and round-trips legacy `presets` field untouched (ticket 04's data).
+           
+           Leftover references: only test-side assertions on raw JSON (sync.test.ts round-trip checks — still valid behavior; tui.test.ts asserts presets NOT written). No source references to manifest.presets or migrateBakedPresets.
+           
+           Now one more end-to-end acceptance check that's cheap: "agent 目录内符号链接齐全且最终解析到真身" — covered in preset.test.ts via realpathSync. "改动预设成员后再次 link，已应用 agent 的链接随之增减" — covered.
+           
+           One more scenario worth a real smoke: TUI compiled and startup reconcile wiring — already covered by preset-folders.test.ts CLI tests (green).
+           
+           Also — sync.test.ts still passing means sync commits manifest fine with t...
+所有验证均已通过。正在进行清理并确认变更范围：
+
+[client] session/request_permission (running)
+
+[tool] $ rm -rf /tmp/myskills-coexist && cd /home/smh/myskills && git status --porcelain | head -20 (pending)
+  input: rm -rf /tmp/myskills-coexist && cd /home/smh/myskills && git status --porcelain | head -20
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ rm -rf /tmp/myskills-coexist && cd /home/smh/myskills && git status --porcelain | head -20 (completed)
+  kind: execute
+  input: rm -rf /tmp/myskills-coexist && cd /home/smh/myskills && git status --porcelain | head -20
+  output:
+    M acpx/SKILL.md
+     M acpxtodo/SKILL.md
+     D ascii-art/SKILL.md
+     D ascii-video/README.md
+     D ascii-video/SKILL.md
+     D ascii-video/references/architecture.md
+     D ascii-video/references/composition.md
+     D ascii-video/references/effects.md
+     D ascii-video/references/inputs.md
+     D ascii-video/references/optimization.md
+     D ascii-video/references/scenes.md
+     D ascii-video/references/shaders.md
+     D ascii-video/references/troubleshooting.md
+     D backup_ask-matt-zh/PHASE-BOUNDARIES.md
+     D backup_ask-matt-zh/SKILL.md
+     D backup_ask-matt-zh/agents/openai.yaml
+     D backup_claude-handoff-zh/SKILL.md
+     D backup_claude-handoff-zh/agents/openai.yaml
+     D backup_code-review-zh/SKILL.md
+     D backup_code-review-zh/agents/openai.yaml
+    
+    
+    Wall time: 0.04 seconds
+    
+    $ rm -rf /tmp/myskills-coexist && cd /home/smh/myskills && git status --porcelain | head -20
+    
+    M acpx/SKILL.md
+     M acpxtodo/SKILL.md
+    ... (21 more lines)
+
+[client] session/request_permission (running)
+
+[tool] $ cd /home/smh/myskills && git status --porcelain -- manager/ | cat (pending)
+  input: cd /home/smh/myskills && git status --porcelain -- manager/ | cat
+
+[client] terminal/create (running)
+
+[client] terminal/wait_for_exit (running)
+
+[client] terminal/output (running)
+
+[client] terminal/release (running)
+
+[tool] $ cd /home/smh/myskills && git status --porcelain -- manager/ | cat (completed)
+  kind: execute
+  input: cd /home/smh/myskills && git status --porcelain -- manager/ | cat
+  output:
+    M manager/src/cli.ts
+     M manager/src/core.ts
+     M manager/src/tui.ts
+     M manager/test/preset.test.ts
+     M manager/test/tui.test.ts
+    
+    
+    Wall time: 0.02 seconds
+    
+    $ cd /home/smh/myskills && git status --porcelain -- manager/ | cat
+    
+    M manager/src/cli.ts
+     M manager/src/core.ts
+     M manager/src/tui.ts
+     M manager/test/preset.test.ts
+     M manager/test/tui.test.ts
+    
+    
+    Wall time: 0.02 seconds
+
+[thinking] My changes are exactly the 5 manager files; the rest of the working tree (deletions etc.) was pre-existing (other tickets/user work) — untouched by me.
+           
+           Final full-suite run once more to be sure, then close todos and deliver. Already ran: 112/112 pass. Let me mark todos done.
+
+[tool] Marking implementation tasks done (pending)
+  input: {"op":"done","task":"core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets"}
+
+[tool] Marking implementation tasks done (completed)
+  kind: think
+  input: {"op":"done","task":"core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets"}
+  output:
+    Remaining items (4):
+      - cli.ts: remove --presets branch [in_progress] (implement)
+      - tui.ts: presets panel + group view read folders [pending] (implement)
+      - npm test full suite green [pending] (verify)
+      - Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest [pending] (verify)
+    Overall: 3/7 done, 4 open.
+    Active phase 2/3 "implement" (1/3).
+      red:
+        - [X] Rewrite preset.test.ts to folder semantics (failing first)
+        - [X] Update tui.test.ts: apply test, group test, new folder-op tests
+      implement:
+        - [X] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+        - [ ] cli.ts: remove --presets branch (in progress)
+        - [ ] tui.ts: presets panel + group view read folders
+      verify:
+        - [ ] npm test full suite green
+        - [ ] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[plan]
+  - [completed] Rewrite preset.test.ts to folder semantics (failing first)
+  - [completed] Update tui.test.ts: apply test, group test, new folder-op tests
+  - [completed] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+  - [in_progress] cli.ts: remove --presets branch
+  - [pending] tui.ts: presets panel + group view read folders
+  - [pending] npm test full suite green
+  - [pending] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[tool] Marking cli change done (pending)
+  input: {"op":"done","task":"cli.ts: remove --presets branch"}
+
+[tool] Marking cli change done (completed)
+  kind: think
+  input: {"op":"done","task":"cli.ts: remove --presets branch"}
+  output:
+    Remaining items (3):
+      - tui.ts: presets panel + group view read folders [in_progress] (implement)
+      - npm test full suite green [pending] (verify)
+      - Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest [pending] (verify)
+    Overall: 4/7 done, 3 open.
+    Active phase 2/3 "implement" (2/3).
+      red:
+        - [X] Rewrite preset.test.ts to folder semantics (failing first)
+        - [X] Update tui.test.ts: apply test, group test, new folder-op tests
+      implement:
+        - [X] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+        - [X] cli.ts: remove --presets branch
+        - [ ] tui.ts: presets panel + group view read folders (in progress)
+      verify:
+        - [ ] npm test full suite green
+        - [ ] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[tool] Marking tui change done (pending)
+  input: {"op":"done","task":"tui.ts: presets panel + group view read folders"}
+
+[plan]
+  - [completed] Rewrite preset.test.ts to folder semantics (failing first)
+  - [completed] Update tui.test.ts: apply test, group test, new folder-op tests
+  - [completed] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+  - [completed] cli.ts: remove --presets branch
+  - [in_progress] tui.ts: presets panel + group view read folders
+  - [pending] npm test full suite green
+  - [pending] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[tool] Marking tui change done (completed)
+  kind: think
+  input: {"op":"done","task":"tui.ts: presets panel + group view read folders"}
+  output:
+    Remaining items (2):
+      - npm test full suite green [in_progress] (verify)
+      - Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest [pending] (verify)
+    Overall: 5/7 done, 2 open.
+    Active phase 3/3 "verify" (0/2).
+      red:
+        - [X] Rewrite preset.test.ts to folder semantics (failing first)
+        - [X] Update tui.test.ts: apply test, group test, new folder-op tests
+      implement:
+        - [X] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+        - [X] cli.ts: remove --presets branch
+        - [X] tui.ts: presets panel + group view read folders
+      verify:
+        - [ ] npm test full suite green (in progress)
+        - [ ] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[tool] Marking verification done (pending)
+  input: {"op":"done","task":"npm test full suite green"}
+
+[tool] Marking verification done (completed)
+  kind: think
+  input: {"op":"done","task":"npm test full suite green"}
+  output:
+    Remaining items (1):
+      - Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest [in_progress] (verify)
+    Overall: 6/7 done, 1 open.
+    Active phase 3/3 "verify" (1/2).
+      red:
+        - [X] Rewrite preset.test.ts to folder semantics (failing first)
+        - [X] Update tui.test.ts: apply test, group test, new folder-op tests
+      implement:
+        - [X] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+        - [X] cli.ts: remove --presets branch
+        - [X] tui.ts: presets panel + group view read folders
+      verify:
+        - [X] npm test full suite green
+        - [ ] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest (in progress)
+
+[plan]
+  - [completed] Rewrite preset.test.ts to folder semantics (failing first)
+  - [completed] Update tui.test.ts: apply test, group test, new folder-op tests
+  - [completed] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+  - [completed] cli.ts: remove --presets branch
+  - [completed] tui.ts: presets panel + group view read folders
+  - [in_progress] npm test full suite green
+  - [pending] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[tool] Marking smoke done (pending)
+  input: {"op":"done","task":"Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest"}
+
+[tool] Marking smoke done (completed)
+  kind: think
+  input: {"op":"done","task":"Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest"}
+  output:
+    Remaining items: none.
+    Overall: 7/7 done, 0 open.
+    Active phase 3/3 "verify" (2/2).
+      red:
+        - [X] Rewrite preset.test.ts to folder semantics (failing first)
+        - [X] Update tui.test.ts: apply test, group test, new folder-op tests
+      implement:
+        - [X] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+        - [X] cli.ts: remove --presets branch
+        - [X] tui.ts: presets panel + group view read folders
+      verify:
+        - [X] npm test full suite green
+        - [X] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[plan]
+  - [completed] Rewrite preset.test.ts to folder semantics (failing first)
+  - [completed] Update tui.test.ts: apply test, group test, new folder-op tests
+  - [completed] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+  - [completed] cli.ts: remove --presets branch
+  - [completed] tui.ts: presets panel + group view read folders
+  - [completed] npm test full suite green
+  - [in_progress] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[plan]
+  - [completed] Rewrite preset.test.ts to folder semantics (failing first)
+  - [completed] Update tui.test.ts: apply test, group test, new folder-op tests
+  - [completed] core.ts: folder-model setPreset/createPreset/deletePreset/moveSkillToTop/applyPreset/link; drop Manifest.presets + migrateBakedPresets
+  - [completed] cli.ts: remove --presets branch
+  - [completed] tui.ts: presets panel + group view read folders
+  - [completed] npm test full suite green
+  - [completed] Smoke: real-repo dry TUI/link behavior unchanged for legacy manifest
+
+[thinking] All done. Deliver the summary: changed files, key functions, test results, notes (AGENTS.md --presets doc pending ticket 06; real manifest presets data pending ticket 04).
+票 03 完成。TDD 全程：先红（preset.test.ts 整文件改写为文件夹语义 + tui.test.ts 更新），后实现至绿。
+
+## 改动文件与关键函数
+
+**manager/src/core.ts**
+- `Manifest`：删除 `presets?: Record<string, string[]>` 字段；`presetApplied` 保留，注释说明旧字段数据由一次性迁移收敛（读原样带过、写不增不改）
+- `link()`：预设合并段从 `manifest.presets` 改为 `presetMembers()` 现读文件夹（`membersByPreset` Map），只对 `presetApplied` 已应用的预设取成员；指向已删文件夹的记录按空成员处理
+- 预设管理段整体重写（core.ts:774-842）：
+  - `createPreset()`（新）：presets/ 下建文件夹，重名/非法名拒绝
+  - `setPreset()`：diff 同步成员——新增走移入、去掉的移回顶层；先经 `assertSkillMovable` 整体预检，任一失败完全不动（无部分应用），跨预设同名复用 moveSkillToPreset 的报错文案
+  - `deletePreset()`：成员全部移回顶层 → 删文件夹（含非技能残留）→ 清 `presetApplied`
+  - `applyPreset()`：存在性按 `listPresets()`，成员按 `presetMembers()`；互斥接管语义不变
+- 文件夹模型段：`assertSkillMovable()`（从 `moveSkillToPreset` 抽出的共用判据）、`moveSkillToTop()`（新，真身回顶层，顶层被真身占用时拒绝，支持嵌套成员）
+- 删除 `migrateBakedPresets` + `MigratePresetsReport`
+
+**manager/src/cli.ts**：删除 `--presets` 分支与 `migrateBakedPresets` 导入（`myskills migrate --presets` 现落入常规 migrate 路径，不崩）
+
+**manager/src/tui.ts**
+- 分组浏览（g 键预设组）数据源改为 `core.presetMembers()`
+- `PresetsView`：预设列表 `listPresets()`、成员展示/勾选初值 `presetMembers()`；n=建文件夹（重名提示）、回车保存包 try/catch（失败留在编辑页给拒绝提示）、d=删除包 try/catch
+
+**manager/test/preset.test.ts**：15 个测试全部改写为文件夹语义（setPreset 增减/拒绝、createPreset、moveSkillToTop、deletePreset、applyPreset 接管/missing/撤销、link 传播含 `realpathSync` 解析到真身、旧 presetApplied 指向缺失文件夹不崩）
+
+**manager/test/tui.test.ts**：应用预设测试改文件夹 fixture（并断言清单不写 presets 字段）；多组高亮测试改用 agent 分组（预设成员互斥后同技能不再跨预设组）；新增 3 个 TUI 测试：新建+勾选成员落盘/重名拒绝、删除预设真身回顶层、跨预设加成员被拒并提示「已归属预设 p1」
+
+## 测试与验证
+
+- `npm test`：**112/112 全绿**（含未动的 preset-folders/core/link/sync/project 等既有套件）
+- 旧字段共存 smoke（沙箱，已清理）：manifest 带遗留 `presets` 数据 + 无 presets/ 文件夹时——`link` 正常建链不崩；`applyPreset('web')` 报「预设集 web 不存在」；`deletePreset` 清 `presetApplied` 且 `presets` 数据原样带过（票 04 迁移）
+- 工作区只动了上述 5 个 manager 文件；未做任何 git 提交
+
+## 遗留给后续票（非本票范围）
+
+- 真实 manifest 的 `presets` 数据迁移：票 04
+- AGENTS.md 中 `myskills migrate --presets` 文档行已失效：票 06 文档更新时处理
+
+[done] end_turn

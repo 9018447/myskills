@@ -64,14 +64,14 @@ myskills sync              # 拉最新、按清单建链接、上报状态
 Use specialized code search tools instead of shell `grep`/`find` or built-in `Grep`/`Glob`:
 
 - File discovery: `rg --files`
-- Content search: `zg` (semantic default — embedding model, tolerates paraphrase) · `zg --rg` (exact text / regex) · `zg` index missing/stale → rebuild with `zg index`, don't degrade to rg
+- Content search: `jg` (semantic first stop — natural-language question, returns file list + declaration locations; verify with `jg doctor`) · `zg` (fallback, local embedding index) · `zg --rg` (exact text / regex) · `zg` index missing/stale → rebuild with `zg index`, don't degrade to rg
 - Structural matching: `ast-grep`
 - Symbols (definitions, references, types, call hierarchy): LSP
 - Graph relations (call chains, dependencies, impact analysis, architecture): `GitNexus`
 
-Escalate from cheap to expensive: `rg --files → zg → ast-grep / LSP → GitNexus`. After locating code, use `Read` on the exact source before concluding or editing.
+Escalate from cheap to expensive: `rg --files → jg → ast-grep / LSP → GitNexus`. After locating code, use `Read` on the exact source before concluding or editing.
 
-本节是硬约束，不是建议。已观察到的倒退：实际工作中很少用 `zg` 和 `GitNexus`，仍然退回 shell `grep`/`find`，`ast-grep` 几乎从未使用。内容搜索默认 `zg`，精确匹配 `zg --rg`，结构匹配 `ast-grep`，调用链与影响面 `GitNexus`；`grep`/`find` 只在路由层声明的例外情形或路由工具不可用（需当场说明）时才出现。细则见 `.claude/rules/code-search.md`。
+本节是硬约束，不是建议。已观察到的倒退：实际工作中很少用 `jg`、`zg` 和 `GitNexus`，仍然退回 shell `grep`/`find`，`ast-grep` 几乎从未使用。内容检索按 `jg → GitNexus → zg` 的顺序：语义第一选择 `jg`（自然语言提问，返回文件清单+声明位置），精确匹配 `zg --rg`，结构匹配 `ast-grep`，调用链与影响面 `GitNexus`；`grep`/`find` 只在路由层声明的例外情形或路由工具不可用（需当场说明）时才出现。细则见 `.claude/rules/code-search.md`。
 
 The full routing policy, including tool boundaries and escalation flows, lives in `.claude/rules/code-search.md`.
 

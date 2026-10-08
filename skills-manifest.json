@@ -10,7 +10,8 @@
   },
   "sources": {
     "skill-creator": "openai/skills/skills/.system/skill-creator",
-    "git-guardrails-claude-code": "mattpocock/skills/skills/misc/git-guardrails-claude-code"
+    "git-guardrails-claude-code": "mattpocock/skills/skills/misc/git-guardrails-claude-code",
+    "migrate-to-shoehorn": "mattpocock/skills/skills/misc/migrate-to-shoehorn"
   },
   "presetApplied": {
     "github": [

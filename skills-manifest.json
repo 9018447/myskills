@@ -95,6 +95,24 @@
       "kimi-code",
       "omp",
       "pi"
+    ],
+    "stack": [
+      "agents",
+      "claude",
+      "codex",
+      "cursor",
+      "kimi-code",
+      "omp",
+      "pi"
+    ],
+    "jev": [
+      "agents",
+      "claude",
+      "codex",
+      "cursor",
+      "kimi-code",
+      "omp",
+      "pi"
     ]
   }
 }

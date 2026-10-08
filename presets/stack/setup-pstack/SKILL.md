@@ -15,6 +15,8 @@ On another runtime, read [Other runtimes](#other-runtimes) below for where the s
 
 Write the current runtime's per-role model override sheet, using the path in [Other runtimes](#other-runtimes). Each pstack skill names a default model inline; the override sheet adapts those defaults to the models you actually have access to.
 
+**The sheet is optional on this host.** When the workflow dispatches implementation through acpx, delegated work names an agent, not a model (the routing table in `/acpxtodo`, the capability table in `/acpx`), so per-role model overrides do nothing there. Offer the skip up front; run the remaining steps only when the user still wants the sheet, for hosts or skills that still dispatch through the `Agent` tool.
+
 Claude Code has no auto-applied "rules" mechanism like Cursor's `.mdc`. The Claude Code config directory is `$CLAUDE_CONFIG_DIR` when that variable is set and `~/.claude` otherwise. This skill calls it `<config>`. Inclusion is explicit: the user adds a line to `<config>/CLAUDE.md` (or their project `CLAUDE.md`) such as:
 
 ```text

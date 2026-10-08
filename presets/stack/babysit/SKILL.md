@@ -17,7 +17,7 @@ Inside poteto-mode, the **Babysit** playbook ([`../poteto-mode/playbooks/babysit
 
 - There's an open PR and the user explicitly wants it kept green, and you are not already inside a poteto-mode run (the playbook owns that case).
 - The user invokes `/babysit` directly.
-- A subagent that opens a PR does NOT babysit — return to the parent and let the parent decide.
+- A delegate that opens a PR does NOT babysit — return to the parent and let the parent decide.
 
 ## Steps
 

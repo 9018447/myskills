@@ -36,21 +36,18 @@ Write one clear paragraph. If you're unsure about the intent, ask the user befor
 
 ## Step 3, Spawn Reviewers
 
-Launch all reviewers in a single message using the `Agent` tool. Use the `interrogate reviewers` line in the `pstack-models.md` override sheet (`/setup-pstack` lists its path per runtime), one reviewer per entry, extending or shrinking the Reviewer labels below to the configured entry count. If the sheet or that line is missing, use the table defaults.
+Launch all reviewers concurrently, one dedicated herdr pane each (mechanics in `/acpx`), one reviewer per entry, extending or shrinking the Reviewer labels below to the panel size you want.
 
 | Subagent | Default model |
 |----------|---------------|
-| Reviewer A | `opus` |
-| Reviewer B | `fable` |
-| Reviewer C | `sonnet` |
-| Reviewer D | `haiku` |
+| Reviewer A | `omp` |
+| Reviewer B | `kimi` |
+| Reviewer C | `codex` |
+| Reviewer D | `dsh` |
 
-For each reviewer:
-- `subagent_type`: `general-purpose`
-- `model`: the configured `interrogate reviewers` entry, or the table default with no configured line. For an `auto` or `inherit-parent` entry, omit `model` so that reviewer runs on the parent model.
-- `readonly`: `true`
+Each reviewer runs as one readonly delegate in its own dedicated herdr pane (mechanics in `/acpx`). A user-named panel overrides the table.
 
-If the `Agent` tool rejects a configured entry, run that reviewer on the table default of its family and say so. Families go by model name, such as Opus, Fable, or Sonnet. With no family match, use Reviewer A's default. If it rejects a table default, check the valid slugs in the `Agent` tool's error message, pick the closest equivalent (prefer the same family and reasoning tier), spawn with it, and open a separate PR to update the default table. Do not block the review on the slug issue. Never treat an alias entry as a rejected slug or apply either fallback to it.
+If an agent in the table is unavailable, fall down the candidate chain in the capability table in `/acpx` and say so. Do not block the review on the substitution. Never count the authoring session as one of the reviewers.
 
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent
@@ -113,6 +110,3 @@ Present the verdict in this structure:
 ### Agreement Map
 [Where did models agree, where did they diverge, and what does the pattern of agreement/disagreement tell us?]
 
-## Reasoning effort
-
-A role value in the override sheet may name a reasoning effort after its model, as in `opus @xhigh`. Levels on Claude Code: `low`, `medium`, `high`, `xhigh`, `max`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no effort, so the dispatch is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` at every level, and a model name is passed as `model`. On Claude Code, a level picks the effort agent from the `subagent_type` you would otherwise use. `pstack:poteto-agent` becomes `subagent_type: "pstack:poteto-agent-<level>"`. `general-purpose`, or no `subagent_type`, becomes `subagent_type: "pstack:effort-<level>"`. The effort agents set only `effort`, so the model you pass still decides the model. On Codex, pass the level as `spawn_agent`'s `reasoning_effort` and keep the usual instructions.

@@ -1,6 +1,6 @@
 # Merge and restack safety
 
-Use this reference with [Shipping](../playbooks/shipping.md) and before topology changes in [Autopilot-stack](../playbooks/autopilot-stack.md). Keep the existing watcher responsible for CI and blocker classification. These operations add revision and destination checks; they do not grant merge authority.
+Use this reference with [Shipping](../playbooks/shipping.md) and before topology changes in a stacked-PR landing. Keep the existing watcher responsible for CI and blocker classification. These operations add revision and destination checks; they do not grant merge authority.
 
 ## Read both pending mechanisms
 

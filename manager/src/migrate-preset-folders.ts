@@ -106,8 +106,8 @@ export function migratePresetFolders(repoRoot: string): MigratePresetFoldersRepo
     memberCounts: {},
     reconcileLines: [],
   };
-  const raw = readJson<Record<string, unknown>>(join(repoRoot, 'skills-manifest.json'));
-  const legacy = (raw.presets ?? {}) as Record<string, string[]>;
+  const raw = readJson<Manifest & { presets?: Record<string, string[]> }>(join(repoRoot, 'skills-manifest.json'));
+  const legacy = raw.presets ?? {};
 
   // 1. JSON 预设成员落地。顶层已是指向本预设真身的链接（上次运行中断后重跑）则跳过保证幂等
   for (const [preset, members] of Object.entries(legacy)) {
@@ -161,7 +161,7 @@ export function migratePresetFolders(repoRoot: string): MigratePresetFoldersRepo
   // 3. 清空废弃的 presets 字段（放在文件搬移之后：中断重跑时成员移入仍可幂等续跑）
   if ('presets' in raw) {
     delete raw.presets;
-    saveManifest(repoRoot, raw as Manifest);
+    saveManifest(repoRoot, raw);
     report.clearedPresetsField = true;
   }
 

@@ -39,7 +39,7 @@ myskills migrate         # 存量收敛 dry-run；加 --apply 执行
 
 没跑过 `npm link` 的环境用 `node manager/src/cli.ts <子命令>` 等价替代；TUI 对应 `node manager/src/tui.ts`。
 
-测试：`cd manager && npm test`（node:test，fixture 文件系统 + 本地裸仓库 + PATH 注入桩 gh）。
+测试：`cd manager && npm test`（node:test，fixture 文件系统 + 本地裸仓库 + PATH 注入桩 gh）；类型检查 `npm run check`（tsc --noEmit，tsconfig strict）。git 提交时 pre-commit 自动跑两者（hook 在 `scripts/git-hooks/`，已提交；新机器 clone 后需执行一次 `git config core.hooksPath scripts/git-hooks`）。
 
 ## 新机器 bootstrap
 

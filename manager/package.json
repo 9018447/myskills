@@ -9,14 +9,17 @@
     "myskills-tui": "src/tui.ts"
   },
   "scripts": {
-    "test": "node --test \"test/*.test.ts\""
+    "test": "node --test \"test/*.test.ts\"",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "ink": "^7.1.1",
     "react": "^19.3.0"
   },
   "devDependencies": {
+    "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",
-    "ink-testing-library": "^4.0.0"
+    "ink-testing-library": "^4.0.0",
+    "typescript": "^7.0.2"
   }
 }

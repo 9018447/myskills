@@ -1,12 +1,26 @@
 {
   "agents": {
-    "agents": [],
-    "claude": [],
-    "cursor": [],
-    "kimi-code": [],
-    "codex": [],
-    "pi": [],
-    "omp": []
+    "agents": [
+      "acpx"
+    ],
+    "claude": [
+      "acpx"
+    ],
+    "cursor": [
+      "acpx"
+    ],
+    "kimi-code": [
+      "acpx"
+    ],
+    "codex": [
+      "acpx"
+    ],
+    "pi": [
+      "acpx"
+    ],
+    "omp": [
+      "acpx"
+    ]
   },
   "sources": {
     "skill-creator": "openai/skills/skills/.system/skill-creator",
@@ -106,6 +120,15 @@
       "pi"
     ],
     "jev": [
+      "agents",
+      "claude",
+      "codex",
+      "cursor",
+      "kimi-code",
+      "omp",
+      "pi"
+    ],
+    "setup": [
       "agents",
       "claude",
       "codex",

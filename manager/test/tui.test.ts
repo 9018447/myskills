@@ -432,7 +432,9 @@ test('tui: 把已归属其他预设的技能加入第二个预设被拒绝并提
   await tick();
   stdin.write('e'); // 编辑 p2 成员
   await tick();
-  stdin.write(' '); // 勾选列表第一项 alpha（已归属 p1）
+  stdin.write('\x1b[B'); // 已在预设里的 beta 排最前；下移到 alpha（未归属，已归属 p1）
+  await tick();
+  stdin.write(' '); // 勾选 alpha
   await tick();
   stdin.write('\r'); // 保存 → 拒绝
   await tick();

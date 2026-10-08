@@ -342,10 +342,12 @@ function PresetsView({
     return by;
   }, [members]);
   const skills = useMemo(() => core.listRepoSkills(root), [root]);
-  const mShown = useMemo(
-    () => (mFilter ? skills.filter((s) => s.toLowerCase().includes(mFilter.toLowerCase())) : skills),
-    [skills, mFilter],
-  );
+  const mShown = useMemo(() => {
+    const base = mFilter ? skills.filter((s) => s.toLowerCase().includes(mFilter.toLowerCase())) : skills;
+    // 已在当前预设里的技能排到前面（按编辑打开时的成员算，不随勾选实时变动，避免列表跳动）
+    const inPreset = new Set(membersByPreset[editing] ?? []);
+    return [...base].sort((a, b) => (inPreset.has(b) ? 1 : 0) - (inPreset.has(a) ? 1 : 0) || a.localeCompare(b));
+  }, [skills, mFilter, membersByPreset, editing]);
 
   useEffect(() => {
     setBusy(mode !== 'list' || mSearching);

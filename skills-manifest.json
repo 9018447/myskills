@@ -9,13 +9,11 @@
     "omp": []
   },
   "sources": {
-    "skill-creator": "openai/skills/skills/.system/skill-creator"
+    "skill-creator": "openai/skills/skills/.system/skill-creator",
+    "git-guardrails-claude-code": "mattpocock/skills/skills/misc/git-guardrails-claude-code"
   },
   "presetApplied": {
     "github": [
-      "claude"
-    ],
-    "orch-skills": [
       "claude"
     ],
     "gitnexus": [

@@ -29,3 +29,6 @@ __pycache__/
 # node
 node_modules/
 .aider*
+
+# nested git repo (jev-use MCP server source, has its own remote)
+presets/jev-use/

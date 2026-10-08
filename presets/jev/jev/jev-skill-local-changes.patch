@@ -1,0 +1,150 @@
+From b5aee3012ac813b6a9e941ba8ecfc0f7cd43548d Mon Sep 17 00:00:00 2001
+From: 9018447 <1679900756@qq.com>
+Date: Thu, 8 Oct 2026 22:15:18 +0800
+Subject: [PATCH] restore SiliconFlow provider; add JEV_PROXY override and
+ endpoint host in transport errors
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- 0.2.1 dropped SiliconFlow; re-added it (endpoints, provider choices,
+  setup_report, default model Kev-4b) since it is the domestic fallback target
+- http_json honors JEV_PROXY (explicit ProxyHandler); never trust HTTPS_PROXY
+  blindly — some local proxies inject a dead one into agent sessions
+- transport error messages now name the endpoint host, e.g.
+  'OpenRouter (openrouter.ai) dns failure during connect_or_headers'
+---
+ skills/jev/scripts/jev.py | 42 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 30 insertions(+), 12 deletions(-)
+
+diff --git a/skills/jev/scripts/jev.py b/skills/jev/scripts/jev.py
+index 15de34e..5f922d5 100644
+--- a/skills/jev/scripts/jev.py
++++ b/skills/jev/scripts/jev.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-"""Typed Jev decisions through OpenRouter or TypeSafe. Python standard library only."""
++"""Typed Jev decisions through OpenRouter, TypeSafe or SiliconFlow. Python standard library only."""
+ 
+ import argparse
+ import http.client
+@@ -12,12 +12,15 @@ from pathlib import Path
+ import sys
+ import time
+ import urllib.error
++import urllib.parse
+ import urllib.request
+ 
+ DEFAULT_MODEL = "typesafe/jev-1.13"
+ DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
+ TYPESAFE_URL = "https://api.typesafe.ai/v1/systemone"
+ TYPESAFE_MODEL = "jev-1.13.0"
++SILICONFLOW_URL = "https://api.siliconflow.cn/v1/systemone"
++SILICONFLOW_MODEL = "Kev-4b"
+ REVIEW_LABELS = {"other", "unknown", "abstain", "review", "ask_user", "wait",
+                  "none", "defer", "insufficient_evidence"}
+ 
+@@ -131,10 +134,12 @@ def http_json(url, payload, timeout=30):
+         DECISIONS_URL: ("OPENROUTER_API_KEY", "OpenRouter"),
+         "https://openrouter.ai/api/v1/chat/completions": ("OPENROUTER_API_KEY", "OpenRouter"),
+         TYPESAFE_URL: ("TYPESAFE_API_KEY", "TypeSafe"),
++        SILICONFLOW_URL: ("SILICONFLOW_API_KEY", "SiliconFlow"),
+     }
+     if url not in endpoints:
+-        raise JevError("Only the documented OpenRouter and TypeSafe endpoints are supported")
++        raise JevError("Only the documented OpenRouter, TypeSafe and SiliconFlow endpoints are supported")
+     key_name, provider_name = endpoints[url]
++    host = urllib.parse.urlparse(url).netloc
+     number(timeout, 0.1, 300, "timeout")
+     key = os.environ.get(key_name, "").strip()
+     if not key:
+@@ -147,14 +152,23 @@ def http_json(url, payload, timeout=30):
+                  "X-OpenRouter-Title": "Jev Skill"}, method="POST",
+     )
+     phase, status = "connect_or_headers", None
++    # JEV_PROXY is an explicit opt-in override; the default opener still honors
++    # HTTPS_PROXY, but some local proxies inject a dead one into every session,
++    # so agents on those machines should set JEV_PROXY instead.
++    proxy = os.environ.get("JEV_PROXY", "").strip()
++    if proxy:
++        opener = urllib.request.build_opener(
++            urllib.request.ProxyHandler({"http": proxy, "https": proxy}), NoRedirect)
++    else:
++        opener = urllib.request.build_opener(NoRedirect)
+     try:
+-        with urllib.request.build_opener(NoRedirect).open(request, timeout=timeout) as response:
++        with opener.open(request, timeout=timeout) as response:
+             phase, status = "response_body", response.status
+             result = load_json(response.read().decode())
+     except urllib.error.HTTPError as error:
+         status = error.code
+         error.close()
+-        raise JevError(f"{provider_name} HTTP {status}; no automatic retry was made",
++        raise JevError(f"{provider_name} ({host}) HTTP {status}; no automatic retry was made",
+                        http_status=status, error_kind="http", phase=phase) from None
+     except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException) as error:
+         cause = error.reason if isinstance(error, urllib.error.URLError) else error
+@@ -167,7 +181,7 @@ def http_json(url, payload, timeout=30):
+         else:
+             kind = "connection"
+         # Retain diagnostic categories, never raw exception text or credentials.
+-        raise JevError(f"{provider_name} {kind} failure during {phase}; no automatic retry was made",
++        raise JevError(f"{provider_name} ({host}) {kind} failure during {phase}; no automatic retry was made",
+                        http_status=status, error_kind=kind, phase=phase) from None
+     except (json.JSONDecodeError, UnicodeError):
+         raise JevError(f"{provider_name} returned invalid JSON") from None
+@@ -177,16 +191,18 @@ def http_json(url, payload, timeout=30):
+ 
+ 
+ def request_decisions(payload, timeout=30, provider="openrouter"):
+-    if provider not in {"openrouter", "typesafe"}:
+-        raise JevError("provider must be openrouter or typesafe")
+-    url = DECISIONS_URL if provider == "openrouter" else TYPESAFE_URL
++    if provider not in {"openrouter", "typesafe", "siliconflow"}:
++        raise JevError("provider must be openrouter, typesafe or siliconflow")
++    url = {"openrouter": DECISIONS_URL, "typesafe": TYPESAFE_URL,
++           "siliconflow": SILICONFLOW_URL}[provider]
+     return http_json(url, validate_request(payload), timeout)
+ 
+ 
+ def setup_report():
+     """Inspect presence only. Do not test credentials, write config or choose a mode."""
+     available = {name: bool(os.environ.get(key, "").strip()) for name, key in
+-                 [("openrouter", "OPENROUTER_API_KEY"), ("typesafe", "TYPESAFE_API_KEY")]}
++                 [("openrouter", "OPENROUTER_API_KEY"), ("typesafe", "TYPESAFE_API_KEY"),
++                  ("siliconflow", "SILICONFLOW_API_KEY")]}
+     return {
+         "available": available,
+         "recommended_provider": next((name for name, present in available.items() if present), None),
+@@ -196,7 +212,8 @@ def setup_report():
+             "B": "After consent, use the current agent or an explicitly selected available model such as DeepSeek to simulate; no Jev probabilities.",
+         },
+         "key_pages": {"openrouter": "https://openrouter.ai/settings/keys",
+-                      "typesafe": "https://console.typesafe.ai"},
++                      "typesafe": "https://console.typesafe.ai",
++                      "siliconflow": "https://cloud.siliconflow.cn/account/ak"},
+         "note": "Presence is not authentication or credit validation. No network call or configuration change was made.",
+     }
+ 
+@@ -278,7 +295,7 @@ def parser():
+     text.add_argument("--text-file", help="UTF-8 file, or - for stdin")
+     classify.add_argument("--criteria", required=True, help="JSON file mapping labels to descriptions")
+     for command in [decide, classify]:
+-        command.add_argument("--provider", choices=["openrouter", "typesafe"], default="openrouter",
++        command.add_argument("--provider", choices=["openrouter", "typesafe", "siliconflow"], default="openrouter",
+                              help="Explicit destination; default openrouter. Never falls back automatically")
+         command.add_argument("--model", help=f"Default: request model, JEV_MODEL, or {DEFAULT_MODEL}")
+         command.add_argument("--min-probability", type=float, default=0.8,
+@@ -311,7 +328,8 @@ def main(argv=None):
+                              "criteria": read_json(args.criteria)}}}
+         if not isinstance(payload, dict):
+             raise JevError("Request must be a JSON object")
+-        default_model = DEFAULT_MODEL if args.provider == "openrouter" else TYPESAFE_MODEL
++        default_model = {"openrouter": DEFAULT_MODEL, "typesafe": TYPESAFE_MODEL,
++                         "siliconflow": SILICONFLOW_MODEL}[args.provider]
+         payload["model"] = args.model or payload.get("model") or os.environ.get("JEV_MODEL") or default_model
+         # Bundled examples carry the OpenRouter model ID; explicit provider selection
+         # maps that one known ID. Custom overrides are never rewritten.
+-- 
+2.43.0
+

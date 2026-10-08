@@ -213,6 +213,42 @@ its state, evidence and question ids per run. Rebuilding the shape from memory
 each time has repeatedly produced rejected requests (placeholder `model` values,
 mis-shaped `criteria`) before the proven file was restored; copying is the default.
 
+## Deployment, fallback chain and proxy (multi-machine)
+
+Two implementations back this skill. The jev-use clone lives at
+`~/myskills/presets/jev-use`. The jev-skill clone was removed from the primary
+machine (the repo bundles older copies of the skill docs maintained in preset
+`jev`, which collide in the myskills preset scanner — keep only the maintained
+copies); the installed `jev-decide` tool does not depend on the clone. Our
+local patch (SiliconFlow provider + JEV_PROXY) is kept at
+`~/myskills/jev/jev-skill-local-changes.patch`. To install or update the
+python CLI: clone `github.com/wuyoscar/jev-skill`, `git am <patch>`, then
+`uv tool install --force <clone>`. To reuse on another
+machine, clone and install — the same two steps everywhere:
+
+- **jev-use** (TypeScript: MCP server + CLI, `github.com/shitianfang/jev-use`):
+  `git clone … && npm ci && npm run build`, then point the agent's MCP config at
+  the build, e.g. `"jev": {"command": "node", "args": ["<clone>/dist/server.js"]}`
+  (takes effect on the next agent session start).
+- **jev-skill** (Python CLI, `github.com/wuyoscar/jev-skill`):
+  `git clone … && uv tool install --force <clone>`; then `jev-decide decide …
+  --provider {openrouter,typesafe,siliconflow}`.
+
+Credentials are plain env keys: `OPENROUTER_API_KEY`, `TYPESAFE_API_KEY`,
+`SILICONFLOW_API_KEY`. jev-use in auto mode builds a fallback chain from every
+key present (typesafe → openrouter → siliconflow → vercel): an unreachable or
+auth-rejected backend hands the batch to the next, a request-caused 4xx does
+not, and the result names the backend that actually answered. The python CLI
+picks one provider per call — use `--provider siliconflow` as the domestic
+fallback route (default model `Kev-4b`).
+
+Proxy rule: never rely on `HTTPS_PROXY` inside agent sessions — some local
+proxies inject a dead per-session one (`http://127.0.0.1:<dynamic>`), so calls
+honor it and fail against working direct routes. Both implementations support
+an explicit override instead: set `JEV_PROXY=http://127.0.0.1:7890` (or the
+machine's real proxy) when a backend genuinely needs the proxy; leave it unset
+to go direct.
+
 ## Runnable starting points
 
 Copy a matching asset, then replace its synthetic state and criteria:

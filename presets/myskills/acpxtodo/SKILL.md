@@ -46,7 +46,7 @@ Tickets 不再逐票串行。默认按**波次并发**执行：每张就绪票�
 
 ### 调度
 
-1. 从票面 blocking edges 建依赖图（无票面边时按 ticket 编号 + Spec 的接口依赖人工判边，判不清就问用户，不猜）。票面由 split-tickets 产出，两技能的契约就是三个字段：**阻塞边**（本节调度输入）、**改动范围**（合并冲突预测输入）、**运行预算标记 `含 N 次真实运行`**（运行票识别，见运行票派发）。
+1. 从票面 blocking edges 建依赖图（无票面边时按 ticket 编号 + Spec 的接口依赖人工判边，判不清就问用户，不猜）。票面由 split-tickets 产出，两技能的契约就是三个字段：**阻塞边**（本节调度输入）、**改动范围**（合并冲突预测输入）、**运行预算**（实现票 `目标测试约 X 分钟/轮，预期 Y 轮`；写 `含 N 次真实运行` 的为运行票，识别与派发见运行票派发）。
 2. **本波就绪集** = 所有前置票已合并的票。就绪集内所有票同时派发，不等彼此。
 3. 每张就绪票在派发前建独立 worktree（在仓库根执行）：
 
@@ -74,11 +74,12 @@ herdr pane run <pane-id> "acpx --cwd <repo根>/.worktrees/tNN --approve-all --tt
 2. 当前 Ticket 对解决主要矛盾的作用；
 3. **其工作目录是独立 worktree `.worktrees/tNN`，分支 `ticket/tNN`，只在该目录内工作**；
 4. 遵守当前 Spec、ADR 和 Ticket 范围；使用 `/tdd` 完成实现；
-5. 不扩大范围，不做无关重构和过度设计；
-6. 不得再次使用 `/acpx` 或 `subagent` 向下派发；
-7. 不跑 code-review（`@../open-code-review-delegate/`、`ocr` `/code-review` 命令都不执行）——评审轮由编排者在其完成后进行；
-8. **不提交 git**（提交由编排者在本票分支上完成）；
-9. 提示词中的文件路径必须先在盘上验证存在（ls/grep）；验证不了就让实现 agent 自行定位，不得断言未验证的路径（2026-09-26 票 22 提示词写错 CLI 路径，靠 agent 自行 glob 纠正）。
+5. **全程不跑全量测试套件**（如 `Pkg.test` 整套），一次也不跑——全量由编排者在本票闭环后单独派发测试 agent；只跑与改动直接相关的目标测试（单个 testset 或测试文件），"没改坏别处"由 `/gitnexus-impact-analysis` + `/jev-code-review` 判定（2026-10-08 定案：实现 agent 在调试循环里反复跑全量是票拖到一小时以上的主因）；
+6. 不扩大范围，不做无关重构和过度设计；
+7. 不得再次使用 `/acpx` 或 `subagent` 向下派发；
+8. 不跑 code-review（`@../open-code-review-delegate/`、`ocr` `/code-review` 命令都不执行）——评审轮由编排者在其完成后进行；
+9. **不提交 git**（提交由编排者在本票分支上完成）；
+10. 提示词中的文件路径必须先在盘上验证存在（ls/grep）；验证不了就让实现 agent 自行定位，不得断言未验证的路径（2026-09-26 票 22 提示词写错 CLI 路径，靠 agent 自行 glob 纠正）。
 
 其余 headless 规则（pane 存活预检、派发同一步布 watcher、`[done] end_turn` 完成判据、候补链降级、续作分工）按下文 Headless 派发与 `/acpx` skill 执行，对 worktree 模式同样适用——只是每个对象都带票号：`prompts/tNN.md`、`.agent-results/<agent>-tNN.log`、`herdr pane get <该票pane>`。
 
@@ -88,7 +89,7 @@ herdr pane run <pane-id> "acpx --cwd <repo根>/.worktrees/tNN --approve-all --tt
 
 每票独立走完闭环，互相不阻塞：
 
-确认票无误 → `/acpx` 派发进 worktree → agent 按 `/tdd` 完成 → 编排者在 worktree 内审 diff（`git -C .worktrees/tNN diff` 对照 worktree HEAD）→ 按 `/jev-code-review` 评审 → 有修复则修复后重验受影响部分 → 编排者在 `ticket/tNN` 分支上 commit（有修复才提交第二次 commit，不创建空 commit）→ 维护票面与相关文档（勾选验收项、handoff、受影响的 ADR）。
+确认票无误 → `/acpx` 派发进 worktree → agent 按 `/tdd` 完成（只跑目标测试，不跑全量）→ 编排者在 worktree 内审 diff（`git -C .worktrees/tNN diff` 对照 worktree HEAD）→ 按 `/jev-code-review` 评审 → 有修复则修复后重验受影响部分 → 编排者在 `ticket/tNN` 分支上 commit（有修复才提交第二次 commit，不创建空 commit）→ **派 codex 测试 agent 进该 worktree 跑一次全量测试（见测试派发）** → 全绿后维护票面与相关文档（勾选验收项、handoff、受影响的 ADR）→ 进合并回主干。
 
 纯文档 / 纯 tracker / 纯 markdown 提交（staged diff 无代码路径）可豁免评审轮；豁免必须在 commit message 或会话记录中显式声明，不得静默跳过。
 
@@ -141,6 +142,16 @@ git merge --no-ff ticket/tNN
 * 边界（2026-09-27 定案）：进 pueue 的是**运行任务**（julia 跑 benchmark、批量求解等），不是 **agent 进程本身**——pi/交互式 agent 在 pueue 环境下启动会静默卡死；agent 的派发走 `/acpx`，两者不可混。
 * 运行票默认与其他运行票串行（见 Worktree 并发闭环·调度第 5 条）。
 
+### 测试派发（全量测试）
+
+实现 agent 全程不跑全量测试（派发 Prompt 第 5 条）——全量测试不属于任何票，由编排者单独派发：
+
+* **时机**：实现票完成评审、编排者 commit 之后，合并回主干之前；
+* **派法**：向该票 worktree（`.worktrees/tNN`）派发一个 codex 测试 agent（headless 规则同上，prompt/日志/watcher 带票号），任务只有一件——跑一次全量测试套件，产出带失败清单的报告；
+* **长套件**（单轮 ≥20 分钟）：prompt 要求测试 agent 用 `/pueue` 执行全量运行（规则同运行票）；
+* **全绿** → 进合并回主干；**有失败** → 把失败测试清单派回实现 agent 修复（新派发，编排者不代写），修复后重跑全量；
+* 运行票的真实运行任务不在此列，仍按运行票派发执行。
+
 ## 事实核验
 
 不要因为实现 Agent 声称完成、测试通过或 Review 无报错，就直接认定 Ticket 正确。
@@ -157,7 +168,7 @@ Agent 声称的关键测试/运行结果
 
 编排者无法跑 `git diff` / `git show` 时（worktree 守卫拦截），关键 diff 以「直读文件 + 对照派发前记录的基线」替代——worktree 模式下基线即建树时的 HEAD（见 Worktree 并发闭环·调度）。
 
-实现 Agent 负责把 `pnpm run check` 或项目等价检查跑绿。编排者默认不重复跑完整 check；只有结果可疑、发生修复、缺少验收证据或 Ticket 明确要求时才定向复跑。
+实现 Agent 负责把定向目标测试和 `pnpm run check` 或项目等价快速检查跑绿；全量测试套件不在其职责内（见测试派发）。编排者默认不重复跑完整 check；只有结果可疑、发生修复、缺少验收证据或 Ticket 明确要求时才定向复跑。
 
 **合并后核验（本模式新增）**：单票在 worktree 里测试通过，不代表合并进主干后仍通过——其他票的改动可能与它相互作用。每波合并完成后对合并集做一次定向核验（跑测试或 check），失败则定位到引入票派回修复。
 

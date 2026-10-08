@@ -778,7 +778,10 @@ export function App({ root, remote, project = null, cwd = process.cwd() }: AppPr
 // 直接运行时渲染；也供 cli.ts 的 tui 子命令调用。启动目录向上找到 .myskills.json 时进入项目模式
 export function start(remote: string) {
   const cwd = process.cwd();
-  render(h(App, { root: core.findRepoRoot(), remote, project: core.findProjectRoot(cwd), cwd }));
+  const root = core.findRepoRoot();
+  // 启动 reconcile：把 presets/ 文件夹事实同步到仓库顶层（幂等；重名冲突时拒绝启动）
+  core.reconcilePresets(root);
+  render(h(App, { root, remote, project: core.findProjectRoot(cwd), cwd }));
 }
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*\//, ''))) {

@@ -1,9 +1,9 @@
 // myskills 核心逻辑：link / init / status / sync / install / migrate 及清单、注册表读写。
 // link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
 // 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
-import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync, renameSync } from 'node:fs';
 import { homedir, hostname, tmpdir } from 'node:os';
-import { join, dirname, resolve, sep } from 'node:path';
+import { join, dirname, resolve, sep, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -513,10 +513,11 @@ export function parseGitHubUrl(input: string): GitHubSource {
   return { owner: m[1], repo: m[2], ref: m[3], subdir: m[4] };
 }
 
-// 技能名必须是一个安全的单目录段：字母数字开头，只含字母数字与 ._-，杜绝 ../ 逃逸与隐藏目录
-export function validateSkillName(name: string): void {
+// 技能名必须是一个安全的单目录段：字母数字开头，只含字母数字与 ._-，杜绝 ../ 逃逸与隐藏目录。
+// label 用于报错文案（技能名 / 预设名共用同一套约束）
+export function validateSkillName(name: string, label = '技能名'): void {
   if (!/^[A-Za-z0-9_-][A-Za-z0-9._-]*$/.test(name)) {
-    throw new Error(`非法技能名 "${name}"：只能由字母、数字、点、下划线、连字符组成，且不能以点开头`);
+    throw new Error(`非法${label} "${name}"：只能由字母、数字、点、下划线、连字符组成，且不能以点开头`);
   }
 }
 
@@ -850,6 +851,134 @@ export function migrateBakedPresets(repoRoot: string): MigratePresetsReport {
   }
   saveManifest(repoRoot, manifest);
   return report;
+}
+
+// ---------- 预设集文件夹事实模型：presets/<预设名>/<技能名>/ 存真身，仓库顶层留相对符号链接 ----------
+
+export const PRESETS_DIR = 'presets';
+
+// 预设成员：name = 技能名（= 顶层链接名）；preset = 所属预设名；dir = 真身目录（相对仓库根）
+export interface PresetMember {
+  name: string;
+  preset: string;
+  dir: string;
+}
+
+// 递归下探识别成员：目录自身含 SKILL.md 即成员（找到即止，不再深入其内部）；
+// 不含则继续向下。预设文件夹里的非技能残留（CHANGELOG、docs 等）不参与识别
+function collectMembers(preset: string, dir: string, repoRoot: string, out: PresetMember[]): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('.')) continue;
+    const abs = join(dir, entry.name);
+    if (isSkillDir(abs)) {
+      out.push({ name: entry.name, preset, dir: relative(repoRoot, abs) });
+      continue;
+    }
+    try {
+      if (statSync(abs).isDirectory()) collectMembers(preset, abs, repoRoot, out);
+    } catch {
+      // 断链等不可访问条目跳过
+    }
+  }
+}
+
+// presets/ 下的一级目录即预设（排序）；目录不存在时返回空
+export function listPresets(repoRoot: string): string[] {
+  const root = join(repoRoot, PRESETS_DIR);
+  if (!existsSync(root)) return [];
+  return readdirSync(root, { withFileTypes: true })
+    .filter((e) => !e.name.startsWith('.'))
+    .filter((e) => {
+      try {
+        return statSync(join(root, e.name)).isDirectory();
+      } catch {
+        return false;
+      }
+    })
+    .map((e) => e.name)
+    .sort();
+}
+
+// 全部预设的全部成员（按技能名排序）
+export function presetMembers(repoRoot: string): PresetMember[] {
+  const out: PresetMember[] = [];
+  for (const preset of listPresets(repoRoot)) {
+    collectMembers(preset, join(repoRoot, PRESETS_DIR, preset), repoRoot, out);
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// 启动 reconcile：把 presets/ 的文件夹事实同步到仓库顶层。幂等，返回报告行。
+// - 为每个成员建立（或确认已存在）指向真身的相对符号链接，正确链接不重复创建；
+// - 清除顶层指向仓库内但目标已不存在的断链（成员被删除后的残留）；
+// - 顶层真身与预设成员重名、多个预设成员同名：报错拒绝，不动任何一方
+export function reconcilePresets(repoRoot: string): string[] {
+  const lines: string[] = [];
+  const members = presetMembers(repoRoot);
+
+  // 同名成员无法在同一顶层各建一链，先报错说明全部位置
+  const dup = members.find((m, i) => members.findIndex((o) => o.name === m.name) !== i);
+  if (dup) {
+    const locs = members.filter((m) => m.name === dup.name).map((m) => join(repoRoot, m.dir));
+    throw new Error(`预设成员重名 ${dup.name}: ${locs.join(' 与 ')}`);
+  }
+
+  // 顶层条目现状（lstat 不跟随符号链接；undefined = 条目不存在）。
+  // 冲突检查先行：任一顶层非链接条目与成员重名即整体拒绝（不覆盖、不删除任何一方）
+  const tops = members.map((m) => {
+    const linkPath = join(repoRoot, m.name);
+    try {
+      return { m, linkPath, st: lstatSync(linkPath) };
+    } catch {
+      return { m, linkPath, st: undefined };
+    }
+  });
+  for (const { m, linkPath, st } of tops) {
+    if (st && !st.isSymbolicLink()) {
+      throw new Error(`顶层与预设成员重名 ${m.name}: 顶层 ${linkPath} 与预设 ${join(repoRoot, m.dir)}，请手动取舍后再运行`);
+    }
+  }
+
+  for (const { m, linkPath, st } of tops) {
+    if (st?.isSymbolicLink()) {
+      if (resolve(repoRoot, readlinkSync(linkPath)) === resolve(repoRoot, m.dir)) continue; // 已指向真身，不重复创建
+      rmSync(linkPath, { force: true }); // 指向别处的旧链接重建
+    }
+    symlinkSync(m.dir, linkPath, 'dir');
+    lines.push(`建链 ${m.name} -> ${m.dir}`);
+  }
+
+  // 清除顶层残留断链：仅限指向仓库内且目标已不存在的链接（成员名的断链已在上面重建）
+  const memberNames = new Set(members.map((m) => m.name));
+  for (const entry of readdirSync(repoRoot, { withFileTypes: true })) {
+    if (memberNames.has(entry.name)) continue;
+    const entryPath = join(repoRoot, entry.name);
+    if (!entry.isSymbolicLink()) continue;
+    const target = resolve(repoRoot, readlinkSync(entryPath));
+    if (!target.startsWith(repoRoot + sep)) continue;
+    if (existsSync(target)) continue;
+    rmSync(entryPath, { force: true });
+    lines.push(`清除断链 ${entry.name}`);
+  }
+  return lines;
+}
+
+// 技能移入预设：顶层真身 mv 进 presets/<预设>/<技能>/，并在原地留相对符号链接（reconcile 也会补）。
+// 真身已归属其他预设时直接报错（说明当前归属，不自动搬家）；移回顶层后可再移入新预设
+export function moveSkillToPreset(repoRoot: string, preset: string, skill: string): void {
+  validateSkillName(skill);
+  validateSkillName(preset, '预设名');
+  const owner = presetMembers(repoRoot).find((m) => m.name === skill);
+  if (owner) {
+    throw new Error(`技能 ${skill} 已归属预设 ${owner.preset}（${join(repoRoot, owner.dir)}），请先移回顶层`);
+  }
+  const top = join(repoRoot, skill);
+  if (!isSkillDir(top)) throw new Error(`仓库顶层没有技能 ${skill}`);
+  const dest = join(repoRoot, PRESETS_DIR, preset, skill);
+  if (existsSync(dest)) throw new Error(`目标已存在: ${dest}`);
+  mkdirSync(dirname(dest), { recursive: true });
+  renameSync(top, dest);
+  symlinkSync(relative(repoRoot, dest), top, 'dir');
 }
 
 // agent 的项目分组键：skillsPath 里第一个点开头的段之前是项目路径；直接在家目录下的算「全局」

@@ -73,6 +73,15 @@ test('applyPreset: 预设中仓库不存在的技能跳过并计入 missing', ()
   assert.equal(loadManifest(repo).agents.claude, undefined); // 不并入 agent 清单
 });
 
+test('applyPreset: 预设成员目录存在但无 SKILL.md（非技能）与枚举同判，计入 missing', () => {
+  const repo = makeRepo(['a']);
+  mkdirSync(join(repo, 'tools')); // 集合目录：路径存在，但不是技能
+  setPreset(repo, 'web', ['a', 'tools']);
+  const r = applyPreset(repo, 'web', ['claude']);
+  assert.deepEqual(r.added, { claude: 1 });
+  assert.deepEqual(r.missing, ['tools']);
+});
+
 test('applyPreset: 预设不存在时抛错', () => {
   const repo = makeRepo(['a']);
   assert.throws(() => applyPreset(repo, 'nope', ['claude']), /不存在/);

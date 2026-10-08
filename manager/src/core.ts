@@ -1,7 +1,7 @@
 // myskills 核心逻辑：link / init / status / sync / install / migrate 及清单、注册表读写。
 // link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
 // 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
-import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, hostname, tmpdir } from 'node:os';
 import { join, dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -71,10 +71,20 @@ export function saveManifest(repoRoot: string, manifest: Manifest): void {
   writeFileSync(join(repoRoot, 'skills-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 }
 
-// 仓库里的技能：顶层含 SKILL.md 的目录
+// 技能判别（全仓唯一标准）：目录内含 SKILL.md。符号链接本身不是技能，按解析后的目标判定——
+// 目标目录含 SKILL.md 该链接才算技能；断链、普通文件、不可访问路径都不是技能
+export function isSkillDir(dir: string): boolean {
+  try {
+    return statSync(dir).isDirectory() && existsSync(join(dir, 'SKILL.md'));
+  } catch {
+    return false;
+  }
+}
+
+// 仓库里的技能：顶层含 SKILL.md 的目录（含指向此类目录的符号链接）
 export function listRepoSkills(repoRoot: string): string[] {
   return readdirSync(repoRoot, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && !e.name.startsWith('.') && existsSync(join(repoRoot, e.name, 'SKILL.md')))
+    .filter((e) => !e.name.startsWith('.') && isSkillDir(join(repoRoot, e.name)))
     .map((e) => e.name)
     .sort();
 }
@@ -536,7 +546,7 @@ export function install(repoRoot: string, input: string, nameOverride: string | 
     rmSync(tmp, { recursive: true, force: true });
     throw new Error(`子目录越界：${subdir} 逃逸出 tarball 顶层目录`);
   }
-  if (!existsSync(join(src, 'SKILL.md'))) throw new Error(`${subdir ?? '仓库根'} 中没有 SKILL.md，不是一个技能`);
+  if (!isSkillDir(src)) throw new Error(`${subdir ?? '仓库根'} 中没有 SKILL.md，不是一个技能`);
 
   cpSync(src, dest, { recursive: true });
   rmSync(tmp, { recursive: true, force: true });
@@ -781,7 +791,7 @@ export function applyPreset(repoRoot: string, name: string, agentIds: string[]):
   const manifest = loadManifest(repoRoot);
   const skills = manifest.presets?.[name];
   if (!skills) throw new Error(`预设集 ${name} 不存在`);
-  const missing = skills.filter((s) => !existsSync(join(repoRoot, s)));
+  const missing = skills.filter((s) => !isSkillDir(join(repoRoot, s)));
   const valid = skills.filter((s) => !missing.includes(s));
   const before = manifest.presetApplied?.[name] ?? [];
   const added: Record<string, number> = {};

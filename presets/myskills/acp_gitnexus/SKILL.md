@@ -20,8 +20,9 @@ disable-model-invocation: true
 ```
 
 1. **规范与拆票**：编排者先 `/to-spec` 再 `/split-tickets`，票面含验收标准与阻塞边，交用户确认后才派发。拆票时暴露任务实际为长程复杂任务（多切片强依赖、时长不可控的真实运行）→ 改用 `/acpxtodo`。
-2. **派发**：默认**一次派发覆盖全部票据**；票面工作总量超出一个会话能可靠完成的量时，按票据边界分两次派发（先派发无阻塞的前批），不得拆碎到一票一派。派发前记录当前 `HEAD` 和 `git status --short` 作为基线。headless 细节（pane 验证、watcher、完成判据、候补链）见 `/acpx` 与 `/acpxtodo`，不在此重复。
-3. **核验与评审**：执行者完成后，编排者抽查关键 diff、每票验收标准、执行者声称的验证结果——自述与盘上证据冲突时以盘上证据为准。然后按 `/jev-code-review` 评审本次闭环的全部 commit。有修复经新派发回到执行者，复评受影响部分，不创建空 commit。
+2. **派发**：默认**一次派发覆盖全部票据**；票面工作总量超出一个会话能可靠完成的量时，按票据边界分两次派发（先派发无阻塞的前批），不得拆碎到一票一派。派发位置默认**主检出**而非票级 worktree：`.gitnexus/` 索引不进 git，worktree 内 GitNexus 不可用（MODULE_NOT_FOUND），而单 agent 串行吃票也不需要票级隔离；执行者确需 worktree 时，编排者在 prompt 里写明 GitNexus 不可用、按仓库规则回落 `zg --rg` 与 LSP。派发前记录当前 `HEAD` 和 `git status --short` 作为基线。headless 细节（pane 验证、watcher、完成判据、候补链）见 `/acpx` 与 `/acpxtodo`，不在此重复。
+3. **核验与评审**：执行者完成后，编排者抽查关键 diff、每票验收标准、执行者声称的验证结果——自述与盘上证据冲突时以盘上证据为准。然后按 `/jev-code-review` 评审本次闭环的全部 commit。评审口径固定：本快速闭环用 `/jev-code-review`（轻、快）；`/acpxtodo` 长程任务用 `/open-code-review-delegate`（逐文件、覆盖强制），不混用。有修复经新派发回到执行者，复评受影响部分，不创建空 commit。
+4. **决策日志**：执行者按 show-me-your-work 约定把决策记入 `.scratch/<feature>/decisions.tsv`（每票 `start`/`dispatch`/`close` 必记，列式与语义见 `/show-me-your-work`）；编排者收盘核验时抽查日志，票号对不上的 commit 退回补记。
 
 ## 派发 Prompt 模板
 
@@ -36,9 +37,13 @@ disable-model-invocation: true
 
 ## 执行流程
 
-逐票执行，每票：/gitnexus-plan 出计划 → 图谱事实不足用 /gitnexus-exploring 补齐
+- 执行位置：主检出（编排者已在 prompt 里确认过 `.gitnexus` 索引在位；若编排者改派 worktree，GitNexus 不可用，按仓库规则回落 `zg --rg` 与 LSP，不要反复重试 GitNexus）。
+- 逐票执行，每票：/gitnexus-plan 出计划 → 图谱事实不足用 /gitnexus-exploring 和/jev-grep 补齐
 → 按 /gitnexus-work 纪律实现（impact 前置、最小改动、跑 verification_commands）
 → 一票一提交，commit message 标明票号。
+- 工作原则注入：每票开始时按票面类型注入对应原则，映射规则与全类型必含项（test-behavior-not-implementation、prove-it-works、minimize-reader-load）见 `/acpxtodo` 派发 prompt 第 11 条，不在此重复。
+- 输出文风：对用户的说明性文字对齐说人话规则（中文场景），见 `/acpxtodo` 派发 prompt 第 12 条。
+- 决策日志：每票在 `.scratch/<feature>/decisions.tsv` 记 `start`/`dispatch`/`close` 行。
 
 ## 禁止事项
 
@@ -49,7 +54,8 @@ disable-model-invocation: true
 ## 完成判据
 
 每票验收标准逐条满足并有证据（测试名、命令输出、文件路径）；
-每票恰好一个 commit；结尾列出票号 → commit → 验收证据对照表。
+每票恰好一个 commit；决策日志每票有 start/dispatch/close 行；
+结尾列出票号 → commit → 验收证据对照表。
 ```
 
 提示词中的文件路径必须先在盘上验证存在（ls/grep）；验证不了就让执行者自行定位，不断言未验证的路径。

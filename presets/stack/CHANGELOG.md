@@ -13,3 +13,4 @@ poteto-mode：
 - 删除 autopilot-full、autopilot-stack、orchestrate 三个子代理舰队 playbook（与派发工作流不适配），babysit、multi-phase-plan、shipping、opening-a-pr 及 references 中的相关引用同步清理。
 
 其余技能：show-me-your-work、deslop、setup-pstack 的适配与全量 subagent→acpx 审计随本批次进行（见各自改动）。
+- poteto-mode: Non-negotiables 派发链补中等任务分流——同质中等票批拆票后走 acp_gitnexus 快速闭环（一次派发吃全队、收盘 jev-code-review），长程/混类型仍走 acpxtodo + open-code-review-delegate。

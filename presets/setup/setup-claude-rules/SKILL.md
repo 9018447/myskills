@@ -37,6 +37,7 @@ After running the script and relaying, do one read-only check of three companion
 - **setup-pre-commit** — look for `.husky/pre-commit`, a `"prepare": "husky"` script or `lint-staged` config in package.json. Any of these counts as installed, skip; otherwise suggest the user run `/setup-pre-commit` (that skill forbids model-triggered runs).
 - **setup-matt-pocock-skills** — look for an `## Agent skills` section in AGENTS.md/CLAUDE.md, a repo-root `GLOSSARY.md`, or `docs/agents/`. Any of these, skip; otherwise suggest the user run `/setup-matt-pocock-skills` (same restriction).
 - **show-me-your-work** — look for `.scratch/`, `.audit/`, or an existing decision-log convention in steering files. If present, skip; otherwise tell the user that in later long-running tasks, autonomous runs, or when the user says "until … is done" / sets a goal, the agent will use that skill directly to record the decision trail (the agent may trigger it itself, no permission needed).
+- **rule-companion skills** — the rules reference skills that carry the details: `jev`, `jevgrep`, `poteto-mode`, and the `gitnexus-*` family. Check whether each is present in the target agent's skills directory; report any that are missing with one line: "fetch it from https://github.com/9018447/myskills". This check is informational only and never blocks the install.
 
 ## Completion criteria
 

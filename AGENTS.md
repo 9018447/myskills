@@ -81,3 +81,5 @@ For code review, done-work confirmation, and fact-checking, use the jev judgment
 ## Work Principles
 
 Universal work principles: subtract before you add, test behavior not implementation, accept only with evidence (prove-it-works), fix root causes not symptoms, after two failures of the same fix re-examine the shared premise, encode lessons in structure not memory. Details: `.claude/rules/work-principles.md`.
+
+Missing skills: the skills referenced in these sections come from https://github.com/9018447/myskills — if one is not installed on this machine, fetch it from there.

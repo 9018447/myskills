@@ -37,3 +37,7 @@ Do not use built-in `Grep` or `Glob` when the equivalent search is covered by th
 ## Tool boundaries
 
 `rg --files` = file discovery · `jg` = first-stop semantic retrieval · `zg` = fallback lexical + semantic index · `zg --rg` = exhaustive exact text / regex · `ast-grep` = syntax and AST structure · LSP = precise language-level symbol navigation · `GitNexus` = graph relationships, architecture, impact · `Read` = final source inspection.
+
+## Missing skills
+
+The skills referenced above (`jevgrep`, `gitnexus-*`) are distributed from https://github.com/9018447/myskills. If one is not installed on this machine, fetch it from that repo — do not improvise around the gap.

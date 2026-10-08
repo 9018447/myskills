@@ -807,10 +807,12 @@ export function App({ root, remote, project = null, cwd = process.cwd() }: AppPr
 }
 
 // 直接运行时渲染；也供 cli.ts 的 tui 子命令调用。启动目录向上找到 .myskills.json 时进入项目模式
-export function start(remote: string) {
+export async function start(remote: string) {
   const cwd = process.cwd();
   const root = core.findRepoRoot();
-  // 启动 reconcile：把 presets/ 文件夹事实同步到仓库顶层（幂等；重名冲突时拒绝启动）
+  // 启动确认：顶层未知非技能文件夹引导进 presets/（非交互环境只提示不动手），
+  // 先于 reconcile——同意移入的文件夹立即被 reconcile 建链
+  for (const line of await core.promptUnknownTopDirs(root, { tty: process.stdin.isTTY === true, confirm: core.confirmOnTty })) console.log(line);
   core.reconcilePresets(root);
   render(h(App, { root, remote, project: core.findProjectRoot(cwd), cwd }));
 }
@@ -818,5 +820,5 @@ export function start(remote: string) {
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*\//, ''))) {
   const remoteIdx = process.argv.indexOf('--remote');
   const remote = remoteIdx > -1 ? process.argv[remoteIdx + 1] : (process.env.MYSKILLS_REMOTE ?? 'origin');
-  start(remote);
+  await start(remote);
 }

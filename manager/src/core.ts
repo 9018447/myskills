@@ -6,6 +6,7 @@ import { homedir, hostname, tmpdir } from 'node:os';
 import { join, dirname, resolve, sep, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { createInterface } from 'node:readline/promises';
 
 export interface AgentDef {
   id: string;
@@ -992,6 +993,101 @@ export function moveSkillToTop(repoRoot: string, preset: string, skill: string):
   if (st && !st.isSymbolicLink()) throw new Error(`顶层 ${top} 已被占用，请手动取舍`);
   if (st) rmSync(top, { force: true });
   renameSync(join(repoRoot, m.dir), top);
+}
+
+// ---------- 启动确认（票 05）：顶层未知非技能文件夹引导进 presets/ ----------
+
+// 预置豁免名单：仓库固定目录 + presets 自身；点开头目录、技能目录、空目录天然不参与（见 listPromptableTopDirs）
+export const TOP_DIR_EXEMPTIONS: Record<string, true> = { manager: true, machines: true, testdir: true, [PRESETS_DIR]: true };
+
+// 拒绝名单文件（仓库根）：记用户明确跳过的顶层文件夹，跨进程持久；手工删除条目（或整个文件）可重新被询问
+export const PRESET_PROMPT_FILE = '.preset-prompt.json';
+
+// 名单损坏时按空处理（不拦截询问），不因文件本身报错
+function loadDismissed(repoRoot: string): string[] {
+  const p = join(repoRoot, PRESET_PROMPT_FILE);
+  if (!existsSync(p)) return [];
+  try {
+    const raw = readJson<{ dismissed?: unknown }>(p);
+    return Array.isArray(raw.dismissed) ? raw.dismissed.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+// 顶层待确认文件夹：真实目录（非符号链接）、非空、自身无 SKILL.md、不在豁免与拒绝名单
+export function listPromptableTopDirs(repoRoot: string): string[] {
+  const dismissed = new Set(loadDismissed(repoRoot));
+  return readdirSync(repoRoot, { withFileTypes: true })
+    .filter((e) => !e.name.startsWith('.'))
+    .filter((e) => e.isDirectory())
+    .filter((e) => !TOP_DIR_EXEMPTIONS[e.name])
+    .filter((e) => !dismissed.has(e.name))
+    .filter((e) => !isSkillDir(join(repoRoot, e.name)))
+    .filter((e) => readdirSync(join(repoRoot, e.name)).length > 0)
+    .map((e) => e.name)
+    .sort();
+}
+
+export interface PromptUnknownDirsOpts {
+  // stdin 是否 TTY；与 confirm 同时提供才走交互分支，否则一律按非交互处理
+  tty?: boolean;
+  // 交互确认（文件夹名）：返回 true = 移入 presets/；问题文案的呈现由实现方负责
+  confirm?: (dir: string) => boolean | Promise<boolean>;
+}
+
+// 启动确认：逐个询问顶层未知文件夹是否移入 presets/ 成为预设文件夹。
+// 同意 → mv 进 presets/<名>/（名字过 validateSkillName；目标已存在则提示后留在原地，不记名单，下次仍会问）；
+// 拒绝 → 记入 PRESET_PROMPT_FILE，之后启动不再询问。移动后的建链由调用方随后的 reconcile 完成。
+// 非交互（tty 非 true 或未提供 confirm）→ 不询问不动手，返回一行提示列出待确认文件夹。
+// 返回报告行，不直接打印（打印由 cli.ts / tui.ts 负责）
+export async function promptUnknownTopDirs(repoRoot: string, opts: PromptUnknownDirsOpts = {}): Promise<string[]> {
+  const lines: string[] = [];
+  const candidates = listPromptableTopDirs(repoRoot);
+  if (candidates.length === 0) return lines;
+  const interactive = opts.tty === true && typeof opts.confirm === 'function';
+  if (!interactive) {
+    lines.push(`发现顶层非技能文件夹待确认: ${candidates.join('、')}（可移入 ${PRESETS_DIR}/ 成为预设集；在交互终端运行 myskills 可逐个确认）`);
+    return lines;
+  }
+  const dismissed = new Set(loadDismissed(repoRoot));
+  let dirty = false;
+  for (const name of candidates) {
+    if (await opts.confirm!(name)) {
+      try {
+        validateSkillName(name, '预设名');
+      } catch (e) {
+        lines.push(`${(e as Error).message}；${name} 留在原地`);
+        continue;
+      }
+      const dest = join(repoRoot, PRESETS_DIR, name);
+      if (existsSync(dest)) {
+        lines.push(`预设 ${name} 已存在（${dest}），${name} 留在原地，下次启动仍会询问`);
+        continue;
+      }
+      mkdirSync(join(repoRoot, PRESETS_DIR), { recursive: true });
+      renameSync(join(repoRoot, name), dest);
+      lines.push(`已移入预设 ${join(PRESETS_DIR, name)}，其成员技能将由 reconcile 建立顶层链接`);
+    } else {
+      dismissed.add(name);
+      dirty = true;
+      lines.push(`已跳过 ${name}（记入 ${PRESET_PROMPT_FILE}，删除该条目可重新询问）`);
+    }
+  }
+  if (dirty) writeFileSync(join(repoRoot, PRESET_PROMPT_FILE), JSON.stringify({ dismissed: [...dismissed].sort() }, null, 2) + '\n');
+  return lines;
+}
+
+// 交互确认的默认实现（cli.ts / tui.ts 启动接线用）：readline 是非题，y/yes 同意，其余（含空回车）拒绝。
+// core 不打印报告，但问句本身是对话必需的交互输出，属此约定的例外
+export async function confirmOnTty(question: string): Promise<boolean> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = (await rl.question(`${question} [y/N] `)).trim().toLowerCase();
+    return answer === 'y' || answer === 'yes';
+  } finally {
+    rl.close();
+  }
 }
 
 // agent 的项目分组键：skillsPath 里第一个点开头的段之前是项目路径；直接在家目录下的算「全局」

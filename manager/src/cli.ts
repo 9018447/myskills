@@ -2,7 +2,7 @@
 // myskills 管理 CLI：link / status / sync / install / init / migrate（薄封装，逻辑在 core.ts）
 // link 在含 .myskills.json 的目录下自动切项目模式，--global 强制全局
 import { hostname } from 'node:os';
-import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets } from './core.ts';
+import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets, promptUnknownTopDirs, confirmOnTty } from './core.ts';
 
 function resolveRemote(): string {
   const idx = process.argv.indexOf('--remote');
@@ -17,12 +17,15 @@ async function launchTui(): Promise<void> {
     return;
   }
   const { start } = await import('./tui.ts');
-  start(resolveRemote());
+  await start(resolveRemote());
 }
 
 try {
-  // 启动 reconcile：把 presets/ 文件夹事实同步到仓库顶层（幂等；重名冲突时拒绝执行）
-  reconcilePresets(findRepoRoot());
+  const repoRoot = findRepoRoot();
+  // 启动确认：顶层未知非技能文件夹引导进 presets/（非交互环境只提示不动手），
+  // 先于 reconcile——同意移入的文件夹立即被 reconcile 建链
+  for (const line of await promptUnknownTopDirs(repoRoot, { tty: process.stdin.isTTY === true, confirm: confirmOnTty })) console.log(line);
+  reconcilePresets(repoRoot);
   switch (command) {
     case 'tui':
       await launchTui();

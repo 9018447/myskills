@@ -1,0 +1,5 @@
+interface:
+  display_name: "GitNexus Implement"
+  short_description: "Implement a medium task from a gitnexus plan"
+policy:
+  allow_implicit_invocation: false

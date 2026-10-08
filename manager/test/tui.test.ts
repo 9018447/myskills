@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { createElement as h } from 'react';
 import { render } from 'ink-testing-library';
 import { App } from '../src/tui.ts';
+import { moveSkillToPreset, presetMembers } from '../src/core.ts';
 
 function makeFixture() {
   const tmp = mkdtempSync(join(tmpdir(), 'myskills-tui-'));
@@ -69,10 +70,7 @@ test('tui: 搜索模式屏蔽全局键，q 不退出而是进入过滤词', asyn
 
 test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用分发勾选', async () => {
   const { repo } = makeFixture();
-  writeFileSync(
-    join(repo, 'skills-manifest.json'),
-    JSON.stringify({ agents: {}, presets: { base: ['alpha'] } }, null, 2),
-  );
+  moveSkillToPreset(repo, 'base', 'alpha'); // 预设成员真身进 presets/base/，顶层留链接
   const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
   await tick();
   stdin.write('p'); // 预设视图
@@ -88,6 +86,7 @@ test('tui: 应用预设后，应用关系落盘为 presetApplied，不再占用�
   const m = JSON.parse(readFileSync(join(repo, 'skills-manifest.json'), 'utf8'));
   assert.deepEqual(m.presetApplied, { base: ['claude'] }); // 应用关系必须落盘，而不是旧快照
   assert.deepEqual(m.agents, {}); // 预设是独立单元，不并集烘焙进 agent 清单
+  assert.equal(m.presets, undefined, '清单不再写 presets 字段');
   assert.doesNotMatch(lastFrame()!, /\[x\] claude/); // 分发面板只反映清单勾选，预设应用在预设页展示
   unmount();
 });
@@ -332,18 +331,28 @@ test('tui: 分组浏览按行实例导航，初始光标落在第一组的第一
 });
 
 test('tui: 同一技能出现在多个组时，只有光标所在行实例高亮', async () => {
-  const { repo } = makeFixture();
+  // 预设改为文件夹模型后成员互斥，同一技能不会再出现在多个预设组；用两个 agent 共有同一技能覆盖同一导航逻辑
+  const { repo, home } = makeFixture();
+  writeFileSync(
+    join(repo, 'agents.json'),
+    JSON.stringify({
+      agents: [
+        { id: 'claude', name: 'Claude Code', skillsPath: join(home, '.claude', 'skills') },
+        { id: 'cursor', name: 'Cursor', skillsPath: join(home, '.cursor', 'skills') },
+      ],
+    }, null, 2),
+  );
   writeFileSync(
     join(repo, 'skills-manifest.json'),
-    JSON.stringify({ agents: {}, presets: { p1: ['alpha'], p2: ['alpha'] } }, null, 2),
+    JSON.stringify({ agents: { claude: ['alpha'], cursor: ['alpha'] } }, null, 2),
   );
   const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
   await tick();
-  for (let i = 0; i < 4; i++) stdin.write('g'); // 切到「按预设集」
+  stdin.write('g'); // 切到「按agent」
   await tick();
   const frame = lastFrame()!;
-  assert.match(frame, /预设: p1/);
-  assert.match(frame, /预设: p2/);
+  assert.match(frame, /\/ claude\b/);
+  assert.match(frame, /\/ cursor\b/);
   assert.equal(frame.match(/❯ alpha/g)?.length ?? 0, 1, '重复的 alpha 行只能有一个被高亮');
   unmount();
 });
@@ -363,5 +372,75 @@ test('tui: 编辑 agent 路径清空后保存被拒绝，agents.json 不变', as
   await tick();
   assert.match(lastFrame()!, /路径不能为空/);
   assert.equal(readFileSync(join(repo, 'agents.json'), 'utf8'), original, '空路径不应写入 agents.json');
+  unmount();
+});
+
+test('tui: 新建预设并勾选成员，真身移入 presets/ 文件夹；重名预设被拒绝', async () => {
+  const { repo } = makeFixture();
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write('p'); // 预设视图
+  await tick();
+  stdin.write('n'); // 新建
+  await tick();
+  stdin.write('web');
+  await tick();
+  stdin.write('\r'); // 建文件夹并进成员编辑
+  await tick();
+  stdin.write(' '); // 勾选第一个技能 alpha
+  await tick();
+  stdin.write('\r'); // 保存
+  await tick();
+  assert.ok(existsSync(join(repo, 'presets/web/alpha/SKILL.md')), '成员真身应在 presets/web/');
+  assert.ok(lstatSync(join(repo, 'alpha')).isSymbolicLink(), '顶层 alpha 应留符号链接');
+  assert.match(lastFrame()!, /预设 web 已保存（1 个技能）/);
+  stdin.write('n'); // 再建同名预设
+  await tick();
+  stdin.write('web');
+  await tick();
+  stdin.write('\r');
+  await tick();
+  assert.match(lastFrame()!, /预设 web 已存在/);
+  unmount();
+});
+
+test('tui: 删除预设，成员真身回顶层', async () => {
+  const { repo } = makeFixture();
+  moveSkillToPreset(repo, 'web', 'alpha');
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write('p');
+  await tick();
+  stdin.write('d');
+  await tick();
+  assert.equal(existsSync(join(repo, 'presets/web')), false, '预设文件夹应删除');
+  assert.ok(existsSync(join(repo, 'alpha/SKILL.md')), '成员真身回顶层');
+  assert.equal(lstatSync(join(repo, 'alpha')).isSymbolicLink(), false);
+  assert.match(lastFrame()!, /已删除预设 web/);
+  unmount();
+});
+
+test('tui: 把已归属其他预设的技能加入第二个预设被拒绝并提示', async () => {
+  const { repo } = makeFixture();
+  moveSkillToPreset(repo, 'p1', 'alpha');
+  moveSkillToPreset(repo, 'p2', 'beta');
+  const { lastFrame, stdin, unmount } = render(h(App, { root: repo, remote: 'origin' }));
+  await tick();
+  stdin.write('p');
+  await tick();
+  stdin.write('\x1b[B'); // 下移到 p2
+  await tick();
+  stdin.write('e'); // 编辑 p2 成员
+  await tick();
+  stdin.write(' '); // 勾选列表第一项 alpha（已归属 p1）
+  await tick();
+  stdin.write('\r'); // 保存 → 拒绝
+  await tick();
+  assert.match(lastFrame()!, /已归属预设 p1/);
+  assert.deepEqual(
+    presetMembers(repo).map((m) => `${m.preset}:${m.name}`),
+    ['p1:alpha', 'p2:beta'],
+    '两个预设的成员都不动',
+  );
   unmount();
 });

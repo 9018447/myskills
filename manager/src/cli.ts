@@ -2,7 +2,7 @@
 // myskills 管理 CLI：link / status / sync / install / init / migrate（薄封装，逻辑在 core.ts）
 // link 在含 .myskills.json 的目录下自动切项目模式，--global 强制全局
 import { hostname } from 'node:os';
-import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, migrateBakedPresets, reconcilePresets } from './core.ts';
+import { findRepoRoot, findProjectRoot, findProjectRootForInit, link, linkProject, initProject, status, sync, install, migrate, reconcilePresets } from './core.ts';
 
 function resolveRemote(): string {
   const idx = process.argv.indexOf('--remote');
@@ -61,15 +61,7 @@ try {
       break;
     }
     case 'migrate':
-      if (process.argv.includes('--presets')) {
-        const r = migrateBakedPresets(findRepoRoot());
-        console.log('补记 presetApplied（个人清单含预设全部成员的 agent）:');
-        for (const [name, ids] of Object.entries(r.backfilled)) console.log(`  ${name}: ${ids.join(', ')}`);
-        console.log('从个人清单移出的已应用预设成员:');
-        for (const [id, n] of Object.entries(r.cleaned)) console.log(`  ${id}: ${n} 项`);
-      } else {
-        for (const line of migrate(findRepoRoot(), process.argv.includes('--apply')).lines) console.log(line);
-      }
+      for (const line of migrate(findRepoRoot(), process.argv.includes('--apply')).lines) console.log(line);
       break;
     case undefined:
       await launchTui();

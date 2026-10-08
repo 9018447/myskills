@@ -1,7 +1,7 @@
 // myskills 核心逻辑：link / init / status / sync / install / migrate 及清单、注册表读写。
 // link 可从任意目录运行；项目根 .myskills.json 启用项目级分发，init 负责生成该清单。
 // 所有函数返回结构化结果或报告行，不直接打印——打印由 cli.ts / tui.ts 负责
-import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync, renameSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, cpSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, symlinkSync, lstatSync, statSync, writeFileSync, renameSync, type Stats } from 'node:fs';
 import { homedir, hostname, tmpdir } from 'node:os';
 import { join, dirname, resolve, sep, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,9 +17,10 @@ export interface Manifest {
   agents: Record<string, string[]>;
   // 技能来源仓库："owner/repo" 或 "owner/repo/subdir"；install 时记录，存量由 skillSources 从 git 历史推断
   sources?: Record<string, string>;
-  // 预设集：名字 → 技能列表；应用到 agent 时并集追加
-  presets?: Record<string, string[]>;
-  // 预设应用记录：预设名 → 已应用到的 agent id；link 时把这些 agent 的清单与预设技能重新取并集
+  // 预设应用记录：预设名 → 已应用到的 agent id；预设成员读 presets/ 文件夹（见下方文件夹事实模型段），
+  // link 时把这些 agent 的清单与预设当前成员取并集。
+  // 旧版清单里的 presets 字段（名字 → 技能列表）已废弃：类型不再声明，读清单会原样带过、写清单不增不改，
+  // 存量数据由一次性迁移收敛
   presetApplied?: Record<string, string[]>;
 }
 
@@ -195,11 +196,18 @@ function syncSkillsIntoDir(label: string, skillsDir: string, wanted: string[], r
     report.lines.push(`移除 ${label}/${entry}（孤儿或断链）`);
   }
 }
-
 export function link(repoRoot: string): LinkReport {
   const agents = loadAgents(repoRoot);
   const manifest = loadManifest(repoRoot);
   const report: LinkReport = { lines: [], skippedAgents: [], missingSkills: [] };
+  // 预设成员按文件夹现读（预设名 → 成员技能名），已应用预设的当前成员并入 agent 清单，
+  // 预设成员改动随 link/sync 生效；presetApplied 指向已不存在的预设时按空成员处理
+  const membersByPreset = new Map<string, string[]>();
+  for (const m of presetMembers(repoRoot)) {
+    const list = membersByPreset.get(m.preset) ?? [];
+    list.push(m.name);
+    membersByPreset.set(m.preset, list);
+  }
 
   for (const agent of agents) {
     const skillsPath = expandHome(agent.skillsPath);
@@ -209,10 +217,9 @@ export function link(repoRoot: string): LinkReport {
       report.lines.push(`跳过 ${agent.id}（未安装）`);
       continue;
     }
-    // 预设集传播：agent 应用过某预设，则把该预设的当前成员并入其清单（并集），预设改动随 link/sync 生效
     const presetSkills = new Set<string>();
     for (const [preset, ids] of Object.entries(manifest.presetApplied ?? {})) {
-      if (ids.includes(agent.id)) for (const s of manifest.presets?.[preset] ?? []) presetSkills.add(s);
+      if (ids.includes(agent.id)) for (const s of membersByPreset.get(preset) ?? []) presetSkills.add(s);
     }
     const wanted = [...new Set([...(manifest.agents[agent.id] ?? []), ...presetSkills])];
     syncSkillsIntoDir(agent.id, skillsPath, wanted, repoRoot, report);
@@ -764,36 +771,57 @@ export function skillSources(repoRoot: string): Record<string, string> {
   return result;
 }
 
-// 预设集 CRUD 与应用
-export function setPreset(repoRoot: string, name: string, skills: string[]): void {
-  const manifest = loadManifest(repoRoot);
-  (manifest.presets ??= {})[name] = [...new Set(skills)].sort();
-  saveManifest(repoRoot, manifest);
+// ---------- 预设集管理与应用：presets/ 文件夹是成员的唯一事实，应用关系（presetApplied）记在 JSON ----------
+
+// 新建预设：presets/ 下建空文件夹。成员为空的预设也是预设（listPresets 按文件夹判定）
+export function createPreset(repoRoot: string, name: string): void {
+  validateSkillName(name, '预设名');
+  const dir = join(repoRoot, PRESETS_DIR, name);
+  if (existsSync(dir)) throw new Error(`预设 ${name} 已存在`);
+  mkdirSync(dir, { recursive: true });
 }
 
+// 把预设成员同步成 skills：新增成员从顶层移入文件夹，去掉的移回顶层。
+// 先整体校验所有新增（复用移入判据，含归属拒绝），任一失败则报错且完全不动，避免部分应用
+export function setPreset(repoRoot: string, name: string, skills: string[]): void {
+  validateSkillName(name, '预设名');
+  const members = presetMembers(repoRoot);
+  const current = members.filter((m) => m.preset === name).map((m) => m.name);
+  const want = [...new Set(skills)].sort();
+  const adds = want.filter((s) => !current.includes(s));
+  for (const s of adds) assertSkillMovable(repoRoot, name, s, members);
+  for (const s of current.filter((s) => !want.includes(s))) moveSkillToTop(repoRoot, name, s);
+  for (const s of adds) moveSkillToPreset(repoRoot, name, s);
+}
+
+// 删除预设：成员全部移回顶层，删除 presets/<name>/ 文件夹（含非技能残留），并清除 presetApplied 记录
 export function deletePreset(repoRoot: string, name: string): void {
+  for (const m of presetMembers(repoRoot).filter((m) => m.preset === name)) {
+    moveSkillToTop(repoRoot, name, m.name);
+  }
+  rmSync(join(repoRoot, PRESETS_DIR, name), { recursive: true, force: true });
   const manifest = loadManifest(repoRoot);
-  if (manifest.presets) delete manifest.presets[name];
   if (manifest.presetApplied) delete manifest.presetApplied[name];
   saveManifest(repoRoot, manifest);
 }
 
 export interface ApplyResult {
   added: Record<string, number>; // 各 agent 新增数量
-  missing: string[]; // 预设里但仓库中不存在的技能
+  missing: string[]; // 预设里但顶层不可用（未 reconcile 建链）的技能
 }
 
 // 应用预设：只记录 presetApplied（覆盖为本次勾选的完整 agent 集合），不并入 agents 清单。
 // 互斥接管：应用的技能改由预设管，从该 agent 的个人清单移出——一个技能只属于一处；
 // 撤销应用后个人清单也不恢复，重装需重新应用预设或手工勾选。
-// 链接由 link 按「个人清单 ∪ 已应用预设」生成（接管后两者不重叠）——每个预设是独立单元：
-// 改动成员随 link/sync 传播，取消勾选即撤销
+// 链接由 link 按「个人清单 ∪ 已应用预设的文件夹成员」生成（接管后两者不重叠）——
+// 每个预设是独立单元：改动成员随 link/sync 传播，取消勾选即撤销
 export function applyPreset(repoRoot: string, name: string, agentIds: string[]): ApplyResult {
-  const manifest = loadManifest(repoRoot);
-  const skills = manifest.presets?.[name];
-  if (!skills) throw new Error(`预设集 ${name} 不存在`);
+  if (!listPresets(repoRoot).includes(name)) throw new Error(`预设集 ${name} 不存在`);
+  const members = presetMembers(repoRoot);
+  const skills = members.filter((m) => m.preset === name).map((m) => m.name).sort();
   const missing = skills.filter((s) => !isSkillDir(join(repoRoot, s)));
   const valid = skills.filter((s) => !missing.includes(s));
+  const manifest = loadManifest(repoRoot);
   const before = manifest.presetApplied?.[name] ?? [];
   const added: Record<string, number> = {};
   for (const id of agentIds) {
@@ -801,7 +829,9 @@ export function applyPreset(repoRoot: string, name: string, agentIds: string[]):
     // 该 agent 已会被链接的技能：自身清单 + 其他已应用预设的成员；预设里不在此中的才算新增
     const already = new Set<string>(manifest.agents[id] ?? []);
     for (const [p, ids] of Object.entries(manifest.presetApplied ?? {})) {
-      if (p !== name && ids.includes(id)) for (const s of manifest.presets?.[p] ?? []) already.add(s);
+      if (p !== name && ids.includes(id)) {
+        for (const m of members.filter((x) => x.preset === p)) already.add(m.name);
+      }
     }
     added[id] = valid.filter((s) => !already.has(s)).length;
     if (manifest.agents[id]) manifest.agents[id] = manifest.agents[id].filter((s) => !valid.includes(s));
@@ -809,48 +839,6 @@ export function applyPreset(repoRoot: string, name: string, agentIds: string[]):
   (manifest.presetApplied ??= {})[name] = [...agentIds].sort();
   saveManifest(repoRoot, manifest);
   return { added, missing };
-}
-
-export interface MigratePresetsReport {
-  // 补记：个人清单里拥有某预设全部成员的 agent，视为已应用该预设（旧版烘焙遗留）
-  backfilled: Record<string, string[]>;
-  // 清理：已应用预设的成员从各 agent 个人清单移出的数量
-  cleaned: Record<string, number>;
-}
-
-// 一次性收敛烘焙遗留：旧版应用预设会把成员并集拷进 agent 个人清单，预设边界因此消失。
-// 此迁移把「恰好拥有某预设全部成员」的 agent 补记为已应用该预设，再把已应用预设的成员
-// 从个人清单移出（互斥接管）。幂等，重复运行无副作用。
-export function migrateBakedPresets(repoRoot: string): MigratePresetsReport {
-  const manifest = loadManifest(repoRoot);
-  const report: MigratePresetsReport = { backfilled: {}, cleaned: {} };
-  const presets = manifest.presets ?? {};
-  for (const [name, members] of Object.entries(presets)) {
-    if (members.length === 0) continue;
-    const applied = new Set(manifest.presetApplied?.[name] ?? []);
-    for (const [id, skills] of Object.entries(manifest.agents)) {
-      if (!applied.has(id) && members.every((s) => skills.includes(s))) {
-        (report.backfilled[name] ??= []).push(id);
-      }
-    }
-  }
-  for (const [name, ids] of Object.entries(report.backfilled)) {
-    manifest.presetApplied ??= {};
-    manifest.presetApplied[name] = [...new Set([...(manifest.presetApplied[name] ?? []), ...ids])].sort();
-  }
-  for (const [name, ids] of Object.entries(manifest.presetApplied ?? {})) {
-    for (const id of ids) {
-      const skills = manifest.agents[id];
-      if (!skills) continue;
-      const kept = skills.filter((s) => !(presets[name] ?? []).includes(s));
-      if (kept.length !== skills.length) {
-        manifest.agents[id] = kept;
-        report.cleaned[id] = (report.cleaned[id] ?? 0) + skills.length - kept.length;
-      }
-    }
-  }
-  saveManifest(repoRoot, manifest);
-  return report;
 }
 
 // ---------- 预设集文件夹事实模型：presets/<预设名>/<技能名>/ 存真身，仓库顶层留相对符号链接 ----------
@@ -963,12 +951,12 @@ export function reconcilePresets(repoRoot: string): string[] {
   return lines;
 }
 
-// 技能移入预设：顶层真身 mv 进 presets/<预设>/<技能>/，并在原地留相对符号链接（reconcile 也会补）。
-// 真身已归属其他预设时直接报错（说明当前归属，不自动搬家）；移回顶层后可再移入新预设
-export function moveSkillToPreset(repoRoot: string, preset: string, skill: string): void {
+// 移入预设的可执行判据：名称合法、不归属任何预设、顶层是技能、目标位空闲。
+// moveSkillToPreset 与 setPreset 的整体预检共用同一套报错（含归属拒绝文案）
+function assertSkillMovable(repoRoot: string, preset: string, skill: string, members: PresetMember[]): void {
   validateSkillName(skill);
   validateSkillName(preset, '预设名');
-  const owner = presetMembers(repoRoot).find((m) => m.name === skill);
+  const owner = members.find((m) => m.name === skill);
   if (owner) {
     throw new Error(`技能 ${skill} 已归属预设 ${owner.preset}（${join(repoRoot, owner.dir)}），请先移回顶层`);
   }
@@ -976,9 +964,34 @@ export function moveSkillToPreset(repoRoot: string, preset: string, skill: strin
   if (!isSkillDir(top)) throw new Error(`仓库顶层没有技能 ${skill}`);
   const dest = join(repoRoot, PRESETS_DIR, preset, skill);
   if (existsSync(dest)) throw new Error(`目标已存在: ${dest}`);
+}
+
+// 技能移入预设：顶层真身 mv 进 presets/<预设>/<技能>/，并在原地留相对符号链接（reconcile 也会补）。
+// 真身已归属其他预设时直接报错（说明当前归属，不自动搬家）；移回顶层后可再移入新预设
+export function moveSkillToPreset(repoRoot: string, preset: string, skill: string): void {
+  assertSkillMovable(repoRoot, preset, skill, presetMembers(repoRoot));
+  const top = join(repoRoot, skill);
+  const dest = join(repoRoot, PRESETS_DIR, preset, skill);
   mkdirSync(dirname(dest), { recursive: true });
   renameSync(top, dest);
   symlinkSync(relative(repoRoot, dest), top, 'dir');
+}
+
+// 技能移回顶层：预设文件夹里的真身（含嵌套成员）mv 回仓库顶层，替换 reconcile 留下的符号链接；
+// 顶层被真实目录/文件占用时拒绝（不覆盖、不删除占用方）。预设文件夹保留（空预设仍是预设）
+export function moveSkillToTop(repoRoot: string, preset: string, skill: string): void {
+  const m = presetMembers(repoRoot).find((x) => x.preset === preset && x.name === skill);
+  if (!m) throw new Error(`预设 ${preset} 里没有技能 ${skill}`);
+  const top = join(repoRoot, skill);
+  let st: Stats | undefined;
+  try {
+    st = lstatSync(top);
+  } catch {
+    // 顶层无条目（未 reconcile），直接落位
+  }
+  if (st && !st.isSymbolicLink()) throw new Error(`顶层 ${top} 已被占用，请手动取舍`);
+  if (st) rmSync(top, { force: true });
+  renameSync(join(repoRoot, m.dir), top);
 }
 
 // agent 的项目分组键：skillsPath 里第一个点开头的段之前是项目路径；直接在家目录下的算「全局」

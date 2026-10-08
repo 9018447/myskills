@@ -103,7 +103,12 @@ function SkillsView({
     [skills, filter],
   );
 
-  const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
+  // 预设分组数据源：presets/ 文件夹现读（预设名 → 成员技能名）
+  const presets = useMemo(() => {
+    const byPreset: Record<string, string[]> = {};
+    for (const m of core.presetMembers(root)) (byPreset[m.preset] ??= []).push(m.name);
+    return byPreset;
+  }, [root, tick]);
   const sources = useMemo(() => (groupMode === 'source' ? core.skillSources(root) : {}), [root, tick, groupMode]);
   // 项目级 agent（注册表家目录 agent 去 ~/ 派生）及开启状态；显式 targets 优先，省略时默认全开
   const projAgentRows = useMemo(
@@ -326,9 +331,16 @@ function PresetsView({
   const [mFilter, setMFilter] = useState('');
   const [mSearching, setMSearching] = useState(false);
 
-  const presets = useMemo(() => core.loadManifest(root).presets ?? {}, [root, tick]);
+  // 预设与成员一律读 presets/ 文件夹；应用关系（presetApplied）仍读 JSON
   const applied = useMemo(() => core.loadManifest(root).presetApplied ?? {}, [root, tick]);
-  const names = useMemo(() => Object.keys(presets).sort(), [presets]);
+  const names = useMemo(() => core.listPresets(root), [root, tick]);
+  const members = useMemo(() => core.presetMembers(root), [root, tick]);
+  // 预设名 → 成员技能名（presetMembers 已按技能名排序）
+  const membersByPreset = useMemo(() => {
+    const by: Record<string, string[]> = {};
+    for (const m of members) (by[m.preset] ??= []).push(m.name);
+    return by;
+  }, [members]);
   const skills = useMemo(() => core.listRepoSkills(root), [root]);
   const mShown = useMemo(
     () => (mFilter ? skills.filter((s) => s.toLowerCase().includes(mFilter.toLowerCase())) : skills),
@@ -342,7 +354,7 @@ function PresetsView({
 
   const openMembers = (name: string) => {
     setEditing(name);
-    setSel(new Set(presets[name] ?? []));
+    setSel(new Set(membersByPreset[name] ?? []));
     setMCursor(0);
     setMFilter('');
     setMSearching(false);
@@ -355,6 +367,13 @@ function PresetsView({
       else if (key.return) {
         const name = buffer.trim();
         if (!name) return;
+        try {
+          core.createPreset(root, name); // 新建预设 = presets/ 下建文件夹
+        } catch (err) {
+          onNotice((err as Error).message);
+          return;
+        }
+        bumpTick();
         openMembers(name);
       } else if (key.backspace || key.delete) setBuffer((b) => b.slice(0, -1));
       else if (input && !key.ctrl && !key.meta) setBuffer((b) => b + input);
@@ -386,7 +405,13 @@ function PresetsView({
         setSel(next);
       }
       if (key.return) {
-        core.setPreset(root, editing, [...sel]);
+        try {
+          core.setPreset(root, editing, [...sel]);
+        } catch (err) {
+          // 如技能已归属其他预设：提示后留在编辑页，修正勾选再保存（setPreset 整体校验，失败时完全不动）
+          onNotice((err as Error).message);
+          return;
+        }
         const summary = userLinkSummary(root);
         onNotice(`预设 ${editing} 已保存（${sel.size} 个技能）；${summary}`);
         bumpTick();
@@ -432,7 +457,12 @@ function PresetsView({
     if (input === 'e' && names[cursor]) openMembers(names[cursor]);
     if (input === 'd' && names[cursor]) {
       const victim = names[cursor];
-      core.deletePreset(root, victim);
+      try {
+        core.deletePreset(root, victim); // 成员全部移回顶层后删除文件夹
+      } catch (err) {
+        onNotice((err as Error).message);
+        return;
+      }
       setCursor((c) => Math.max(0, c - 1));
       onNotice(`已删除预设 ${victim}`);
       bumpTick();
@@ -479,9 +509,10 @@ function PresetsView({
     names.length === 0 && mode === 'list' ? h(Text, { dimColor: true }, '暂无预设，按 n 新建') : null,
     ...names.map((n, i) => {
       const ap = applied[n] ?? [];
+      const ms = membersByPreset[n] ?? [];
       return h(
         Text, { key: n, color: i === cursor ? 'cyan' : undefined },
-        `${i === cursor ? '❯' : ' '} ${n}（${presets[n].length}）: ${presets[n].join(', ')}${ap.length ? `  → 已应用: ${ap.join(', ')}` : '  → 未应用'}`,
+        `${i === cursor ? '❯' : ' '} ${n}（${ms.length}）: ${ms.join(', ')}${ap.length ? `  → 已应用: ${ap.join(', ')}` : '  → 未应用'}`,
       );
     }),
     mode === 'new' ? h(Text, { color: 'yellow' }, `预设名: ${buffer}▌`) : null,

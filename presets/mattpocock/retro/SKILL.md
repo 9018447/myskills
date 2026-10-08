@@ -24,6 +24,14 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 
 4. Present these candidates to the user, in order of severity.
 
+## 落档优先级
+
+每条反思结论按这个顺序找落点，前一层装得下就不落到后一层：
+
+1. **已有技能迭代** —— 结论能由某个技能承载的（改流程、加检查步骤、补触发条件），先迭代那个技能的 SKILL.md。
+2. **CLAUDE.md / AGENTS.md** —— 不属于任何技能、但每轮会话都该生效的导航指针或硬约束，落到对应的 steering 文件。
+3. **记忆或新建技能** —— 前两层都装不下的行为约定，最后才写入记忆（无技能指引时的行为约束），或确有复用价值时新建技能。
+
 ## Reference
 
 ### Implementation vs Review

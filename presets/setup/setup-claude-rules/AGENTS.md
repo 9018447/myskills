@@ -1,17 +1,13 @@
-## Tool Routing
+# setup-claude-rules — source directory
 
-Use specialized code search tools instead of shell `grep`/`find` or built-in `Grep`/`Glob`:
+This directory is the source of the `setup-claude-rules` skill. All steering content lives in the source files below; do not duplicate it here.
 
-- File discovery: `rg --files`
-- Content search: `jg` (semantic first stop — natural-language question, returns file list + locations) · `zg` (fallback, local embedding index) · `zg --rg` (exact text / regex)
-- Structural matching: `ast-grep`
-- Symbols (definitions, references, types, call hierarchy): LSP
-- Graph relations (call chains, dependencies, impact analysis, architecture): `GitNexus`
+- `SKILL.md` — skill flow (script-driven install, companion-skill check)
+- `install.sh` / `check-tools.sh` — deterministic installer + tool availability check
+- `ADD_RULES.md` → installed as `.claude/rules/code-search.md`
+- `CODING_RULES.md` → installed as `.claude/rules/coding-principle.md`
+- `VERIFY_RULES.md` → installed as `.claude/rules/verification.md`
+- `PRINCIPLES_RULES.md` → installed as `.claude/rules/work-principles.md`
+- `APPEND_CLAUDE.md` — the summary block appended to CLAUDE.md/AGENTS.md
 
-Escalate from cheap to expensive: `rg --files → jg → ast-grep / LSP → GitNexus`. After locating code, use `Read` on the exact source before concluding or editing.
-
-The full routing policy, including tool boundaries and escalation flows, lives in `.claude/rules/code-search.md`.
-
-## Division of Labor
-
-Claude Code（主 agent）只写文档、编排任务、把握全局。编码工作：零碎和单文件的改动由主 agent 自己直接完成，跨文件改动用 `/acpx` 派发，完整实现流程由用户以 `/acpxtodo` 启动。细则见 `.claude/rules/coding-principle.md`。
+The installed summary block (Tool Routing / Division of Labor / Verification / Work Principles) is generated from `APPEND_CLAUDE.md`: edit that file, then re-run `install.sh` against the target repo.

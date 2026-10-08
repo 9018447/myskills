@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# 检查搜索路由规则与编码分工规则依赖的工具是否在 PATH 中。
-# 始终 exit 0：缺工具不阻断安装，只报告，由用户决定先装还是照常写规则。
+# Check whether the tools the search-routing and coding-labor rules depend on are on PATH.
+# Always exits 0: missing tools do not block the install — report only, the user decides whether to install first.
 
 for t in jg rg zg ast-grep gitnexus acpx; do
   if command -v "$t" >/dev/null 2>&1; then
@@ -10,10 +10,10 @@ for t in jg rg zg ast-grep gitnexus acpx; do
   fi
 done
 
-# jg 需要 OpenRouter 凭据，有命令没凭据照样不可用
+# jg needs OpenRouter credentials; the binary alone is not enough
 if command -v jg >/dev/null 2>&1; then
-  jg doctor >/dev/null 2>&1 && echo "ok      jg auth (Jev reachable)" || echo "WARN    jg auth 未配置/不可达，跑一次 jg auth"
+  jg doctor >/dev/null 2>&1 && echo "ok      jg auth (Jev reachable)" || echo "WARN    jg auth not configured/unreachable, run jg auth once"
 fi
 
-# LSP 不是命令行工具，由宿主 agent 内置提供，这里只能提示
-echo "note    LSP 由宿主 agent（如 Claude Code）内置提供，脚本无法检查"
+# LSP is not a CLI tool; it is built into the host agent, so we can only note it
+echo "note    LSP is provided built-in by the host agent (e.g. Claude Code); the script cannot check it"

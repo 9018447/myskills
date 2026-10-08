@@ -61,24 +61,23 @@ myskills sync              # 拉最新、按清单建链接、上报状态
 
 ## Tool Routing
 
-Use specialized code search tools instead of shell `grep`/`find` or built-in `Grep`/`Glob`:
+Use specialized code search tools instead of shell `grep`/`find` or built-in `Grep`/`Glob`.
 
 - File discovery: `rg --files`
-- Content search: `jg` (semantic first stop — natural-language question, returns file list + declaration locations; verify with `jg doctor`) · `zg` (fallback, local embedding index) · `zg --rg` (exact text / regex) · `zg` index missing/stale → rebuild with `zg index`, don't degrade to rg
-- Structural matching: `ast-grep`
-- Symbols (definitions, references, types, call hierarchy): LSP
-- Graph relations (call chains, dependencies, impact analysis, architecture): `GitNexus`
+- Content search, first stop: `jg` (jevgrep — natural-language question → relevant-file list + declaration locations; auth `jg auth`, health `jg doctor`)
+- Second tier: `zg` (fallback local index; `zg --rg` for exact/exhaustive text; missing/stale index → rebuild with `zg index`) · `ast-grep` (structure) · `GitNexus` (call chains, dependencies, impact) · LSP (symbols)
+- Last resort: `rg` / `grep` — only for declared exceptions (shell composition, filesystem metadata, scripting) or when the tools above cannot cover the task; state the reason on the spot.
 
-Escalate from cheap to expensive: `rg --files → jg → ast-grep / LSP → GitNexus`. After locating code, use `Read` on the exact source before concluding or editing.
-
-本节是硬约束，不是建议。已观察到的倒退：实际工作中很少用 `jg`、`zg` 和 `GitNexus`，仍然退回 shell `grep`/`find`，`ast-grep` 几乎从未使用。内容检索按 `jg → GitNexus → zg` 的顺序：语义第一选择 `jg`（自然语言提问，返回文件清单+声明位置），精确匹配 `zg --rg`，结构匹配 `ast-grep`，调用链与影响面 `GitNexus`；`grep`/`find` 只在路由层声明的例外情形或路由工具不可用（需当场说明）时才出现。细则见 `.claude/rules/code-search.md`。
-
-The full routing policy, including tool boundaries and escalation flows, lives in `.claude/rules/code-search.md`.
+Retrieval order: `jg → zg / ast-grep / GitNexus → rg`. After locating code, `Read` the exact source before concluding or editing. Full policy: `.claude/rules/code-search.md`.
 
 ## Division of Labor
 
-Claude Code（主 agent）只写文档、编排任务、把握全局。编码工作：零碎和单文件的改动由主 agent 自己直接完成，跨文件改动用 `/acpx` 派发，完整实现流程由用户以 `/acpxtodo` 启动。细则见 `.claude/rules/coding-principle.md`。
+Claude Code (the main agent) writes documents, orchestrates tasks, and holds the global picture. Coding: trivial and single-file changes are done by the main agent directly; cross-file implementation always enters through `/poteto-mode` — the dispatch chain and the single-agent vs concurrent choice live inside that skill, and the main agent never codes across files itself. Details: `.claude/rules/coding-principle.md`.
 
 ## Verification
 
-代码复审、完成工作确认、事实确认，尽可能用 jev 判定服务而非自己逐一去看：把已知事实整理成 state，把问题整理成一批类型化判定（真/假、选项、分级）一次提交，按带置信度的结论行动。低置信度或 escalate 的问题自己判；jev 结论是判定辅助，不是授权边界；精确规则和算术用代码。细则见 `.claude/rules/verification.md`。
+For code review, done-work confirmation, and fact-checking, use the jev judgment service (the `jev` skill) instead of reading everything yourself: assemble evidence into `state`, batch independent questions into one request, and judge low-confidence or escalated conclusions yourself. jev's conclusions are decision aids, not authorization boundaries; exact rules and arithmetic go to code. Details: `.claude/rules/verification.md`.
+
+## Work Principles
+
+Universal work principles: subtract before you add, test behavior not implementation, accept only with evidence (prove-it-works), fix root causes not symptoms, after two failures of the same fix re-examine the shared premise, encode lessons in structure not memory. Details: `.claude/rules/work-principles.md`.

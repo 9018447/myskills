@@ -1,17 +1,17 @@
-# 工作原则（提炼自 pstack principle-* 系列）
+# Work Principles (distilled from the pstack principle-* series)
 
-## 硬约束
+## Hard constraints
 
-以下原则按条执行。派发场景的原则注入由 acpxtodo 的映射表负责（按票类型带场景条目）；本文件是普适子集，对所有工作生效。
+Apply these principles item by item. Scenario-specific injection during dispatch is handled by acpxtodo's mapping table (per-ticket-type scenario entries); this file is the universal subset and applies to all work.
 
-- **minimize-reader-load**：代码、注释、文档写给下一个读的人。命名直白、路径写全、不省中间步骤；读者读完还需追问"所以到底什么意思"，就是没写完。
-- **subtract-before-you-add**：先想能不能删代码解决问题，再想加代码。每加一层抽象、一个配置项、一个防御分支，都要能说出删掉哪个旧负担作为交换。
-- **test-behavior-not-implementation**：测试对行为断言（输入→输出、可观察副作用），不对实现细节断言（内部调用顺序、私有结构）。实现重构不该弄绿一套好测试。
-- **prove-it-works**：完工的判据是证据——测试输出、运行结果、可复核的指针，不是"应该没问题"。声称与盘上证据冲突时，以盘上证据为准。
-- **fix-root-causes**：修 bug 先问 why 到根因再动手；打补丁掩盖症状等于把同一个 bug 定时投递给未来。
-- **attack-the-premise**：同类修复连续失败两次，停下来检验共同假设，不试第三次。三次都在同一个前提上打转，说明错的是前提。
-- **foundational-thinking**：动手前先问这个问题到底在问什么；直接在问题的第一个表述上开写，常是把错误前提写进代码。
-- **type-system-discipline**：能让类型/结构替人守住的约束（非法状态不可表示），不靠注释和约定守。`any`/绕过类型的写法等于把约束降级成口头承诺。
-- **encode-lessons-in-structure**：踩过的坑编码进结构——加检查脚本、收紧类型、写进规则文件——而不是编码进记忆。下次还靠人记住的教训等于没吸取。
-- **outcome-oriented-execution**：以结果状态验收，不以动作执行验收。"跑了命令"不是结果，"命令产出落在盘上且形状正确"才是。
-- **guard-the-context-window**：上下文是预算。长输出落盘再取摘要、读文件只读相关段、大批量材料用检索不整读——省下的注意力花在判断上。
+- **minimize-reader-load** — code, comments, and docs are written for the next reader. Plain names, full paths, no skipped steps; if a reader still has to ask "so what does this actually mean", it is not finished.
+- **subtract-before-you-add** — first ask whether deleting code solves the problem, then adding. Every added abstraction, config option, or defensive branch must name the old burden it removes in exchange.
+- **test-behavior-not-implementation** — tests assert behavior (input → output, observable side effects), not implementation details (internal call order, private structure). Refactoring the implementation must not turn a good test suite red.
+- **prove-it-works** — done means evidence: test output, run results, verifiable pointers, not "should be fine". When a claim conflicts with what is on disk, disk wins.
+- **fix-root-causes** — for bugs, keep asking why until the root cause before acting; patching over symptoms schedules the same bug for delivery to the future.
+- **attack-the-premise** — after two consecutive failures of the same kind of fix, stop and examine the shared assumption; do not try a third time. If three attempts circle the same premise, the premise is what is wrong.
+- **foundational-thinking** — before acting, ask what the question is really asking; writing straight onto the first formulation often bakes a wrong premise into the code.
+- **type-system-discipline** — constraints that types/structures can guard (illegal states unrepresentable) are not guarded by comments and conventions. `any` and type bypasses downgrade a constraint to a verbal promise.
+- **encode-lessons-in-structure** — encode lessons into structure (check scripts, tighter types, rule files), not into memory. A lesson that depends on someone remembering it next time was never learned.
+- **outcome-oriented-execution** — accept by resulting state, not by actions performed. "Ran the command" is not a result; "the command's output is on disk and correctly shaped" is.
+- **guard-the-context-window** — context is a budget. Spill long output to disk and take summaries, read only the relevant sections, retrieve instead of bulk-reading; the attention saved goes to judgment.

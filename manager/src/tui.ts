@@ -512,7 +512,7 @@ function PresetsView({
       const ms = membersByPreset[n] ?? [];
       return h(
         Text, { key: n, color: i === cursor ? 'cyan' : undefined },
-        `${i === cursor ? '❯' : ' '} ${n}（${ms.length}）: ${ms.join(', ')}${ap.length ? `  → 已应用: ${ap.join(', ')}` : '  → 未应用'}`,
+        `${i === cursor ? '❯' : ' '} ${n}（${ms.length}）${ap.length ? `  → 已应用: ${ap.join(', ')}` : '  → 未应用'}`,
       );
     }),
     mode === 'new' ? h(Text, { color: 'yellow' }, `预设名: ${buffer}▌`) : null,

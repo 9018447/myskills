@@ -26,7 +26,7 @@ Issue 跟踪器和分类标签词汇表应已提供给你——如果没有，�
 - **GitNexus 影响面分析**（CLI：`node .gitnexus/run.cjs impact <symbol> -d upstream --repo .`，细则见 `.claude/rules/code-search.md`）：对每个计划改动的共享符号查上游影响面。改动票 A 的符号被票 B 的实现读到 → B 必须被 A 阻塞；影响面里没有任何其他票的符号 → 不加边。d=1 直接依赖 WILL BREAK、d=2 LIKELY AFFECTED 的分级照用。
 - **ast-grep**：按语法形态（调用点、类型引用）核实两票的改动是否会落到同一符号/同一文件——文本 grep 容易把同名不同物算重叠。相交的票要么合并、要么显式加边串行。
 
-影响面为空不等于安全：GitNexus 索引没解析到的符号（动态派发、跨语言调用）会返回空，先用 `zg --rg` 复核再下结论。
+影响面为空先分清两种原因：索引本身缺失或过期（先跑 `node .gitnexus/run.cjs status --repo .`，报 missing 或 indexed commit ≠ HEAD 即是）就先重建 `node .gitnexus/run.cjs analyze --index-only` 再重查——索引没覆盖到不构成阻塞，重建即可；索引新鲜仍返回空的（动态派发、跨语言调用）才视为索引没解析到，用 `zg --rg` 复核再下结论。
 
 **边与相交的最终确认用 jev 判定服务批量做**（请求契约见仓库 `VERIFY_RULES.md`）：把上面收集的证据整理进 `state`，将"票 B 是否真的读取票 A 改动的符号""两票相交是否语义性（合并/加边）""这条边是否可删"等判定题一次性批量提交；低置信度或 escalate 的自己回代码复核。jev 结论是判定辅助，不是授权边界——最终拆解仍由用户在下一步批准。
 

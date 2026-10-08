@@ -46,7 +46,7 @@ Tickets 不再逐票串行。默认按**波次并发**执行：每张就绪票�
 
 ### 调度
 
-1. 从票面 blocking edges 建依赖图（无票面边时按 ticket 编号 + Spec 的接口依赖人工判边，判不清就问用户，不猜）。
+1. 从票面 blocking edges 建依赖图（无票面边时按 ticket 编号 + Spec 的接口依赖人工判边，判不清就问用户，不猜）。票面由 split-tickets 产出，两技能的契约就是三个字段：**阻塞边**（本节调度输入）、**改动范围**（合并冲突预测输入）、**运行预算标记 `含 N 次真实运行`**（运行票识别，见运行票派发）。
 2. **本波就绪集** = 所有前置票已合并的票。就绪集内所有票同时派发，不等彼此。
 3. 每张就绪票在派发前建独立 worktree（在仓库根执行）：
 
@@ -88,11 +88,11 @@ herdr pane run <pane-id> "acpx --cwd <repo根>/.worktrees/tNN --approve-all --tt
 
 每票独立走完闭环，互相不阻塞：
 
-确认票无误 → `/acpx` 派发进 worktree → agent 按 `/tdd` 完成 → 编排者在 worktree 内审 diff（`git -C .worktrees/tNN diff` 对照 worktree HEAD）→ 按 `/jev-code-review` 评审 → 有修复则修复后重验受影响部分 → 编排者在 `ticket/tNN` 分支上 commit（有修复才提交第二次 commit，不创建空 commit）。
+确认票无误 → `/acpx` 派发进 worktree → agent 按 `/tdd` 完成 → 编排者在 worktree 内审 diff（`git -C .worktrees/tNN diff` 对照 worktree HEAD）→ 按 `/jev-code-review` 评审 → 有修复则修复后重验受影响部分 → 编排者在 `ticket/tNN` 分支上 commit（有修复才提交第二次 commit，不创建空 commit）→ 维护票面与相关文档（勾选验收项、handoff、受影响的 ADR）。
 
 纯文档 / 纯 tracker / 纯 markdown 提交（staged diff 无代码路径）可豁免评审轮；豁免必须在 commit message 或会话记录中显式声明，不得静默跳过。
 
-评审请求一律从上一票已通过的请求文件复制改写（留档 `.agent-results/tNN-review.json`），只换 state、证据和问题内容，形状与字段照抄——手搓重建形状会连翻数轮（2026-10-08 t02：`model:"default"` 占位键被 OpenRouter 400，删键后才通过）。请求字段细节以 `jev` skill 的 API 文档为准。
+评审请求一律从上一票已通过的请求文件复制改写（留档 `.agent-results/tNN-review.json`），只换 state、证据和问题内容，形状与字段照抄——手搓重建形状会连翻数轮（2026-10-08 t02：`model:"default"` 占位键被 OpenRouter 400，删键后才通过）。请求字段契约见仓库 `VERIFY_RULES.md`。
 
 ### 合并回主干（串行点）
 

@@ -21,3 +21,7 @@ Claude Code（主 agent）只写文档、编排任务、把握全局。编码工
 ## Verification
 
 代码复审、完成工作确认、事实确认，尽可能用 jev 判定服务而非自己逐一去看：把已知事实整理成 state，把问题整理成一批类型化判定（真/假、选项、分级）一次提交，按带置信度的结论行动。低置信度或 escalate 的问题自己判；jev 结论是判定辅助，不是授权边界；精确规则和算术用代码。细则见 `.claude/rules/verification.md`。
+
+## Work Principles
+
+普适工作原则（读得动代码也要读得懂问题）：先删后加（subtract-before-you-add）、测行为不测实现、完工以证据为准（prove-it-works）、修根因不打补丁、同类修复失败两次先检验共同前提、教训编码进结构而不是记忆。细则见 `.claude/rules/work-principles.md`。

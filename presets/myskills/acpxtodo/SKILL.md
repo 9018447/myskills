@@ -30,11 +30,27 @@ disable-model-invocation: true
 
 Agent 选择规则：
 
-1. 用户明确指定 → 离线票使用用户指定；
-2. 真实运行票一律默认 `codex`, `model` 指定`gpt-6-luna`；
-3. 其他情况用户未指定 → 必须询问，不得自行选择。
+1. 用户明确指定 → 用用户指定（含票号段与候补链参数形式）；
+2. 用户未指定 → **按路由表选**：查票面 `**类型/难度：**` 字段对照下表；运行票除外；
+3. 真实运行票一律默认 `codex`, `model` 指定`gpt-6-luna`；
+4. 路由表查不到匹配（类型不在表内、难度存疑）→ 必须询问，不得自行选择。
 
-当前 Agent 只有在额度耗尽、不可用、启动/执行失败时才进入候补链。代码有 bug、测试失败或 Review 发现问题不属于 Agent 不可用，应继续本票修复。
+### 派发路由表
+
+票类型×难度 → 首选 agent。agent 能力依据见 `/acpx` 的「能力对照表」；表按实测迭代，用错就改表。
+
+| 票类型 | 轻 | 重 |
+|---|---|---|
+| bug-fix | omp | omp（失败降 kimi） |
+| refactor | omp | 询问用户 |
+| feature | omp | kimi |
+| perf | codex | codex |
+| docs / chore | kimi | kimi |
+| 运行票（任何类型） | codex + `gpt-6-luna` | 同左 |
+
+路由表未命中时回落**候补链** `omp -> kimi -> dsh`。路由表只决定首选，不改变候补链语义：agent 额度耗尽、不可用、启动/执行失败时才降级；代码有 bug、测试失败或 Review 发现问题不属于 Agent 不可用，应继续本票修复。
+
+当前候补链：
 
 ```text
 omp -> kimi -> dsh
@@ -46,7 +62,7 @@ Tickets 不再逐票串行。默认按**波次并发**执行：每张就绪票�
 
 ### 调度
 
-1. 从票面 blocking edges 建依赖图（无票面边时按 ticket 编号 + Spec 的接口依赖人工判边，判不清就问用户，不猜）。票面由 split-tickets 产出，两技能的契约就是三个字段：**阻塞边**（本节调度输入）、**改动范围**（合并冲突预测输入）、**运行预算**（实现票 `目标测试约 X 分钟/轮，预期 Y 轮`；写 `含 N 次真实运行` 的为运行票，识别与派发见运行票派发）。
+1. 从票面 blocking edges 建依赖图（无票面边时按 ticket 编号 + Spec 的接口依赖人工判边，判不清就问用户，不猜）。票面由 split-tickets 产出，两技能的契约就是四个字段：**阻塞边**（本节调度输入）、**类型/难度**（派发路由与原则注入输入）、**改动范围**（合并冲突预测输入）、**运行预算**（实现票 `目标测试约 X 分钟/轮，预期 Y 轮`；写 `含 N 次真实运行` 的为运行票，识别与派发见运行票派发）。
 2. **本波就绪集** = 所有前置票已合并的票。就绪集内所有票同时派发，不等彼此。
 3. 每张就绪票在派发前建独立 worktree（在仓库根执行）：
 
@@ -79,9 +95,24 @@ herdr pane run <pane-id> "acpx --cwd <repo根>/.worktrees/tNN --approve-all --tt
 7. 不得再次使用 `/acpx` 或 `subagent` 向下派发；
 8. 不跑 code-review（`@../open-code-review-delegate/`、`ocr` `/code-review` 命令都不执行）——评审轮由编排者在其完成后进行；
 9. **不提交 git**（提交由编排者在本票分支上完成）；
-10. 提示词中的文件路径必须先在盘上验证存在（ls/grep）；验证不了就让实现 agent 自行定位，不得断言未验证的路径（2026-09-26 票 22 提示词写错 CLI 路径，靠 agent 自行 glob 纠正）。
+10. 提示词中的文件路径必须先在盘上验证存在（ls/grep）；验证不了就让实现 agent 自行定位，不得断言未验证的路径（2026-09-26 票 22 提示词写错 CLI 路径，靠 agent 自行 glob 纠正）；
+11. **工作原则**：按票面类型对照下面的原则映射表，把命中原则的中文提炼段写入 prompt 末尾「工作原则」小节（每条一两句，不贴原文全文）；
+12. **文风**：prompt 末尾附文风要求段——「输出与代码注释用中文；每句有主语和因果，写清楚谁在做什么、为什么；术语第一次出现时带一句它在当前问题里的实际作用；不用只有作者自己懂的缩写和指代；结论后面跟原因；不把背景、原因、判断挤进一句话」。
 
 其余 headless 规则（pane 存活预检、派发同一步布 watcher、`[done] end_turn` 完成判据、候补链降级、续作分工）按下文 Headless 派发与 `/acpx` skill 执行，对 worktree 模式同样适用——只是每个对象都带票号：`prompts/tNN.md`、`.agent-results/<agent>-tNN.log`、`herdr pane get <该票pane>`。
+
+### 工作原则注入（票类型 → 原则提炼段）
+
+派发 prompt 第 11 条的映射表。提炼段自持中文，不回写 pstack 的 principle 技能原文（`presets/stack/` 下，英文原文按需深读）。全类型必带三条 + 按类型追加：
+
+| 票类型 | 追加原则（提炼段写入 prompt） |
+|---|---|
+| 全类型 | **test-behavior-not-implementation**：测试对行为断言（输入→输出），不对实现细节断言（内部调用顺序、私有结构）；**prove-it-works**：完工的判据是证据（测试输出、运行结果），不是"应该没问题"；**minimize-reader-load**：代码和注释写给下一个读的人，命名直白、路径写全、不省中间步骤 |
+| bug-fix | **fix-root-causes**：先问 why 到根因，不打补丁掩盖症状；**attack-the-premise**：同类修复连续失败两次，先检验共同假设，不再试第三次 |
+| refactor | **migrate-callers-then-delete-legacy-apis**：先迁走所有调用方，再删旧接口，两步分开验证；**subtract-before-you-add**：先想能不能删代码解决问题，再想加代码 |
+| feature | **sequence-verifiable-units**：把工作排成一串可独立验证的小单元，每步都能确认对错再前进 |
+| perf | **explain-the-number**：每个优化前后数字都要有解释，解释不了的收益当作不存在 |
+| 并发/共享状态类（任何类型票涉及） | **separate-before-serializing-shared-state**：先分清状态归属再上锁；**make-operations-idempotent**：操作做成可重复执行，重试和中断不产生副作用 |
 
 如果 Spec、ADR、Ticket 存在无法解释的实质冲突，停止本票并报告，不得自行改写设计。
 
@@ -151,6 +182,20 @@ git merge --no-ff ticket/tNN
 * **长套件**（单轮 ≥20 分钟）：prompt 要求测试 agent 用 `/pueue` 执行全量运行（规则同运行票）；
 * **全绿** → 进合并回主干；**有失败** → 把失败测试清单派回实现 agent 修复（新派发，编排者不代写），修复后重跑全量；
 * 运行票的真实运行任务不在此列，仍按运行票派发执行。
+
+## 决策日志
+
+开跑时建 `.scratch/<feature>/decisions.tsv`（跟 feature 走，随票目录归档，不落 /tmp——/tmp 的交接文档链会丢）。格式沿用 pstack show-me-your-work：TSV 一决策一行，列 `ts / phase / decision / why / evidence / result`，evidence 必须是指针（commit SHA、`file:line`、日志路径）不是段落，append-only，错了用新行 supersede 不改历史。
+
+必记的决策行（phase 标注）：
+
+* `start`：开跑，记录 Spec/ADR 来源与拆票总数——每个 run 的第一行；
+* `dispatch`：每票派发一行——为什么选这个 agent（路由表命中 / 用户指定 / 候补链降级）；
+* `close`：每票闭环一行——评审结论与证据指针；
+* `merge`：每波合并一行——冲突与解决方式（有冲突时）；
+* `accept`：最终验收一行——整体核验结果。
+
+这一份日志是"为什么这么做"的档案：票面和 commit 记录做了什么，决策日志补上理由，事后审计直接读它，不再考古对话。
 
 ## 事实核验
 

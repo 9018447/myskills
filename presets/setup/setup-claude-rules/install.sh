@@ -11,11 +11,12 @@ RULES_DIR="$ROOT/.claude/rules"
 # 1. 工具检查（check-tools.sh 恒 exit 0，缺工具只报告不阻断）
 TOOLS="$(bash "$SCRIPT_DIR/check-tools.sh" 2>&1 || true)"
 
-# 2. 写三个细则文件（建软链接指向技能源文件）
+# 2. 写四个细则文件（建软链接指向技能源文件）
 mkdir -p "$RULES_DIR"
 ln -sfn "$SCRIPT_DIR/ADD_RULES.md"  "$RULES_DIR/code-search.md"
 ln -sfn "$SCRIPT_DIR/CODING_RULES.md" "$RULES_DIR/coding-principle.md"
 ln -sfn "$SCRIPT_DIR/VERIFY_RULES.md" "$RULES_DIR/verification.md"
+ln -sfn "$SCRIPT_DIR/PRINCIPLES_RULES.md" "$RULES_DIR/work-principles.md"
 
 # 3. 选概要落点：CLAUDE.md 存在用它；否则 AGENTS.md；都不存在创建 AGENTS.md
 summary_action="updated summary"
@@ -40,6 +41,6 @@ cat "$SCRIPT_DIR/APPEND_CLAUDE.md" >> "$SUMMARY"
 
 # 5. 结果摘要
 echo "$TOOLS"
-echo "rules -> $RULES_DIR/code-search.md, $RULES_DIR/coding-principle.md, $RULES_DIR/verification.md"
+echo "rules -> $RULES_DIR/code-search.md, $RULES_DIR/coding-principle.md, $RULES_DIR/verification.md, $RULES_DIR/work-principles.md"
 echo "summary: $SUMMARY ($summary_action)"
-echo "done:   code-search.md、coding-principle.md、verification.md 已写入，概要块已落位；四处写入完成。"
+echo "done:   code-search.md、coding-principle.md、verification.md、work-principles.md 已写入，概要块已落位；四处写入完成。"

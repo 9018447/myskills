@@ -115,7 +115,7 @@ herdr pane run <pane-id> "acpx --cwd <repo根>/.worktrees/tNN --approve-all --tt
 
 每票独立走完闭环，互相不阻塞：
 
-确认票无误 → `/acpx` 派发进 worktree → agent 按 `/tdd` 完成（只跑目标测试，不跑全量）→ 编排者在 worktree 内审 diff（`git -C .worktrees/tNN diff` 对照 worktree HEAD）→ 按 `/jev-code-review` 评审 → 有修复则修复后重验受影响部分 → 编排者在 `ticket/tNN` 分支上 commit（有修复才提交第二次 commit，不创建空 commit）→ **派 codex 测试 agent 进该 worktree 跑一次全量测试（见测试派发）** → 全绿后维护票面与相关文档（勾选验收项、handoff、受影响的 ADR）→ 进合并回主干。
+确认票无误 → `/acpx` 派发进 worktree → agent 按 `/tdd` 完成（只跑目标测试，不跑全量）→ 编排者在 worktree 内审 diff（`git -C .worktrees/tNN diff` 对照 worktree HEAD）→ 按 `/jev-code-review` 评审 → 有修复则修复后重验受影响部分 → 编排者在 `ticket/tNN` 分支上 commit（有修复才提交第二次 commit，不创建空 commit）→ **按测试分级派测试 agent（见测试派发：全量票跑全量，目标票不跑全量）** → 绿后维护票面与相关文档（勾选验收项、handoff、受影响的 ADR）→ 进合并回主干。
 
 纯文档 / 纯 tracker / 纯 markdown 提交（staged diff 无代码路径）可豁免评审轮；豁免必须在 commit message 或会话记录中显式声明，不得静默跳过。
 
@@ -168,11 +168,12 @@ git merge --no-ff ticket/tNN
 * 边界（2026-09-27 定案）：进 pueue 的是**运行任务**（julia 跑 benchmark、批量求解等），不是 **agent 进程本身**——pi/交互式 agent 在 pueue 环境下启动会静默卡死；agent 的派发走 `/acpx`，两者不可混。
 * 运行票默认与其他运行票串行（见 Worktree 并发闭环·调度第 5 条）。
 
-### 测试派发（全量测试）
+### 测试派发（按票分级）
 
-实现 agent 全程不跑全量测试（派发 Prompt 第 5 条）——全量测试不属于任何票，由编排者单独派发：
+实现 agent 全程不跑全量测试（派发 Prompt 第 5 条）——全量测试不属于任何票，由编排者单独派发。派发前先按影响面分级，不是每张实现票都付全量成本：
 
-* **时机**：实现票完成评审、编排者 commit 之后，合并回主干之前；
+* **分级判据**（用 GitNexus 影响面分析 + 票面「改动范围」判）：改动跨模块、动共享接口/配置/公共常量、或被多个下游票依赖 → **全量票**；影响面封闭在本模块内（调用方全在本模块内）→ **目标票**，不跑全量，风险由目标测试、评审轮和合并波定向核验兜底。判不清一律按全量票处理，分级结论记入决策日志 close 行。
+* **时机**：全量票——实现票完成评审、编排者 commit 之后，合并回主干之前；目标票——无全量派发，评审通过直接进合并回主干。
 * **派法**：向该票 worktree（`.worktrees/tNN`）派发一个 codex 测试 agent（headless 规则同上，prompt/日志/watcher 带票号），任务只有一件——跑一次全量测试套件，产出带失败清单的报告；
 * **长套件**（单轮 ≥20 分钟）：prompt 要求测试 agent 用 `/pueue` 执行全量运行（规则同运行票）；
 * **全绿** → 进合并回主干；**有失败** → 把失败测试清单派回实现 agent 修复（新派发，编排者不代写），修复后重跑全量；

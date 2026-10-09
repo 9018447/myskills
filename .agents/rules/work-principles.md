@@ -1,0 +1,1 @@
+/home/smh/myskills/presets/setup/setup-claude-rules/PRINCIPLES_RULES.md

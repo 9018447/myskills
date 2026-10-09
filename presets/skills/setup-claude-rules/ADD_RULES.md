@@ -48,6 +48,14 @@ Do not use built-in `Grep` or `Glob` when the equivalent search is covered by th
 
 `rg --files` = file discovery · `jg` = first-stop semantic retrieval · `zg` = fallback lexical + semantic index · `zg --rg` = exhaustive exact text / regex · `ast-grep` = syntax and AST structure · LSP = precise language-level symbol navigation · `GitNexus` = graph relationships, architecture, impact · `Read` = final source inspection.
 
+## GitNexus in git worktrees
+
+A git worktree has no `.gitnexus/` folder (the index is not tracked by git), so the relative launcher `node .gitnexus/run.cjs` fails there. That does not make GitNexus unusable in a worktree (tested 2026-10-09):
+
+- Invoke the launcher by its absolute path in the main checkout and point `--repo` at the main checkout's absolute path: `node <main-checkout>/.gitnexus/run.cjs impact|query|trace|context <target> --repo <main-checkout>`.
+- The graph answers as of the **indexed commit of the main checkout**: merged code is in the graph; the worktree's uncommitted or new code is not, and the index may lag `main`. Before editing, verify graph-derived facts against the worktree source with `Read`.
+- Do not degrade to shell `grep`/`find` just because you are in a worktree — the routing layer above still applies, with the `--repo` workaround for GitNexus.
+
 ## Missing skills
 
 The skills referenced above (`jevgrep`) are distributed from https://github.com/9018447/myskills. If one is not installed on this machine, fetch it from that repo — do not improvise around the gap. GitNexus itself is the CLI (`node .gitnexus/run.cjs`), not a skill; nothing to fetch for it.

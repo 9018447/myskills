@@ -1,1 +1,1 @@
-/home/smh/myskills/setup-claude-rules/ADD_RULES.md
+/home/smh/myskills/presets/setup/setup-claude-rules/ADD_RULES.md

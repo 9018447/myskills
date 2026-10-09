@@ -20,10 +20,12 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
 1b. **Every dispatch goes into a dispatch tab named by ADR.** One tab per ADR of the work being dispatched (fallback: the feature slug when the work has no ADR), max **8 panes** per tab. Check first whether a tab with that label already exists and reuse it instead of creating a new one; when it already holds 8 panes, open the next tab of the series (`<adr>-2`, `<adr>-3`, …). Create:
 
    ```bash
-   herdr tab create --cwd "$PWD" --label "<adr-slug>" --no-focus
+   herdr tab create --cwd <绝对路径> --label "<adr-slug>" --no-focus
    ```
 
-   Read `tab_id` / `root_pane.pane_id` from the response; never guess IDs. `--cwd "$PWD"`, `--label`, `--no-focus` are mandatory. Reuse `herdr tab list` (or the equivalent listing) to find an existing dispatch tab before creating one.
+   Read `tab_id` / `root_pane.pane_id` from the response; never guess IDs. `--cwd`, `--label`, `--no-focus` are mandatory. Reuse `herdr tab list` (or the equivalent listing) to find an existing dispatch tab before creating one.
+
+   **`--cwd` 写显式绝对路径，不用 `$PWD`。** 主 agent shell 的 cwd 会漂移（进 worktree 审查、切目录排查后忘回来），`$PWD` 会把漂移后的目录带进 tab（2026-10-10：tab 连 pane 一起落进了票 worktree，相对路径日志随之丢失）。派发前先 `pwd` 确认，或直接写目标检出/主检出的绝对路径。
 
    **Re-dispatch: verify the pane still exists first.** A pane dies with the agent session that ran in it — after a run finishes, the old pane-id is gone and dispatching into it fails with `pane_not_found` (2026-10-06: cost one wasted dispatch round). Before re-dispatch, `herdr pane get <pane-id>` (or `herdr pane list`); when gone, reuse the tab from `herdr tab list` or recreate the tab, and take the fresh pane-id.
 
@@ -31,8 +33,10 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
 2. **Launch with a log file and an explicit idle TTL so the wrapper exits on its own.** Primary form (herdr pane from the dispatch tab; output tee'd to the log so both the pane and the file have it):
 
    ```bash
-   herdr pane run <pane-id> "acpx --cwd <repo> --approve-all --ttl 60 --timeout 3600 <agent> exec -f prompt.md 2>&1 | tee .agent-results/<agentname>-<label>.log"
+   herdr pane run <pane-id> "env -u HTTPS_PROXY -u https_proxy -u HTTP_PROXY -u http_proxy -u ALL_PROXY -u all_proxy acpx --cwd <repo> --approve-all --ttl 60 --timeout 3600 <agent> exec -f prompt.md 2>&1 | tee .agent-results/<agentname>-<label>.log"
    ```
+
+   The `env -u` strip is part of the form: panes inherit bili's injected fake `HTTPS_PROXY` (dynamic port), which stalls the ACP handshake. Add a proxy back only when the target backend verifiably needs one (codex: port 7890, see below); overlay agents (omp/kimi/dsh) must additionally use the `--agent '<command>'` form of step 3's warning — the positional `<agent> exec` spelling is for built-in agents only.
 
    `--timeout` 适用于**有时限的一次性短任务**（上面示例形状）；由 acpxtodo 编排的长票派发**不设 `--timeout`**（总时限会杀死仍在健康工作的 agent，规则见 acpxtodo Headless 派发），只靠 `--ttl` 兜底。
 
@@ -42,7 +46,9 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
    acpx --cwd <repo> --approve-all --ttl 60 --timeout 3600 <agent> exec -f prompt.md > .agent-results/<agentname>-<label>.log 2>&1
    ```
 
-   Logs go to `.agent-results/` (relative to the launch directory), not `/tmp/` — create the directory if it is missing: `mkdir -p .agent-results`.
+   Logs go to the **orchestrating checkout's** `.agent-results/` — always spell the **absolute path** (`/path/to/main-checkout/.agent-results/<agentname>-<label>.log`), never a relative one. The pane's cwd is the dispatch target (often a per-ticket worktree), which has no `.agent-results/`; a relative tee path there fails instantly and **the whole agent run becomes invisible from the orchestrator side** while the log watcher watches an empty file (2026-10-10: one full codex run lost). `mkdir -p <主检出绝对路径>/.agent-results` before dispatching.
+
+   **Dispatch preflight — satisfy the target repo's session-start protocol.** Read the target repo's `AGENTS.md` for mandatory session-start requirements (BTXS instance: verify `/tmp/agent-handoffs/<repo-slug>/handoff.md` exists and is readable, else report-and-stop). If such a protocol exists, the orchestrator satisfies it **before** dispatch — maintain the handoff file's content (current active line, ticket state, known pitfalls) and verify it is readable. A dispatched agent that hits a missing precondition burns a discovery round at best (omp) or refuses to start at worst (codex refused to run tests, 2026-10-10).
 
    `--timeout` caps one prompt's wait; `--ttl` governs idle shutdown after completion. Both are needed — one does not imply the other.
 
@@ -52,7 +58,13 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
 
    **The two dispatch forms are mutually exclusive.** The `acpx <agent> exec -f prompt.md` form is for built-in agents only. Overlay agents dispatched via `acpx --agent '<command>' exec -f prompt.md` must NOT also carry a positional agent name before `exec` — writing `--agent 'dsh --profile acp' ... dsh exec -f ...` shifts parsing and fails with `error: unknown option '-f'`.
 
-4. **Verify within ~1 minute of launch that the task actually started** (the log reaches `session/new` / `session/set_config_option` with no apply error, and is advancing). For the herdr form, arm the completion callback the same way the fallback gets one — wrap `pane wait-output` in a background Bash so its exit wakes the session:
+4. **Verify within ~1 minute of launch that the task actually started** (the log reaches `session/new` / `session/set_config_option` with no apply error, and is advancing). Concrete probe, not vibes — arm it right after dispatch; if the log never outgrows its first line, kill the process and diagnose (wrong dispatch form, env poisoning), never blind re-dispatch:
+
+   ```bash
+   until [ "$(wc -c < .agent-results/<agentname>-<label>.log)" -gt 80 ]; do sleep 5; done
+   ```
+
+   For the herdr form, arm the completion callback the same way the fallback gets one — wrap `pane wait-output` in a background Bash so its exit wakes the session:
 
    ```bash
    herdr pane wait-output <pane-id> --match "end_turn" --timeout 3600000  # via run_in_background: true
@@ -60,7 +72,7 @@ When an orchestrator agent dispatches work to acpx, follow this pattern — the 
 
    The match string must not appear in the dispatched command text, or the shell's echo of that command triggers `wait-output` instantly (fake completion). Pick a marker that exists only in real output (`[done] end_turn` qualifies as long as the command text itself does not contain it). On timeout, `pane read` first to see actual state — never blindly re-dispatch.
 5. **Do not block-poll.** End the turn; act when the completion notification arrives (tracked background task, or its waiter), or the user pings. To check interim progress, `tail` the log file in a short non-blocking call.
-6. **Turn completion = the `[done] end_turn` marker** at the end of the log. That marker, not the background task's exit status, is the completion criterion: the acpx wrapper process can linger after the turn ends even past its TTL.
+6. **Turn completion = the `[done] end_turn` marker** at the end of the log. That marker, not the background task's exit status, is the completion criterion: the acpx wrapper process can linger after the turn ends even past its TTL. Lines like `[exited with code 0]` inside the log are per-shell-command terminal-session close lines (2026-10-10: misread once as the whole agent exiting, costing a diagnostic round) — only the log-tail `[done] end_turn` decides.
 7. **Reap the wrapper by PID.** Record the launcher PID (or find it once with `pgrep -af` when nothing else matches); when the marker is present and the process lives, `kill <pid>`. Never verify with `pgrep -f <pattern>` whose pattern appears in your own check command — it self-matches and reports a dead task as alive; confirm with `ps -p <pid>`.
 6. Read the delivered result from the tail of the log; `--format quiet` when only the final answer line is needed.
 

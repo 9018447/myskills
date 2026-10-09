@@ -21,6 +21,7 @@ logs/
 .remember/
 .obsidian/
 .skills-manager/
+.zvec-grep/
 
 # Python build artifacts
 __pycache__/

@@ -1,26 +1,12 @@
 {
   "agents": {
-    "agents": [
-      "acpx"
-    ],
-    "claude": [
-      "acpx"
-    ],
-    "cursor": [
-      "acpx"
-    ],
-    "kimi-code": [
-      "acpx"
-    ],
-    "codex": [
-      "acpx"
-    ],
-    "pi": [
-      "acpx"
-    ],
-    "omp": [
-      "acpx"
-    ]
+    "agents": [],
+    "claude": [],
+    "cursor": [],
+    "kimi-code": [],
+    "codex": [],
+    "pi": [],
+    "omp": []
   },
   "sources": {
     "skill-creator": "openai/skills/skills/.system/skill-creator",
@@ -98,9 +84,6 @@
       "omp",
       "pi"
     ],
-    "myskills": [
-      "claude"
-    ],
     "mattpocock": [
       "agents",
       "claude",
@@ -128,7 +111,16 @@
       "omp",
       "pi"
     ],
-    "setup": [
+    "meta-skill": [
+      "agents",
+      "claude",
+      "codex",
+      "cursor",
+      "kimi-code",
+      "omp",
+      "pi"
+    ],
+    "skills": [
       "agents",
       "claude",
       "codex",

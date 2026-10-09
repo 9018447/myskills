@@ -1,1 +1,1 @@
-/home/smh/myskills/presets/setup/setup-claude-rules/CODING_RULES.md
+/home/smh/myskills/setup-claude-rules/CODING_RULES.md

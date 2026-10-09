@@ -8,11 +8,11 @@ Use specialized code search tools instead of shell `grep`/`find` or built-in `Gr
 - Web search / fetch: `WebSearch` / `WebFetch`; unavailable or blocked → `meta-search` / `meta-fetch` / `meta-ask` (metaso skills), always triggered through context-mode (`ctx_batch_execute` / `ctx_execute`) so their long raw output is indexed instead of flooding context
 - Last resort: `rg` / `grep` — only for declared exceptions (shell composition, filesystem metadata, scripting) or when the tools above cannot cover the task; state the reason on the spot.
 
-Retrieval order: `jg → zg / ast-grep / GitNexus → rg`. After locating code, `Read` the exact source before concluding or editing. Full policy: `.claude/rules/code-search.md`.
+After locating code, `Read` the exact source before concluding or editing; the escalation order (hard rule) lives in `.claude/rules/code-search.md`.
 
 ## Division of Labor
 
-Claude Code (the main agent) writes documents, orchestrates tasks, and holds the global picture. Coding: trivial and single-file changes are done by the main agent directly; cross-file implementation always enters through `/poteto-mode` — the dispatch chain and the single-agent vs concurrent choice live inside that skill, and the main agent never codes across files itself. Details: `.claude/rules/coding-principle.md`.
+Claude Code (the main agent) writes documents, orchestrates tasks, and holds the global picture. Multi-file, design, or unknown-cause-bug work routes through `/poteto-mode` — the SessionStart hook carries the trigger list; trivial and single-file changes the main agent does directly. Details: `.claude/rules/coding-principle.md`.
 
 ## Verification
 
@@ -20,6 +20,6 @@ For code review, done-work confirmation, and fact-checking, use the jev judgment
 
 ## Work Principles
 
-Universal work principles: subtract before you add, test behavior not implementation, accept only with evidence (prove-it-works), fix root causes not symptoms, after two failures of the same fix re-examine the shared premise, encode lessons in structure not memory. Context is a budget: batch related tool calls (multi-file reads/searches, edit → check) into one codemode script so intermediate output stays out of context; Edit/Write/state-changing Bash stay direct calls. Details: `.claude/rules/work-principles.md`.
+Universal work principles: subtract before you add, test behavior not implementation, accept only with evidence (prove-it-works), fix root causes not symptoms, after two failures of the same fix re-examine the shared premise, encode lessons in structure not memory. Context is a budget — batch tool chains in one codemode script. Details: `.claude/rules/work-principles.md`.
 
 Missing skills: the skills referenced in these sections come from https://github.com/9018447/myskills — if one is not installed on this machine, fetch it from there.

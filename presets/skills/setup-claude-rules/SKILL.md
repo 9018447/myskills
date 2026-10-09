@@ -25,11 +25,11 @@ The script outputs one result summary. Relay it to the user verbatim, without ex
 
 What the script does (fully deterministic, no agent involvement):
 
-- **Tool check** — calls `check-tools.sh` in this directory, reporting the status of `jg`, `rg`, `zg`, `ast-grep`, `gitnexus`, `acpx` (jg additionally gets an auth check; includes an LSP host note).
-- **Write rule details** — ensure `.claude/rules/` exists; symlink `code-search.md`, `coding-principle.md`, `verification.md`, and `work-principles.md` to [ADD_RULES.md](./ADD_RULES.md), [CODING_RULES.md](./CODING_RULES.md), [VERIFY_RULES.md](./VERIFY_RULES.md), and [PRINCIPLES_RULES.md](./PRINCIPLES_RULES.md). Existing files are overwritten — install means overwrite, no asking.
-- **Pick the summary target** — priority: use `CLAUDE.md` if it exists; otherwise `AGENTS.md` if it exists; if neither exists, create `AGENTS.md`. Never touch both files.
-- **Write the summary** — replace everything from the first `## Tool Routing` heading to the end of the target file with the block in [APPEND_CLAUDE.md](./APPEND_CLAUDE.md). User content above the block is left untouched; duplicate blocks are replaced, not appended.
-- **Install the SessionStart routing hook** — symlink `session-start.sh` and `session-start-context.md` into `.claude/hooks/`, and register a SessionStart entry (matcher `startup|resume|clear|compact`, command `$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh`) in `.claude/settings.json` via a node one-liner that merges instead of overwriting; re-runs never duplicate the entry. The injected text is the pstack-claude hook adapted to this repo's skill chain: multi-file / design / unknown-cause-bug tasks route through `poteto-mode`, with direct entry points `tdd`, `architect`, `how`, `why`, `arena`, `interrogate`. Disable per-repo by removing the SessionStart entry from that repo's `.claude/settings.json`.
+- **Tool check** — calls `check-tools.sh` in this directory, reporting the status of `jg`, `rg`, `zg`, `ast-grep`, `gitnexus`, `acpx` (jg additionally gets an auth check). Missing tools do not block the install.
+- **Write rule details** — ensure `.claude/rules/` exists and symlink `code-search.md`, `coding-principle.md`, `verification.md`, `work-principles.md` to [ADD_RULES.md](./ADD_RULES.md), [CODING_RULES.md](./CODING_RULES.md), [VERIFY_RULES.md](./VERIFY_RULES.md), and [PRINCIPLES_RULES.md](./PRINCIPLES_RULES.md), overwriting what is there.
+- **Pick the summary target** — `CLAUDE.md` if it exists, otherwise `AGENTS.md` (created if neither); never both.
+- **Write the summary** — replace everything from the first `## Tool Routing` heading to the end of the target file with [APPEND_CLAUDE.md](./APPEND_CLAUDE.md); user content above the block survives.
+- **Install the SessionStart routing hook** — symlink the two hook files into `.claude/hooks/` and register the SessionStart entry (idempotent, merge-not-overwrite) in `.claude/settings.json`. The injected text routes multi-file / design / unknown-cause-bug tasks through `poteto-mode`, with direct entry points `tdd`, `architect`, `how`, `why`, `arena`, `interrogate`. Disable per-repo by removing the entry.
 
 ## Companion-skill check
 
@@ -41,4 +41,4 @@ After running the script and relaying, do one read-only check of two companion s
 
 ## Completion criteria
 
-The run succeeds only when all writes have landed, and the script guarantees them: the four rule files exist and match the templates; the target file's summary block matches the template with no duplicate sections. The script signals success via its exit code and result lines; the agent reads those, decides, and relays to the user. The companion-skill check also needs a verdict — each of the three marked "present" or "missing" — before the run is over.
+The run succeeds when all writes have landed — the four rule files match their templates, the summary block matches [APPEND_CLAUDE.md](./APPEND_CLAUDE.md) with no duplicate sections, and the script exits 0 — plus a verdict for the companion check: each of the three marked "present" or "missing".

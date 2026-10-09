@@ -14,6 +14,8 @@ disable-model-invocation: true
 - **长程复杂任务**（多切片强依赖、需要波次并发、含真实运行票）→ 本技能（/acpxtodo，worktree 波次闭环）。
 - **中等任务**（单票或少量弱依赖票，一个会话能可靠吃完）→ 建议用户走 `/acp_gitnexus` 快速闭环：主检出一站派发，GitNexus 流水线下放执行者。
 - 判不清 → 问用户，不硬选。
+- 票数不是判据，复杂度才是：单票但含真实运行票仍归本技能；多票但弱依赖、一会话能吃完仍归 `/acp_gitnexus`。
+- 本节是 poteto-mode 与 acp_gitnexus 路由描述的单一正本；其他文件只放指针，不复述条件。
 
 ## Agent 分发
 

@@ -30,6 +30,16 @@ Ambiguous code question: `jg` (file list + locations) → `LSP` / `GitNexus` (re
 
 Structural query: `ast-grep` → `LSP` / `GitNexus` (expand relationships) → `Read` the final source.
 
+## Web retrieval
+
+| Intent | Preferred tool |
+| --- | --- |
+| Web search | `WebSearch`; unavailable or poor results → `meta-search` (metaso) |
+| Fetch page content | `WebFetch`; blocked (anti-crawl, JS-rendered, WeChat articles) → `meta-fetch` (metaso reader) |
+| Quick networked answer / second opinion | `meta-ask` (metaso chat) |
+
+Meta skills run their work as `curl` and return long raw output (result JSON, full article text, SSE stream) — **always trigger them through context-mode**, never as a bare Bash call: run the skill's curl inside `ctx_batch_execute` (with `queries` so matched sections come back inline) or `ctx_execute`, so the raw output is indexed and only the matched windows enter the conversation. For plain page fetches, prefer `ctx_fetch_and_index` outright — it caches and indexes without any curl.
+
 ## Avoid redundant tools
 
 Do not use built-in `Grep` or `Glob` when the equivalent search is covered by this routing layer. Do not replace `Read` with search tools — search locates code; `Read` retrieves the final source.
@@ -40,4 +50,4 @@ Do not use built-in `Grep` or `Glob` when the equivalent search is covered by th
 
 ## Missing skills
 
-The skills referenced above (`jevgrep`, `gitnexus-*`) are distributed from https://github.com/9018447/myskills. If one is not installed on this machine, fetch it from that repo — do not improvise around the gap.
+The skills referenced above (`jevgrep`) are distributed from https://github.com/9018447/myskills. If one is not installed on this machine, fetch it from that repo — do not improvise around the gap. GitNexus itself is the CLI (`node .gitnexus/run.cjs`), not a skill; nothing to fetch for it.

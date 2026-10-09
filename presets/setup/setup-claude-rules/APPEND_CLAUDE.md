@@ -5,6 +5,7 @@ Use specialized code search tools instead of shell `grep`/`find` or built-in `Gr
 - File discovery: `rg --files`
 - Content search, first stop: `jg` (jevgrep — natural-language question → relevant-file list + declaration locations; auth `jg auth`, health `jg doctor`)
 - Second tier: `zg` (fallback local index; `zg --rg` for exact/exhaustive text; missing/stale index → rebuild with `zg index`) · `ast-grep` (structure) · `GitNexus` (call chains, dependencies, impact) · LSP (symbols)
+- Web search / fetch: `WebSearch` / `WebFetch`; unavailable or blocked → `meta-search` / `meta-fetch` / `meta-ask` (metaso skills), always triggered through context-mode (`ctx_batch_execute` / `ctx_execute`) so their long raw output is indexed instead of flooding context
 - Last resort: `rg` / `grep` — only for declared exceptions (shell composition, filesystem metadata, scripting) or when the tools above cannot cover the task; state the reason on the spot.
 
 Retrieval order: `jg → zg / ast-grep / GitNexus → rg`. After locating code, `Read` the exact source before concluding or editing. Full policy: `.claude/rules/code-search.md`.
@@ -19,6 +20,6 @@ For code review, done-work confirmation, and fact-checking, use the jev judgment
 
 ## Work Principles
 
-Universal work principles: subtract before you add, test behavior not implementation, accept only with evidence (prove-it-works), fix root causes not symptoms, after two failures of the same fix re-examine the shared premise, encode lessons in structure not memory. Details: `.claude/rules/work-principles.md`.
+Universal work principles: subtract before you add, test behavior not implementation, accept only with evidence (prove-it-works), fix root causes not symptoms, after two failures of the same fix re-examine the shared premise, encode lessons in structure not memory. Context is a budget: batch related tool calls (multi-file reads/searches, edit → check) into one codemode script so intermediate output stays out of context; Edit/Write/state-changing Bash stay direct calls. Details: `.claude/rules/work-principles.md`.
 
 Missing skills: the skills referenced in these sections come from https://github.com/9018447/myskills — if one is not installed on this machine, fetch it from there.

@@ -1,1 +1,1 @@
-/home/smh/myskills/setup-claude-rules/session-start.sh
+/home/smh/myskills/presets/skills/setup-claude-rules/session-start.sh

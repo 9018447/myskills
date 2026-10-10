@@ -1,1 +1,1 @@
-/home/smh/myskills/setup-claude-rules/session-start-context.md
+/home/smh/myskills/presets/skills/setup-claude-rules/session-start-context.md

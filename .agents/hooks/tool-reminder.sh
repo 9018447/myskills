@@ -1,0 +1,1 @@
+/home/smh/myskills/presets/skills/setup-claude-rules/tool-reminder.sh

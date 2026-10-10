@@ -18,25 +18,27 @@ ln -sfn "$SCRIPT_DIR/CODING_RULES.md" "$RULES_DIR/coding-principle.md"
 ln -sfn "$SCRIPT_DIR/VERIFY_RULES.md" "$RULES_DIR/verification.md"
 ln -sfn "$SCRIPT_DIR/PRINCIPLES_RULES.md" "$RULES_DIR/work-principles.md"
 
-# 2b. Install the SessionStart routing hook (files + settings registration)
+# 2b. Install hooks (files + settings registration): SessionStart routing and PreToolUse reminders
 HOOKS_DIR="$ROOT/.claude/hooks"
 mkdir -p "$HOOKS_DIR"
 ln -sfn "$SCRIPT_DIR/session-start.sh" "$HOOKS_DIR/session-start.sh"
 ln -sfn "$SCRIPT_DIR/session-start-context.md" "$HOOKS_DIR/session-start-context.md"
+ln -sfn "$SCRIPT_DIR/tool-reminder.sh" "$HOOKS_DIR/tool-reminder.sh"
 node - "$ROOT/.claude/settings.json" <<'EOF'
 const fs = require('fs');
 const file = process.argv[2];
 let cfg = {};
 try { cfg = JSON.parse(fs.readFileSync(file, 'utf8')); } catch {}
-const cmd = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/session-start.sh';
-const entries = (cfg.hooks ??= {}).SessionStart ??= [];
-if (!entries.some(e => (e.hooks ?? []).some(h => String(h.command).includes('session-start.sh')))) {
-  entries.push({
-    matcher: 'startup|resume|clear|compact',
-    hooks: [{ type: 'command', command: cmd }],
-  });
-  fs.writeFileSync(file, JSON.stringify(cfg, null, 2) + '\n');
-}
+const hooks = (cfg.hooks ??= {});
+const add = (event, matcher, cmdPart) => {
+  const entries = hooks[event] ??= [];
+  if (!entries.some(e => (e.hooks ?? []).some(h => String(h.command).includes(cmdPart)))) {
+    entries.push({ matcher, hooks: [{ type: 'command', command: cmdPart }] });
+  }
+};
+add('SessionStart', 'startup|resume|clear|compact', '"$CLAUDE_PROJECT_DIR"/.claude/hooks/session-start.sh');
+add('PreToolUse', 'Bash|Read|Write|Edit|NotebookEdit', '"$CLAUDE_PROJECT_DIR"/.claude/hooks/tool-reminder.sh');
+fs.writeFileSync(file, JSON.stringify(cfg, null, 2) + '\n');
 EOF
 
 # 3. Pick the summary target: CLAUDE.md if it exists; otherwise AGENTS.md; create AGENTS.md if neither exists
@@ -64,5 +66,5 @@ cat "$SCRIPT_DIR/APPEND_CLAUDE.md" >> "$SUMMARY"
 echo "$TOOLS"
 echo "rules -> $RULES_DIR/code-search.md, $RULES_DIR/coding-principle.md, $RULES_DIR/verification.md, $RULES_DIR/work-principles.md"
 echo "summary: $SUMMARY ($summary_action)"
-echo "hook:    $HOOKS_DIR/session-start.sh -> $SCRIPT_DIR/session-start.sh; SessionStart registered in $ROOT/.claude/settings.json"
+echo "hook:    $HOOKS_DIR/session-start.sh + tool-reminder.sh -> $SCRIPT_DIR; SessionStart + PreToolUse registered in $ROOT/.claude/settings.json"
 echo "done:   code-search.md, coding-principle.md, verification.md, work-principles.md written; summary block in place; routing hook installed; all writes complete."

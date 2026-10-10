@@ -60,7 +60,7 @@ Agent 选择规则：
 每张票的核心循环（走完才闭环）：
 
 ```text
-派发实现（/tdd，只跑目标测试）→ gitnexus-impact-analysis → jev-code-review
+派发实现（/gitnexus-plan 出本票计划 → /tdd 实现，只跑目标测试）→ gitnexus-impact-analysis → jev-code-review
 → 编排者 commit → 按分级派测试（仅全量票）→ 绿 → 维护票面/文档 → 合并回主干
 ```
 
@@ -102,7 +102,7 @@ herdr pane run <pane-id> "env -u HTTPS_PROXY -u https_proxy -u HTTP_PROXY -u htt
 
 每票独立走完闭环，互相不阻塞：
 
-确认票无误 → `/acpx` 派发进 worktree → agent 按 `/tdd` 完成（只跑目标测试，不跑全量）→ 编排者在 worktree 内审 diff（`git -C .worktrees/tNN diff` 对照 worktree HEAD）→ 按 `/jev-code-review` 评审 → 有修复则修复后重验受影响部分 → 编排者在 `ticket/tNN` 分支上 commit（有修复才提交第二次 commit，不创建空 commit）→ **按测试分级派测试 agent（全量票跑全量，目标票不跑）** → 绿后维护票面与相关文档（勾选验收项、handoff、受影响的 ADR）→ 进合并回主干。
+确认票无误 → `/acpx` 派发进 worktree → agent 先按 `/gitnexus-plan` 出本票实现计划再按该计划 `/tdd` 完成（只跑目标测试，不跑全量）→ 编排者在 worktree 内审 diff（`git -C .worktrees/tNN diff` 对照 worktree HEAD）→ 按 `/jev-code-review` 评审 → 有修复则修复后重验受影响部分 → 编排者在 `ticket/tNN` 分支上 commit（有修复才提交第二次 commit，不创建空 commit）→ **按测试分级派测试 agent（全量票跑全量，目标票不跑）** → 绿后维护票面与相关文档（勾选验收项、handoff、受影响的 ADR）→ 进合并回主干。
 
 纯文档 / 纯 tracker / 纯 markdown 提交（staged diff 无代码路径）可豁免评审轮；豁免必须在 commit message 或会话记录中显式声明，不得静默跳过。
 

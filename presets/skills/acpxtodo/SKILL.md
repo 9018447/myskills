@@ -106,6 +106,8 @@ herdr pane run <pane-id> "env -u HTTPS_PROXY -u https_proxy -u HTTP_PROXY -u htt
 
 纯文档 / 纯 tracker / 纯 markdown 提交（staged diff 无代码路径）可豁免评审轮；豁免必须在 commit message 或会话记录中显式声明，不得静默跳过。
 
+**编排者提交防呆（2026-10-10 T08 事故：`git add -A` 在主检出误执行，扫进用户 54 个未提交文件、worktree 真改动反而没入库）**：提交一律 `git -C <该检出绝对路径>` 显式指检出（会话 cwd 常漂在别的 worktree，凭直觉的相对路径是事故根源）；只 `add` 票面文件清单里列出的路径，编排者提交禁用 `add -A` / `add -u` / `add .`；提交前 `git -C <检出> status --short` 全览一眼，出现票面外路径（尤其用户未提交改动）即停。合并同理：`git -C <主检出绝对路径> merge --no-ff ticket/tNN`。
+
 评审请求一律从上一票已通过的请求文件复制改写（留档 `.agent-results/tNN-review.json`），只换 state、证据和问题内容，形状与字段照抄。请求字段契约见仓库 `VERIFY_RULES.md`。
 
 如果 Spec、ADR、Ticket 存在无法解释的实质冲突，停止本票并报告，不得自行改写设计。

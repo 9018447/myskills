@@ -17,7 +17,7 @@ process.stdin.on("data", d => s += d).on("end", () => {
   const tips = [];
   if (tool === "Bash") {
     if (/(^|[;&|(\s])(sudo\s+)?(find|grep|rg)\b/.test(cmd))
-      tips.push("Shell find/grep/rg is the last resort: first stop jg, second tier zg / ast-grep / GitNexus / LSP (see .claude/rules/code-search.md).");
+      tips.push("Shell find/grep/rg is the last resort: go to zg / GitNexus instead (see .claude/rules/code-search.md).");
     tips.push("Processing command output? ctx_batch_execute / ctx_execute keeps the raw bytes out of context; Bash is for observing short fixed output or mutating state.");
   }
   if (tool === "Read")

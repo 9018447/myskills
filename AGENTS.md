@@ -6,8 +6,10 @@
 
 - 顶层目录 = 一个技能（含 `SKILL.md`）；技能判别统一为「目录含 `SKILL.md` 才是技能」，无 `SKILL.md` 的顶层目录不再是技能
 - `presets/<预设名>/<技能名>/` —— 预设集：预设成员技能的真身。预设文件夹内递归下探识别成员（穿过不含 `SKILL.md` 的中间目录，命中含 `SKILL.md` 的目录即成员）；平铺残留的非技能文件（CHANGELOG、docs 等）留在文件夹内不识别。原集合目录（agent-workflow、atomistic-workflows、data-processing、machine-learning-potentials、matlab-skills-catalog、molecular-*、tools、gitnexus 等）都已归位为预设文件夹
-- 例外：`manager/`（管理工具）、`machines/`（各机器状态）、`testdir/`。顶层出现既无 `SKILL.md` 又非豁免的非空目录时，CLI/TUI 启动会交互询问是否移入 `presets/`：同意则移入，拒绝记入仓库根 `.preset-prompt.json` 持久化名单不再问；非交互环境跳过询问不动。名单可手改
+- 例外：`manager/`（管理工具）、`machines/`（各机器状态）、`testdir/`、`archive/`（深度归档，见下）。顶层出现既无 `SKILL.md` 又非豁免的非空目录时，CLI/TUI 启动会交互询问是否移入 `presets/`：同意则移入，拒绝记入仓库根 `.preset-prompt.json` 持久化名单不再问；非交互环境跳过询问不动。名单可手改
 - 启动 reconcile：每次 CLI/TUI 启动自动执行——为 `presets/` 成员补顶层相对符号链接、清理指向已删成员的断链；顶层真身与预设成员重名、同一技能归属两个预设会直接报错（不自动搬家）
+- `archive/` —— 深度归档：全部技能真身（含原顶层技能与 `presets/` 整树）已移入此处，顶层仅保留 CLI 最小集（`manager/` + `agents.json` + `skills-manifest.json` + `AGENTS.md` + `.gitignore`）。`archive/` 内相对符号链接原样保留、仍可解析；恢复单个技能：`git mv archive/<名> ./`。
+
 - `agents.json` —— agent 注册表：id、名称、skills 目录路径（支持 `~`；也支持项目级 agent，填项目内的绝对路径）。新增支持的 agent 就加一条
 - `skills-manifest.json` —— 分发清单：每个 agent 装哪些技能。**这是分发的唯一来源**。另有两个可选字段：`sources`（技能来源 GitHub 仓库，install 时自动记录）、`presetApplied`（预设集 → 已应用的 agent 列表）。预设成员不再写在 JSON 里——一律以 `presets/` 文件夹实况为准（readdir 现读）；应用仍是互斥接管：预设成员从 agent 个人清单移出、改由预设管，一个技能只属于一处；每个预设是独立分发单元，成员改动随 link/sync 传播到已应用的 agent，取消应用后下次 link 移除其链接，个人清单不回填
 - `machines/<hostname>.json` —— 各机器同步状态（sha、时间、断链数）

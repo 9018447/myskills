@@ -997,8 +997,8 @@ export function moveSkillToTop(repoRoot: string, preset: string, skill: string):
 
 // ---------- 启动确认（票 05）：顶层未知非技能文件夹引导进 presets/ ----------
 
-// 预置豁免名单：仓库固定目录 + presets 自身；点开头目录、技能目录、空目录天然不参与（见 listPromptableTopDirs）
-export const TOP_DIR_EXEMPTIONS: Record<string, true> = { manager: true, machines: true, testdir: true, [PRESETS_DIR]: true };
+// 预置豁免名单：仓库固定目录 + presets 自身 + 归档目录；点开头目录、技能目录、空目录天然不参与（见 listPromptableTopDirs）
+export const TOP_DIR_EXEMPTIONS: Record<string, true> = { manager: true, machines: true, testdir: true, archive: true, [PRESETS_DIR]: true };
 
 // 拒绝名单文件（仓库根）：记用户明确跳过的顶层文件夹，跨进程持久；手工删除条目（或整个文件）可重新被询问
 export const PRESET_PROMPT_FILE = '.preset-prompt.json';

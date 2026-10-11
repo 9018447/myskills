@@ -4,7 +4,7 @@
 //      （成员名指向不存在目录的剔除并记入报告，不中断）；字段本身清空，presetApplied 原样
 //   2. 顶层含子技能的集合目录整体移入 presets/<集合名>/；嵌套集合（子技能在 skills/ 等中间层下）
 //      拆除中间层，子技能平铺到第一层；非技能残留（CHANGELOG、docs、点文件等）原地不动
-//   3. manager/、machines/、testdir/、点开头条目不动；末尾 reconcilePresets 为所有成员建顶层链接
+//   3. manager/、machines/、testdir/、archive/、点开头条目不动；末尾 reconcilePresets 为所有成员建顶层链接
 // 幂等：对已收敛布局重复执行无任何改动。
 // 直接执行即迁移真仓并打印报告：node manager/src/migrate-preset-folders.ts（仓库根取 findRepoRoot）
 import { existsSync, lstatSync, mkdirSync, readdirSync, readlinkSync, renameSync, rmSync, rmdirSync } from 'node:fs';

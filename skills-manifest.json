@@ -1,12 +1,27 @@
 {
   "agents": {
-    "agents": [],
-    "claude": [],
-    "cursor": [],
-    "kimi-code": [],
-    "codex": [],
-    "pi": [],
-    "omp": []
+    "agents": [
+      "create-workflow"
+    ],
+    "claude": [
+      "create-workflow",
+      "open-code-review-delegate"
+    ],
+    "cursor": [
+      "create-workflow"
+    ],
+    "kimi-code": [
+      "create-workflow"
+    ],
+    "codex": [
+      "create-workflow"
+    ],
+    "pi": [
+      "create-workflow"
+    ],
+    "omp": [
+      "create-workflow"
+    ]
   },
   "sources": {
     "skill-creator": "openai/skills/skills/.system/skill-creator",

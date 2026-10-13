@@ -18,7 +18,7 @@ disable-model-invocation: true
 
 ## 2. 生成 JSON 任务契约（供运行时读取）
 
-Claude 先研究目标仓库：通过只读索引/搜索定位有关文件、代码关系和现有验证方式；排除无关路径。把每次任务写为仓库内 `.agent/luna/task.json`（单任务/单工作区；并行任务使用隔离的 worktree）。示意：
+Claude 先研究目标仓库：通过只读索引/搜索定位有关文件、代码关系和现有验证方式；排除无关路径。把每次任务写为仓库内 `.agent/workflow/task.json`（单任务/单工作区；并行任务使用隔离的 worktree）。示意：
 
 ```json
 {
@@ -43,8 +43,8 @@ Claude 先研究目标仓库：通过只读索引/搜索定位有关文件、代
 1. 检查 `specify workflow --help` 和（若提供）`specify workflow validate --help`，阅读对应当前安装版本的 [Spec Kit Workflow 官方参考](https://github.com/github/spec-kit/blob/main/docs/reference/workflows.md)。不要臆造 CLI 参数或 YAML 字段。
 2. 新建工作流时，以 `references/workflow-template.yml`（本技能目录内）为**结构参考**，根据真实环境编写可执行 YAML。最低要求：`schema_version: "1.0"`、`workflow.id/name/version`、合法的 preflight → execute → verify → repair-once → finalize 结构和唯一节点 ID。参考模板包含占位的可信脚本，**不能直接作为可执行成品**。
 3. 工作流按以下顺序组织：
-   - **preflight（shell）**：验证任务契约、所需文件/权限、`codex` 可调用性、指定模型可用性、可信验证器存在、工作区隔离；失败立即退出。
-   - **execute（prompt/codex 或 shell→codex exec）**：只从 JSON 契约读取任务；优先 `gpt-6-luna`，不默默降级其他模型。若使用 `shell` 启动 Codex，则通过受信脚本传入参数、限制沙箱和最大时长；不要把模型输出拼入 Shell 命令。
+   - **preflight（shell）**：验证任务契约、所需文件/权限、派发通道（`codex`）可调用性、指定模型可用性、可信验证器存在、工作区隔离；失败立即退出。
+   - **execute（prompt/codex、shell→codex exec）**：只从 JSON 契约读取任务；只使用 `gpt-6-luna`。若使用 `shell` 启动 Codex，则通过受信脚本传入参数、限制沙箱和最大时长；prompt 一律经文件传入，不把模型输出或自由文本拼进命令。
    - **verify（shell）**：独立验收文件范围、业务不变量、测试结果和 diff。把退出码、报告和证据写入独立位置。
    - **repair-once（if → execute → verify）**：仅可修复且未越界的失败允许重新执行一次；其余失败立即终止/升级给 Claude。第二次校验失败必须使最终状态为失败，不能依赖 `continue_on_error: true` 把任务判成成功。
    - **finalize（shell）**：仅在最终验收通过后保存成功标记及产物摘要。

@@ -1,0 +1,35 @@
+# explore-repo：Codex 只读探索仓库，可信脚本独立验收。
+# 契约固定读 .agent/luna/task.json；所有 shell.run 为固定命令，无插值。
+schema_version: "1.0"
+workflow:
+  id: explore-repo
+  name: Verified Repo Exploration
+  version: "1.0.0"
+  author: "create-workflow"
+  description: "Codex 只读探索仓库，产出带证据索引的报告；可信脚本核验引用真实性与写入边界"
+steps:
+  - id: preflight
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" preflight'
+  - id: explore
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" explore'
+  - id: verify-first
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+  - id: repair-if-fixable
+    type: if
+    condition: "{{ steps.verify-first.output.stdout | contains('VERDICT=repairable') }}"
+    then:
+      - id: repair
+        type: shell
+        run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" repair'
+      - id: verify-again
+        type: shell
+        run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+  - id: final-check
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" assert-passed'
+  - id: finalize
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" finalize'

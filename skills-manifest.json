@@ -5,6 +5,7 @@
     ],
     "claude": [
       "create-workflow",
+      "explore-repo",
       "open-code-review-delegate"
     ],
     "cursor": [

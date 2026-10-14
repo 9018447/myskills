@@ -1,0 +1,43 @@
+# deep-research：编排者给出计划的网络深入研究；可信脚本确定性调用 metaso API，AI 不触网。
+# 契约固定读 .agent/luna/task.json；所有 shell.run 为固定命令（driver.py <子命令>），无插值。
+schema_version: "1.0"
+workflow:
+  id: deep-research
+  name: Planned Network Deep Research
+  version: "1.0.0"
+  author: "create-workflow"
+  description: "编排者给出计划的网络深入研究：计划→广域搜索→逐子方向深潜→综合闭环；搜索由可信脚本确定性调用 metaso，产出引用可解析的闭环报告"
+requires:
+  speckit_version: ">=1.2.0"
+steps:
+  - id: preflight
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" preflight'
+  - id: broad-search
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" broad-search'
+  - id: deep-dive
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" deep-dive'
+  - id: synthesize
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" synthesize'
+  - id: verify-first
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+  - id: repair-if-fixable
+    type: if
+    condition: "{{ steps.verify-first.output.stdout | contains('VERDICT=repairable') }}"
+    then:
+      - id: repair
+        type: shell
+        run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" repair'
+      - id: verify-again
+        type: shell
+        run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+  - id: final-check
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" assert-passed'
+  - id: finalize
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" finalize'

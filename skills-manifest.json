@@ -1,27 +1,44 @@
 {
   "agents": {
     "agents": [
-      "create-workflow"
+      "bro",
+      "create-workflow",
+      "meta-search",
+      "technical-writing",
+      "ticket-status-audit",
+      "why"
     ],
     "claude": [
       "create-workflow",
+      "deep-research",
       "explore-repo",
-      "open-code-review-delegate"
+      "meta-search",
+      "open-code-review-delegate",
+      "ticket-status-audit"
     ],
     "cursor": [
-      "create-workflow"
+      "create-workflow",
+      "ticket-status-audit"
     ],
     "kimi-code": [
-      "create-workflow"
+      "create-workflow",
+      "meta-search",
+      "ticket-status-audit"
     ],
     "codex": [
-      "create-workflow"
+      "create-workflow",
+      "meta-search",
+      "ticket-status-audit"
     ],
     "pi": [
-      "create-workflow"
+      "create-workflow",
+      "meta-search",
+      "ticket-status-audit"
     ],
     "omp": [
-      "create-workflow"
+      "create-workflow",
+      "meta-search",
+      "ticket-status-audit"
     ]
   },
   "sources": {

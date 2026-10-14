@@ -13,18 +13,23 @@ steps:
   - id: preflight
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" preflight'
+    timeout: 7200
   - id: broad-search
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" broad-search'
+    timeout: 7200
   - id: deep-dive
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" deep-dive'
+    timeout: 7200
   - id: synthesize
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" synthesize'
+    timeout: 7200
   - id: verify-first
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+    timeout: 7200
   - id: repair-if-fixable
     type: if
     condition: "{{ steps.verify-first.output.stdout | contains('VERDICT=repairable') }}"
@@ -32,12 +37,16 @@ steps:
       - id: repair
         type: shell
         run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" repair'
+        timeout: 7200
       - id: verify-again
         type: shell
         run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+        timeout: 7200
   - id: final-check
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" assert-passed'
+    timeout: 7200
   - id: finalize
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" finalize'
+    timeout: 7200

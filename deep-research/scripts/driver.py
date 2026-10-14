@@ -251,6 +251,49 @@ def attempts(od):
     return 0
 
 
+# ---------------------------------------------------------------- 幂等续跑
+
+def canonical_done(od, name):
+    """queries/<name>.json 已是 canonical（direction 键存在且 queries 含 qid/q）即视为完成。"""
+    p = os.path.join(od, "queries", name + ".json")
+    if not os.path.isfile(p):
+        return False
+    try:
+        obj = read_json(p)
+    except Exception:
+        return False
+    qs = obj.get("queries") if isinstance(obj, dict) else None
+    return isinstance(qs, list) and bool(qs) and all(
+        isinstance(x, dict) and str(x.get("qid") or "").startswith("q")
+        and str(x.get("q") or "").strip() for x in qs)
+
+
+def searched(src, direction):
+    """该方向（broad 为 None）是否已有成功搜索记账。"""
+    return any(s.get("direction") == direction for s in src.get("searches", []))
+
+
+def text_min(od, rel, min_bytes):
+    p = os.path.join(od, rel)
+    if not os.path.isfile(p):
+        return False
+    try:
+        return len(open(p, encoding="utf-8").read().strip().encode("utf-8")) >= min_bytes
+    except Exception:
+        return False
+
+
+def fetch_done(od, stage):
+    return os.path.isfile(os.path.join(od, "fetch-requests", stage + ".done"))
+
+
+def mark_fetch_done(od, stage):
+    d = os.path.join(od, "fetch-requests")
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, stage + ".done"), "w", encoding="utf-8") as f:
+        f.write("ok\n")
+
+
 # ---------------------------------------------------------------- sources.json
 
 def sources_path(od):
@@ -667,7 +710,7 @@ def build_broad_queries_prompt(c, od, plan_abs):
         f"- {os.path.join(REPO, CONTRACT_PATH)}（任务契约：topic、objective、scopes、broad_queries）",
         _plan_line(plan_abs),
         "## 任务",
-        f"提出恰好 {c['broad_queries']} 条互不重叠、角度互补的查询（中文），覆盖主题的不同侧面。",
+        f"提出恰好 {c['broad_queries']} 条互不重叠、角度互补的查询（中英结合；学术主题优先用英文关键词，行业应用可中文），覆盖主题的不同侧面。",
         "## 只写（绝对路径）",
         f"- {os.path.join(od, 'queries', 'broad.json')}",
         '结构：{"queries": [{"q": "查询", "scope": "webpage"}, ...]}',
@@ -721,7 +764,7 @@ def build_deep_queries_prompt(c, od, d):
     parts += ["", "## 该方向要回答的问题",
               *[f"- {q}" for q in d["questions"]],
               "## 任务",
-              f"提出恰好 {c['queries_per_direction']} 条聚焦查询（中文），"
+              f"提出恰好 {c['queries_per_direction']} 条聚焦查询（中英结合；学术主题优先英文关键词），"
               "补足广域阶段未覆盖的角度，避免与已有查询重复。",
               "## 只写",
               f"- {os.path.join(od, 'queries', d['id'] + '.json')}（结构同 broad）",
@@ -866,31 +909,42 @@ def cmd_broad_search():
     t0 = time.monotonic()
     ensure_sources(od, c)
     pf = plan_abs(c)
-    # (a) codex 写查询提案 → 校验 → canonical
+    # (a) codex 写查询提案 → 校验 → canonical（已有 canonical 则跳过，幂等）
     qf = os.path.join(od, "queries", "broad.json")
-    obj = propose_json(c, od, "broad-queries", build_broad_queries_prompt(c, od, pf), qf,
-                       lambda o: validate_queries_proposal(o, c["broad_queries"], c["scopes"]), t0)
-    canon = canonicalize_queries(obj, None, next_qid(load_sources(od)))
-    write_json(qf, canon)
-    # (b) 可信脚本执行搜索（预算超限丢弃并记录，不报错）
-    for item in canon["queries"]:
-        check_stage_timeout(c, t0)
-        src = load_sources(od)
-        if not budget_ok(src, c):
-            src = record_search_dropped(src, item, None, "budget")
-            write_sources(od, src)
-            print(f"[deep-research] 搜索超预算，丢弃 {item['qid']}", file=sys.stderr)
-            continue
-        run_search(c, od, item["qid"], item["q"], item["scope"], None)
+    if canonical_done(od, "broad"):
+        print("[deep-research] broad 查询已存在，跳过提案")
+    else:
+        obj = propose_json(c, od, "broad-queries", build_broad_queries_prompt(c, od, pf), qf,
+                           lambda o: validate_queries_proposal(o, c["broad_queries"], c["scopes"]), t0)
+        canon = canonicalize_queries(obj, None, next_qid(load_sources(od)))
+        write_json(qf, canon)
+    # (b) 可信脚本执行搜索（预算超限丢弃并记录，不报错；已记账则跳过）
+    src = load_sources(od)
+    if searched(src, None):
+        print("[deep-research] broad 搜索已记账，跳过")
+    else:
+        for item in read_json(qf)["queries"]:
+            check_stage_timeout(c, t0)
+            src = load_sources(od)
+            if not budget_ok(src, c):
+                src = record_search_dropped(src, item, None, "budget")
+                write_sources(od, src)
+                print(f"[deep-research] 搜索超预算，丢弃 {item['qid']}", file=sys.stderr)
+                continue
+            run_search(c, od, item["qid"], item["q"], item["scope"], None)
     src = load_sources(od)
     if not src["searches"]:
         fail("广域搜索无任何成功查询（成功搜索为 0 条）")
     if not src["sources"]:
         fail("广域搜索未获得任何来源")
-    # (c) codex 写综述笔记 + fetch 提案
-    run_one(c, od, "broad-notes", build_broad_notes_prompt(c, od, pf), t0)
-    # (d) 可信脚本抓全文
-    process_fetch_proposal(c, od, "broad", os.path.join(od, "fetch-requests", "broad.json"), t0)
+    # (c)+(d) codex 写综述笔记 + fetch 提案，脚本抓全文（已齐则跳过）
+    if text_min(od, "notes/broad.md", 500) and fetch_done(od, "broad"):
+        print("[deep-research] broad 笔记已完成，跳过")
+    else:
+        if not text_min(od, "notes/broad.md", 500):
+            run_one(c, od, "broad-notes", build_broad_notes_prompt(c, od, pf), t0)
+        process_fetch_proposal(c, od, "broad", os.path.join(od, "fetch-requests", "broad.json"), t0)
+        mark_fetch_done(od, "broad")
     src = load_sources(od)
     print(f"[deep-research] broad-search OK: 搜索 {len(src['searches'])} 次, "
           f"来源 {len(src['sources'])} 条, 抓取 {len(src.get('fetches', []))} 条")
@@ -903,27 +957,37 @@ def cmd_deep_dive():
     ensure_sources(od, c)
     for d in c["directions"]:
         did = d["id"]
-        # (a) codex 写该方向查询提案 → 校验 → canonical
+        # (a) codex 写该方向查询提案 → 校验 → canonical（已有则跳过，幂等）
         qf = os.path.join(od, "queries", did + ".json")
-        obj = propose_json(c, od, f"deep-dive-{did}-queries",
-                           build_deep_queries_prompt(c, od, d), qf,
-                           lambda o: validate_queries_proposal(o, c["queries_per_direction"], c["scopes"]), t0)
-        canon = canonicalize_queries(obj, did, next_qid(load_sources(od)))
-        write_json(qf, canon)
-        # (b) 可信脚本执行搜索（direction 记为 did）
-        for item in canon["queries"]:
-            check_stage_timeout(c, t0)
-            src = load_sources(od)
-            if not budget_ok(src, c):
-                src = record_search_dropped(src, item, did, "budget")
-                write_sources(od, src)
-                print(f"[deep-research] 搜索超预算，丢弃 {item['qid']}", file=sys.stderr)
-                continue
-            run_search(c, od, item["qid"], item["q"], item["scope"], did)
-        # (c) codex 写该方向发现笔记 + fetch 提案
-        run_one(c, od, f"deep-dive-{did}-findings", build_deep_findings_prompt(c, od, d), t0)
-        # (d) 可信脚本抓全文
-        process_fetch_proposal(c, od, did, os.path.join(od, "fetch-requests", did + ".json"), t0)
+        if canonical_done(od, did):
+            print(f"[deep-research] {did} 查询已存在，跳过提案")
+        else:
+            obj = propose_json(c, od, f"deep-dive-{did}-queries",
+                               build_deep_queries_prompt(c, od, d), qf,
+                               lambda o: validate_queries_proposal(o, c["queries_per_direction"], c["scopes"]), t0)
+            canon = canonicalize_queries(obj, did, next_qid(load_sources(od)))
+            write_json(qf, canon)
+        # (b) 可信脚本执行搜索（direction 记为 did；已记账则跳过）
+        if searched(load_sources(od), did):
+            print(f"[deep-research] {did} 搜索已记账，跳过")
+        else:
+            for item in read_json(qf)["queries"]:
+                check_stage_timeout(c, t0)
+                src = load_sources(od)
+                if not budget_ok(src, c):
+                    src = record_search_dropped(src, item, did, "budget")
+                    write_sources(od, src)
+                    print(f"[deep-research] 搜索超预算，丢弃 {item['qid']}", file=sys.stderr)
+                    continue
+                run_search(c, od, item["qid"], item["q"], item["scope"], did)
+        # (c)+(d) codex 写该方向发现笔记 + fetch 提案，脚本抓全文（已齐则跳过）
+        if text_min(od, "findings/" + did + ".md", 300) and fetch_done(od, did):
+            print(f"[deep-research] {did} findings 已完成，跳过")
+        else:
+            if not text_min(od, "findings/" + did + ".md", 300):
+                run_one(c, od, f"deep-dive-{did}-findings", build_deep_findings_prompt(c, od, d), t0)
+            process_fetch_proposal(c, od, did, os.path.join(od, "fetch-requests", did + ".json"), t0)
+            mark_fetch_done(od, did)
     src = load_sources(od)
     print(f"[deep-research] deep-dive OK: {len(c['directions'])} 个方向, "
           f"搜索累计 {len(src['searches'])} 次, 来源累计 {len(src['sources'])} 条")
@@ -933,7 +997,10 @@ def cmd_synthesize():
     c = contract()
     od = outdir_of(c)
     t0 = time.monotonic()
-    run_one(c, od, "synthesize", build_synthesize_prompt(c, od, plan_abs(c)), t0)
+    if text_min(od, "report.md", 1000):
+        print("[deep-research] report.md 已存在，跳过综合")
+    else:
+        run_one(c, od, "synthesize", build_synthesize_prompt(c, od, plan_abs(c)), t0)
     print("[deep-research] synthesize OK")
 
 
@@ -1366,6 +1433,30 @@ def test_violates():
     assert violates(".git/config", allowed)
 
 
+def test_idempotency(tmp="/tmp/dr-idem-test"):
+    import contextlib
+    with contextlib.suppress(FileNotFoundError):
+        shutil.rmtree(tmp)
+    os.makedirs(tmp + "/queries")
+    os.makedirs(tmp + "/notes")
+    assert not canonical_done(tmp, "broad")
+    write_json(tmp + "/queries/broad.json", {"direction": None, "queries": [{"qid": "q1", "q": "x", "scope": "webpage"}]})
+    assert canonical_done(tmp, "broad")
+    write_json(tmp + "/queries/broad.json", {"queries": [{"q": "x"}]})
+    assert not canonical_done(tmp, "broad")  # 无 qid：还是 codex 原始提案
+    assert not searched({"searches": [{"direction": "D1"}]}, None)
+    assert searched({"searches": [{"direction": None}]}, None)
+    assert searched({"searches": [{"direction": "D1"}]}, "D1")
+    assert not text_min(tmp, "notes/broad.md", 10)
+    with open(tmp + "/notes/broad.md", "w", encoding="utf-8") as f:
+        f.write("字" * 10)
+    assert text_min(tmp, "notes/broad.md", 10) and not text_min(tmp, "notes/broad.md", 100)
+    assert not fetch_done(tmp, "broad")
+    mark_fetch_done(tmp, "broad")
+    assert fetch_done(tmp, "broad")
+    shutil.rmtree(tmp)
+
+
 SELFTESTS = [
     ("契约默认值", test_contract_defaults),
     ("契约拒绝路径", test_contract_rejections),
@@ -1378,6 +1469,7 @@ SELFTESTS = [
     ("fetch 提案 schema", test_fetch_proposal_schema),
     ("sources.json 完整性", test_sources_integrity),
     ("violates 越界判定", test_violates),
+    ("幂等续跑助手", test_idempotency),
 ]
 
 

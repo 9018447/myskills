@@ -62,7 +62,7 @@ specify workflow status <run_id> --json
 specify workflow resume <run_id> --json
 ```
 
-仅 `paused`/`failed` 可恢复；恢复前先读 `.specify/workflows/runs/<run_id>/log.jsonl` 定位失败步骤。若中途失败留下了半成品（如部分搜索已记账），恢复可能重复执行；必要时清空 `.agent/luna/research/<task_id>/` 下的产物再重跑。
+仅 `paused`/`failed` 可恢复。注意：引擎 `resume` 用的是运行开始时冻结的旧 workflow 定义，修过 workflow.yml 后的改进不生效——**超时/中断类失败建议直接重跑一次 run**：驱动是幂等的（已完成的查询提案、搜索记账、笔记、findings、综合报告自动跳过，重跑只补缺的部分，不重复花搜索预算），重跑前不必清空产物目录。
 
 ## 4. 判读结果
 
@@ -84,7 +84,7 @@ specify workflow resume <run_id> --json
 - 搜索预算：每次搜索发起前检查 `budget.used < max_searches`，超限查询丢弃并记录 `search_dropped`（不报错）；搜索失败重试 1 次、仍失败记 `search_failures` 与 `raw/<qid>.json={"ok":false}`，**不计入预算**（`budget.used == len(searches)` 只含成功搜索）。全文抓取受 `max_fetches` 预算，超限记 `fetch_dropped`，单条失败记日志继续。
 - 提案重提：codex 的 JSON 提案（queries/fetch-requests）校验失败时，同一次调用允许附错误说明重提 1 次，再失败 fatal；**不算** repair attempt。
 - 修复上限：`max_attempts`（默认 2）次修复后仍 `repairable` 按失败终止；repair 只许改 `report.md`、`notes/broad.md`、`findings/*.md` 三个位置，不提供任何搜索能力。
-- 超时语义：引擎对 shell 步骤无总超时，故 `timeout_seconds` 实现为每个研究阶段（broad-search / deep-dive / synthesize）的进程内墙钟上限（每次 codex 调用与每次搜索前检查，超时 fatal）；`step_timeout_seconds` 是单次 codex 调用的超时。
+- 超时语义：**specify 引擎对每个 shell 步骤有默认 300 秒上限**（实测行为，文档未写明），本工作流已在 workflow.yml 为各 shell 步骤显式声明 `timeout: 7200` 兜底；`timeout_seconds` 仍是 driver 内部每个研究阶段（broad-search / deep-dive / synthesize）的进程内墙钟上限（每次 codex 调用与每次搜索前检查，超时 fatal）；`step_timeout_seconds` 是单次 codex 调用的超时。驱动支持幂等续跑：查询提案、搜索记账、笔记/findings（含大小阈值与 fetch 完成标记）、综合报告均以既有产物为准跳过重做。
 - 写入边界：产物目录、`.specify/`（引擎运行态目录）、契约 `allowed_write_paths` 之外的写入判 fatal；baseline 与复核都用 `git status --porcelain -z`（NUL 分隔，重命名条目取新路径）解析，白名单根的祖先折叠条目不算越界。
 - 版本要求：`workflow.yml` 声明 `requires: speckit_version: ">=1.2.0"`——脚本经 `SPECKIT_WORKFLOW_DIR` 定位、本地文件需可在 Spec Kit 项目外运行，两项行为 1.2.0 起才可靠。
 - metaso 用法：搜索 `POST https://metaso.cn/api/v1/search`（Bearer `$METASO_API_KEY`，body `{q, scope, includeSummary, size, includeRawContent, conciseSnippet}`）；全文 `POST https://metaso.cn/api/v1/reader`（Accept: text/plain）。

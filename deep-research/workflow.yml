@@ -22,6 +22,10 @@ steps:
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" deep-dive'
     timeout: 7200
+  - id: deepen
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" deepen'
+    timeout: 7200
   - id: synthesize
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" synthesize'

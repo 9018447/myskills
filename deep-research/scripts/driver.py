@@ -188,7 +188,7 @@ def check_contract(raw, repo=REPO):
     c["queries_per_direction"] = num("queries_per_direction", 1, 6, 3)
     c["size_per_query"] = num("size_per_query", 1, 10, 10)
     c["max_searches"] = num("max_searches", 1, 1000000, 24)
-    c["max_fetches"] = num("max_fetches", 0, 30, 8)
+    c["max_fetches"] = num("max_fetches", 0, 60, 16)
     c["fulltext_max_chars"] = num("fulltext_max_chars", 1, 10000000, 40000)
     c["max_attempts"] = num("max_attempts", 1, 50, 2)
     c["step_timeout_seconds"] = num("step_timeout_seconds", 60, 86400, 1200)
@@ -292,6 +292,16 @@ def mark_fetch_done(od, stage):
     os.makedirs(d, exist_ok=True)
     with open(os.path.join(d, stage + ".done"), "w", encoding="utf-8") as f:
         f.write("ok\n")
+
+
+def invalidate_report_if_new(od, before, after):
+    """deepen 新抓到全文且旧报告已存在时删除之，迫使 synthesize 重读全文后重写。"""
+    if after > before:
+        p = os.path.join(od, "report.md")
+        if os.path.isfile(p):
+            os.remove(p)
+            return True
+    return False
 
 
 # ---------------------------------------------------------------- sources.json
@@ -857,6 +867,35 @@ def build_repair_prompt(c, od, failures):
     return "\n".join(parts) + "\n"
 
 
+def build_deepen_prompt(c, od, plan_abs):
+    src = load_sources(od)
+    fetched = len(src.get("fetches", []))
+    parts = _preamble(c) + [
+        "",
+        "## 阶段",
+        "全文深读选材：从已登记来源中挑选最值得抓取正文的，补齐写报告所需的证据。",
+        "## 只读",
+        f"- {os.path.join(REPO, CONTRACT_PATH)}（任务契约）",
+        _plan_line(plan_abs),
+        f"- {os.path.join(od, 'notes', 'broad.md')}（广域综述）",
+        f"- {os.path.join(od, 'findings')}/*.md（各方向发现）",
+        f"- {os.path.join(od, 'sources.json')}（来源登记表，sid 是唯一事实源）",
+    ]
+    parts += ["", build_source_digest(src["sources"])]
+    parts += ["", build_fulltext_index(od, src)]
+    parts += ["",
+              "## 任务",
+              f"写 {os.path.join(od, 'fetch-requests', 'deepen.json')}："
+              '{"sids": ["S1", ...]}，挑选对回答契约问题最关键、且尚未抓取全文的来源'
+              f"（已抓 {fetched} 条，剩余全文预算 {remaining_fetch(c, src)} 条，含本次）。优先选："
+              "含参数标定/误差数据表的原始研究、与本主题模型完全一致的研究、与已有发现相矛盾的来源；"
+              "已在全文索引里的 sid 不要再列。",
+              "## 只写",
+              f"- {os.path.join(od, 'fetch-requests', 'deepen.json')}",
+              ]
+    return "\n".join(parts) + "\n"
+
+
 def build_fetch_fix_prompt(c, od, stage, proposal_path, errs):
     parts = _preamble(c) + [
         "",
@@ -991,6 +1030,29 @@ def cmd_deep_dive():
     src = load_sources(od)
     print(f"[deep-research] deep-dive OK: {len(c['directions'])} 个方向, "
           f"搜索累计 {len(src['searches'])} 次, 来源累计 {len(src['sources'])} 条")
+
+
+def cmd_deepen():
+    c = contract()
+    od = outdir_of(c)
+    t0 = time.monotonic()
+    ensure_sources(od, c)
+    if fetch_done(od, "deepen"):
+        print("[deep-research] deepen 已完成，跳过")
+        return
+    src = load_sources(od)
+    if remaining_fetch(c, src) <= 0:
+        print("[deep-research] 全文预算已用尽，deepen 跳过")
+        mark_fetch_done(od, "deepen")
+        return
+    before = len(src.get("fetches", []))
+    run_one(c, od, "deepen-pick", build_deepen_prompt(c, od, plan_abs(c)), t0)
+    process_fetch_proposal(c, od, "deepen", os.path.join(od, "fetch-requests", "deepen.json"), t0)
+    after = len(load_sources(od).get("fetches", []))
+    if invalidate_report_if_new(od, before, after):
+        print("[deep-research] deepen 新增全文，已作废旧 report.md，综合将重读全文后重写")
+    mark_fetch_done(od, "deepen")
+    print(f"[deep-research] deepen OK: 新抓全文 {after - before} 篇")
 
 
 def cmd_synthesize():
@@ -1234,7 +1296,7 @@ def test_contract_defaults():
     assert c["queries_per_direction"] == 3
     assert c["size_per_query"] == 10
     assert c["max_searches"] == 24
-    assert c["max_fetches"] == 8
+    assert c["max_fetches"] == 16
     assert c["fulltext_max_chars"] == 40000
     assert c["max_attempts"] == 2
     assert c["step_timeout_seconds"] == 1200
@@ -1268,7 +1330,7 @@ def test_contract_rejections():
     assert _rejects(size_per_query=0)
     assert _rejects(size_per_query=11)
     assert _rejects(max_fetches=-1)
-    assert _rejects(max_fetches=31)
+    assert _rejects(max_fetches=61)
     assert _rejects(max_attempts=0)
     assert _rejects(broad_queries="4")
     assert _rejects(max_searches=2)  # 低于计划预算 4 + 1*3 = 7
@@ -1454,6 +1516,13 @@ def test_idempotency(tmp="/tmp/dr-idem-test"):
     assert not fetch_done(tmp, "broad")
     mark_fetch_done(tmp, "broad")
     assert fetch_done(tmp, "broad")
+    with open(tmp + "/report.md", "w", encoding="utf-8") as f:
+        f.write("# 旧报告")
+    assert not invalidate_report_if_new(tmp, 2, 2)
+    assert os.path.isfile(tmp + "/report.md")
+    assert invalidate_report_if_new(tmp, 2, 3)
+    assert not os.path.isfile(tmp + "/report.md")
+    assert not invalidate_report_if_new(tmp, 3, 4)  # 无旧报告时不再报真
     shutil.rmtree(tmp)
 
 
@@ -1492,6 +1561,7 @@ HANDLERS = {
     "preflight": cmd_preflight,
     "broad-search": cmd_broad_search,
     "deep-dive": cmd_deep_dive,
+    "deepen": cmd_deepen,
     "synthesize": cmd_synthesize,
     "repair": cmd_repair,
     "verify": cmd_verify,

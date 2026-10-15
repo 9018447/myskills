@@ -1,0 +1,1331 @@
+[client] initialize (running)
+
+[client] session/new (running)
+
+[thinking] Let
+
+[thinking] me start by understanding the task. I need to create a `deep-research/` workflow skill in `/home/smh/myskills`, modeled after the existing `explore-repo/` skill. The task is very detailed. Let me first read the required files in order:
+           
+           1. `/home/smh/myskills/explore-repo/workflow.yml` + `scripts/driver.py` + `SKILL.md`
+           2. `/home/smh/myskills/meta-search/SKILL.md` and `/home/smh/myskills/archive/meta-fetch/SKILL.md`
+           3. `/home/smh/.claude/skills/writing-for-agents/SKILL.md`
+           
+           Let me read these files first. Note the git status shows lots of deleted files in archive/ - the working tree may have deletions staged. But my task says: only create files under `deep-research/`, don't touch other files, don't git commit.
+           
+           Let me read the reference files.
+我先按要求读参考文件：explore-repo 的结构模板、metaso API 用法、SKILL.md 写作规范。
+
+[tool] Read workflow.yml (pending)
+  input: {"file_path":"/home/smh/myskills/explore-repo/workflow.yml"}
+  files: /home/smh/myskills/explore-repo/workflow.yml:1
+
+[tool] Read SKILL.md (pending)
+  input: {"file_path":"/home/smh/myskills/explore-repo/SKILL.md"}
+  files: /home/smh/myskills/explore-repo/SKILL.md:1
+
+[tool] Read (completed)
+  kind: read
+  input: {"file_path":"/home/smh/myskills/explore-repo/workflow.yml"}
+  files: /home/smh/myskills/explore-repo/workflow.yml:1
+  output:
+    1	# explore-repo：Codex 只读探索仓库，可信脚本独立验收。
+    2	# 契约固定读 .agent/luna/task.json；所有 shell.run 为固定命令，无插值。
+    3	schema_version: "1.0"
+    4	workflow:
+    5	  id: explore-repo
+    6	  name: Verified Repo Exploration
+    7	  version: "1.0.0"
+    8	  author: "create-workflow"
+    9	  description: "Codex 只读探索仓库，产出带证据索引的报告；可信脚本核验引用真实性与写入边界"
+    10	requires:
+    11	  speckit_version: ">=1.2.0"
+    12	steps:
+    13	  - id: preflight
+    14	    type: shell
+    15	    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" preflight'
+    16	  - id: explore
+    17	    type: shell
+    18	    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" explore'
+    19	  - id: verify-first
+    20	    type: shell
+    21	    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+    22	  - id: repair-if-fixable
+    23	    type: if
+    24	    condition: "{{ steps.verify-first.output.stdout | contains('VERDICT=repairable') }}"
+    25	    then:
+    26	      - id: repair
+    27	        type: shell
+    28	        run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" repair'
+    ... (10 more lines)
+
+[tool] Read (completed)
+  kind: read
+  input: {"file_path":"/home/smh/myskills/explore-repo/SKILL.md"}
+  files: /home/smh/myskills/explore-repo/SKILL.md:1
+  output:
+    1	---
+    2	name: explore-repo
+    3	description: 对仓库做可信验收的只读探索：陌生仓库定位实现、梳理调用链与架构、变更前影响面调研、交接上手。Codex 产出带证据索引的报告，可信脚本核验每条引用真实存在、写入不越界。适用于要交付可复现报告的调研任务；无报告产物的随问随答不适用。
+    4	---
+    5	
+    6	# explore-repo：证据可核验的仓库探索工作流
+    7	
+    8	在**目标仓库根目录**操作。任务契约固定为 `.agent/luna/task.json`，产物固定在 `.agent/luna/explore/<task_id>/`。工作流 YAML 与可信驱动位于本技能目录（`workflow.yml`、`scripts/driver.py`）。
+    9	
+    10	## 1. 写任务契约
+    11	
+    12	按下列 schema 写 `.agent/luna/task.json`（相对路径按仓库根解析）：
+    13	
+    14	```json
+    15	{
+    16	  "task_id": "explore-auth-001",
+    17	  "objective": "梳理认证子系统的入口与调用链",
+    18	  "focus_paths": ["src/auth/"],
+    19	  "exclude_paths": ["node_modules/", "dist/"],
+    20	  "allowed_write_paths": [],
+    21	  "constraints": ["只读探索", "不得访问网络"],
+    22	  "max_attempts": 2,
+    23	  "timeout_seconds": 1800
+    24	}
+    25	```
+    26	
+    27	`task_id` 仅限字母数字与 `._-`；`allowed_write_paths` 可留空，产物目录会自动加入白名单。完成标准：第 2 步 preflight 通过。
+    28	
+    ... (20 more lines)
+
+[thinking] Now let me read the driver.py for explore-repo, which is the most important structural template.
+
+[tool] Read driver.py (pending)
+  input: {"file_path":"/home/smh/myskills/explore-repo/scripts/driver.py"}
+  files: /home/smh/myskills/explore-repo/scripts/driver.py:1
+
+[tool] Read (completed)
+  kind: read
+  input: {"file_path":"/home/smh/myskills/explore-repo/scripts/driver.py"}
+  files: /home/smh/myskills/explore-repo/scripts/driver.py:1
+  output:
+    1	#!/usr/bin/env python3
+    2	"""explore-repo 可信驱动：preflight / explore / repair / verify / assert-passed / finalize。
+    3	
+    4	裁决约定：verify 恒以 0 退出（引擎对非零 shell 退出直接判失败，不进修复分支），
+    5	裁决写入 verify.json（结构为 {verdict, failures, attempt}），stdout 末行输出 VERDICT=<pass|repairable|fatal>；
+    6	assert-passed 读取 verify.json 强制终态，绕过裁决即失败。
+    7	"""
+    8	import json
+    9	import os
+    10	import re
+    11	import shutil
+    12	import subprocess
+    13	import sys
+    14	from datetime import datetime, timezone
+    15	
+    16	REPO = os.getcwd()
+    17	CONTRACT_PATH = ".agent/luna/task.json"
+    18	MODEL = "gpt-6-luna"
+    19	REQUIRED_SECTIONS = ("## Findings", "## Evidence", "## Open Questions")
+    20	CITE_RE = re.compile(
+    21	    r"(?:[\w.-]+/)*[\w.-]+\.(?:py|js|tsx?|jsx|go|rs|java|kt|swift|c|cc|h|hpp|cpp|cs|rb|php|sh|md|json|ya?ml|toml|txt|sql)"
+    22	)
+    23	
+    24	
+    25	def fail(msg, code=2):
+    26	    print(f"[explore-repo] FATAL: {msg}", file=sys.stderr)
+    27	    sys.exit(code)
+    28	
+    ... (17 more lines)
+
+[thinking] Now let me read the metaso API usage docs and the writing-for-agents skill.
+
+[tool] Read SKILL.md (pending)
+  input: {"file_path":"/home/smh/myskills/meta-search/SKILL.md"}
+  files: /home/smh/myskills/meta-search/SKILL.md:1
+
+[tool] Read (completed)
+  kind: read
+  input: {"file_path":"/home/smh/myskills/meta-search/SKILL.md"}
+  files: /home/smh/myskills/meta-search/SKILL.md:1
+  output:
+    1	---
+    2	name: meta-search
+    3	description: 用 metaso 搜索网页知识：返回带摘要和 URL 的结果条目。需要查资料、验证事实、补充上下文，或 WebSearch 不可用/结果不佳时使用。
+    4	---
+    5	
+    6	# meta-search — metaso 网页搜索
+    7	
+    8	密钥从环境变量 `METASO_API_KEY` 读。`q` 写具体问题（中文即可），`size` 一般 10。**经 context-mode 触发**：把下面的 curl 放进 `ctx_batch_execute`（`queries` 写明要从结果里取什么信息，命中片段随结果一起返回）或 `ctx_execute` 里执行——原始 JSON 只进索引，对话里只出现命中窗口；不要在 Bash 里裸跑：
+    9	
+    10	```bash
+    11	curl -s https://metaso.cn/api/v1/search \
+    12	  -H "Authorization: Bearer $METASO_API_KEY" \
+    13	  -H "Content-Type: application/json" \
+    14	  -d '{"q": "<问题>", "scope": "webpage", "includeSummary": true, "size": "10", "includeRawContent": false, "conciseSnippet": true}'
+    15	```
+    16	
+    17	`scope` 可选：`webpage`（默认）、`news`、`wechat`、`arxiv`、`github`。
+    18	
+    19	响应 JSON 里 `webpages[]` 每条有 `title`、`link`、`summary`、`snippet`、`date`。需要某条的全文，用 meta-fetch 按 `link` 取原文。
+    20
+
+[tool] ls /home/smh/myskills/archive/meta-fetch/ 2>/dev/null && ls /home/smh/myskills/explore-repo/ (pending)
+  input: ls /home/smh/myskills/archive/meta-fetch/ 2>/dev/null && ls /home/smh/myskills/explore-repo/
+
+[tool] Bash (completed)
+  kind: execute
+  input: ls /home/smh/myskills/archive/meta-fetch/ 2>/dev/null && ls /home/smh/myskills/explore-repo/
+  output:
+    SKILL.md
+    scripts
+    SKILL.md
+    workflow.yml
+
+[tool] Read SKILL.md (pending)
+  input: {"file_path":"/home/smh/myskills/archive/meta-fetch/SKILL.md"}
+  files: /home/smh/myskills/archive/meta-fetch/SKILL.md:1
+
+[tool] Read SKILL.md (pending)
+  input: {"file_path":"/home/smh/.claude/skills/writing-for-agents/SKILL.md"}
+  files: /home/smh/.claude/skills/writing-for-agents/SKILL.md:1
+
+[tool] Read (completed)
+  kind: read
+  input: {"file_path":"/home/smh/.claude/skills/writing-for-agents/SKILL.md"}
+  files: /home/smh/.claude/skills/writing-for-agents/SKILL.md:1
+  output:
+    1	---
+    2	name: writing-for-agents
+    3	description: 为智能体编写文档。当你正在创建或编辑技能，或者修改 AGENTS.md / CLAUDE.md 时使用。
+    4	---
+    5	
+    6	一份用于编写智能体所阅读的任何文档的参考：一个技能、一份 `AGENTS.md` / `CLAUDE.md`、一份通过指针触达的文档。包装方式各异，但写作规则是一致的：同样的杠杆让每份文档都变得可预测，因为智能体每次运行采取的是同一个*流程*，而不是产出同一个输出。
+    7	
+    8	当你正在编写的文档是一个技能时，请阅读 [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md)，了解前置元数据、调用方式的选择，以及路由技能。
+    9	
+    10	## 上下文指针
+    11	
+    12	**上下文指针（context pointer）** 是智能体上下文中持有的一条引用，它指向一份"上下文之外"的资料，并编码了触达该资料的条件。技能的 `description` 就是一条；`AGENTS.md` 中指向某份文档的一行也是同一回事。决定智能体何时、以多高的可靠性触达这份资料的，是这条指针的*措辞*，不是它的指向。一个本应被触达的指向目标，却藏在一段措辞含糊的指针背后：这是一个方差 bug：先打磨措辞；只有当打磨失败时，才把资料直接内联进去。
+    13	
+    14	一条指针承担两件事：说明这份资料是什么，以及列出应当触发触达它的**分支**（branch 是这份文档所处理的一种独立情形，所以不同次运行会走不同的路径）。每一条始终加载的指针里的每一个词，在每一次轮次中都在付代价，所以它需要比正文更严格的精简：
+    15	
+    16	- **把"引导词"前移**：指针是触发工作真正发生的地方。
+    17	- **一个分支对应一个触发词。** 同义词把同一个分支换了个说法写两遍，本质上是一个分支；把它们合并，只保留真正不同的分支。
+    18	- **去掉正文已经承载的身份信息。**
+    19	
+    20	## 两种负载
+    21	
+    22	你新增的每一份文档与每一条指针，都在花两种预算之一：
+    23	
+    24	- **上下文负载（Context load）**：始终加载的资料占据智能体窗口的代价：一行 `AGENTS.md`、一条技能描述，任何始终留在上下文里、无论是否触发都在消耗 token 与注意力的东西。
+    25	- **认知负载（Cognitive load）**：消耗在人类身上的代价：有哪些文档存在、各自在什么时候用。人类就是这个索引。它不是要被最小化的代价：它是人类能动性的价格；把它花在需要人类判断的地方，在不需要的地方去除。
+    26	
+    27	只通过指针触达的资料，逃脱了上下文负载，代价是这条指针自身那一行；完全没有指针的资料，则完全依靠认知负载。
+    28	
+    ... (6 more lines)
+
+[tool] Read (completed)
+  kind: read
+  input: {"file_path":"/home/smh/myskills/archive/meta-fetch/SKILL.md"}
+  files: /home/smh/myskills/archive/meta-fetch/SKILL.md:1
+  output:
+    1	---
+    2	name: meta-fetch
+    3	description: 用 metaso reader 抓取网页正文：给定 URL 返回提取好的纯文本。WebFetch 拿不到内容（反爬、需要 JS 渲染、微信公众号文章）或想要干净的正文时使用。
+    4	---
+    5	
+    6	# meta-fetch — metaso 网页正文抓取
+    7	
+    8	密钥从环境变量 `METASO_API_KEY` 读。`url` 换成目标页面。**经 context-mode 触发**：把下面的 curl 放进 `ctx_batch_execute`（`queries` 写明要读正文的哪些部分）或 `ctx_execute` 里执行——整篇正文只进索引，对话里只出现命中窗口；在 Bash 里裸跑会把整篇文章灌进对话：
+    9	
+    10	```bash
+    11	curl -s https://metaso.cn/api/v1/reader \
+    12	  -H "Authorization: Bearer $METASO_API_KEY" \
+    13	  -H "Accept: text/plain" \
+    14	  -H "Content-Type: application/json" \
+    15	  -d '{"url": "<目标URL>"}'
+    16	```
+    17	
+    18	响应是提取好的正文纯文本（不是 JSON），可能很长——先用 head/jq 截取，或只读需要的部分。配合 meta-search：搜到 `link` 后用它取全文。
+    19
+
+[thinking] Now let me also look at the writing-for-agents SKILL-MECHANICS.md, since it's referenced. Also, let me check the explore-repo scripts directory and maybe the create-workflow skill for packaging conventions (but I'm told NOT to use the create-workflow skill directly — the task says the orchestrator handles commit; actually the task says create the directory following explore-repo conventions. The create-workflow skill is for "creating or modifying Spec Kit Workflow, and packaging as standalone skill after verification" — but the task
+
+[thinking] instructions here are extremely detailed and self-contained, telling me exactly what to build. The task explicitly says "只创建 deep-research/ 下的文件，不要动仓库其他文件，不要 git commit". 
+           
+           Should I invoke the create-workflow skill? The available skills list includes create-workflow: "创建或修改 Spec Kit Workflow，并在通过校验后打包为独立技能。用于设计新的工作流类型、调整现有工作流、修复工作流结构或安装已验证的工作流技能。" The task is to create a new Spec Kit Workflow. The system prompt
+
+[thinking] says "When a skill matches the user's request, this is a BLOCKING REQUIREMENT: invoke the relevant Skill tool BEFORE generating any other response about the task".
+           
+           Hmm. The user's task is essentially creating a workflow skill. The create-workflow skill matches. But the task instruction is extremely detailed and prescriptive — it tells me exactly what to do, including reading specific files. The user (orchestrator) says "源库真身直接实现" (implement directly in the source repo). The create-workflow skill is about "创建或修改 Spec Kit Workflow，并在通过校验后打包为独立技能" — packaging into a standalone skill after validation. The task says don't commit, don't touch other files — the orchestrator will do validation and commit. 
+           
+           Let me consider: the instruction says the task came from an orchestrator with a full spec. Invoking create-workflow might add its own conventions (packaging etc.) that conflict with expli...
+
+[thinking] Let me check what create-workflow actually says — reading it is cheap and will inform whether it conflicts. Actually, the task explicitly lists "开工前必读" files, which doesn't include create-workflow. The task is self-contained.
+           
+           Let me weigh: The create-workflow skill is designed for this repo's workflow skill creation. It might have important conventions (e.g., how workflow.yml should look, packaging steps). Since the task says structure must align with explore-repo (which was itself created by create-workflow per the git log), and the task gives complete specs, I think invoking the skill is still worth it to check for conventions I might miss. Actually, let me read the create-workflow SKILL.md to see. It's at /home/smh/.agents/skills/create-workflow/SKILL.md.
+           
+           Actually, the rule says: "When users ask you to perform tasks, check if any of the available skills match... BLOCKING REQUIREM...
+
+[thinking] 验后打包为独立技能。用于设计新的工作流类型、调整现有工作流、修复工作流结构或安装已验证的工作流技能。" This matches "创建 deep-research 工作流技能". I should invoke it. But the orchestrator's prompt is highly prescriptive and explicitly forbids committing/packaging. The skill will likely tell me to commit after validation — which the task overrides. Reading the skill won't hurt; I'll invoke it and follow both, with the explicit task instructions taking precedence where they conflict.
+           
+           Let me invoke the Skill tool with create-workflow.
+模板和 API 用法都清楚了。任务与 create-workflow 技能的适用域匹配（创建 Spec Kit Workflow），先加载它确认仓库既定惯例，再动手。
+
+[tool] Skill create-workflow (pending)
+  input: {"skill":"create-workflow","args":"在 /home/smh/myskills 源库直接创建 deep-research 工作流技能（结构对齐 explore-repo；编排者已给出完整规格；不打包、不提交）"}
+
+[tool] Skill (completed)
+  kind: execute
+  input: {"skill":"create-workflow","args":"在 /home/smh/myskills 源库直接创建 deep-research 工作流技能（结构对齐 explore-repo；编排者已给出完整规格；不打包、不提交）"}
+  output:
+    <skill_content name="create-workflow">
+    # Skill: create-workflow
+    # 创建 Spec Kit Workflow
+    
+    Workflow 是 YAML 定义的编排：它决定**什么时候执行、执行什么、步骤间如何传值、何时暂停或分支**。Skill 定义能力与操作规则；Workflow 只通过已注册命令引用 Skill。
+    
+    本技能只产出可检查的 workflow 技能目录，不运行 workflow 执行业务任务。
+    
+    ## 工作步骤
+    
+    1. **界定工作流。** 提取触发场景、输入、输出、副作用、权限边界、失败处理和独立验收方式。查 `references/workflow-authoring.md`、`references/workflows.md` 与 `specify workflow --help`，确认字段和命令符合本机安装版本。完成标准：适用范围与验收条件明确，每项依赖的 CLI 能力都有版本依据。
+    2. **检查现有资产。** 读 `templates/workflow-template.yml` 与目标安装位置的同名技能。模板只给结构参考。完成标准：目标名称、版本处理、所需脚本、兼容性影响均已确定。
+    3. **实现工作流及依赖。** 在独立技能目录写 `workflow.yml`、`SKILL.md` 和全部被引用的 `scripts/`。节点 ID 唯一；shell 调用固定可审计，输入经文件或可信脚本读取；`requires` 不是安全边界，权限由沙箱、文件权限或外部隔离提供。完成标准：每个被引用的脚本、验证器、输入路径都真实存在，没有占位实现，也没有「缺依赖时自动放行」。
+    4. **校验候选版本。** 在临时目录备齐完整候选技能，先跑 `specify workflow --help` 探测本机可用子命令、按版本选校验路径（新版若有 `validate` 子命令则直接用它做结构校验）。本机 1.2.0 无 `validate`，实际路径为：YAML 解析器查语法 + 结构自检（节点 ID 唯一、步骤引用可解析、被引用脚本存在）+ 核对 frontmatter 与脚本依赖；必要时在隔离目录用 `specify workflow run <候选 workflow.yml> --json` 做无副作用冒烟（本地 YAML 文件可在 Spec Kit 项目外运行，此行为需按本机版本实测确认）。完成标准：所有适用的静态校验通过，依赖齐全，无未解释的校验错误。校验失败时保留已安装版本，只改候选版本。
+    5. **打包并安装（用户要求时）。** 候选通过校验后，用 `writing-for-agents` 规范写 `SKILL.md`，按用途安装到 `~/.claude/skills/<name>/`（跨仓库）或 `<项目根>/.claude/skills/<name>/`（项目专用）。双位置规则：源库 `~/myskills/<name>/` 是唯一编辑入口（git 管理），校验通过后才同步到安装位，同步后 `diff -r` 确认两侧一致。技能名用 kebab-case，与 `workflow.id` 相同。完成标准：目标目录含 `SKILL.md`、`workflow.yml`、全部脚本，元数据可解析，已安装内容与通过校验的候选一致。用户只要求创建或修改时，交付候选目录与校验结果。
+    6. **报告结果。** 报告技能名、workflow ID、文件位置、Spec Kit 版本、执行过的
+
+[thinking] Now let me read the references of create-workflow to confirm the YAML conventions, and the workflow template. Then I'll design and implement.
+           
+           Let me read:
+           - /home/smh/.agents/skills/create-workflow/references/workflow-authoring.md
+           - /home/smh/.agents/skills/create-workflow/templates/workflow-template.yml
+           
+           Also check the `specify workflow --help` on this machine for smoke test capability later.
+技能已加载。按其工作步骤，先读它的 YAML 写作规范与模板参考，并探测本机 specify 版本能力。
+
+[tool] Read workflow-authoring.md (pending)
+  input: {"file_path":"/home/smh/.agents/skills/create-workflow/references/workflow-authoring.md"}
+  files: /home/smh/.agents/skills/create-workflow/references/workflow-authoring.md:1
+
+[tool] Read workflow-template.yml (pending)
+  input: {"file_path":"/home/smh/.agents/skills/create-workflow/templates/workflow-template.yml"}
+  files: /home/smh/.agents/skills/create-workflow/templates/workflow-template.yml:1
+
+[tool] Read (completed)
+  kind: read
+  input: {"file_path":"/home/smh/.agents/skills/create-workflow/references/workflow-authoring.md"}
+  files: /home/smh/.agents/skills/create-workflow/references/workflow-authoring.md:1
+  output:
+    1	# Workflow 编写规范
+    2	
+    3	Workflow 用 `.yml`/`.yaml` 定义，描述执行顺序与控制逻辑；Skill 通过 `SKILL.md` 定义能力与操作规则。只有当集成已把某能力注册为可调用命令时，workflow 才能用 `command` 引用它。
+    4	
+    5	## YAML 结构
+    6	
+    7	```yaml
+    8	schema_version: "1.0"
+    9	
+    10	workflow:
+    11	  id: feature-development
+    12	  name: Feature Development
+    13	  version: "1.0.0"
+    14	  description: "Feature development workflow"
+    15	
+    16	requires:
+    17	  speckit_version: ">=0.8.5"
+    18	
+    19	inputs:
+    20	  spec:
+    21	    type: string
+    22	    required: true
+    23	
+    24	steps:
+    25	  - id: specify
+    26	    type: command
+    27	    command: speckit.specify
+    28	    input:
+    ... (26 more lines)
+
+[tool] Read (completed)
+  kind: read
+  input: {"file_path":"/home/smh/.agents/skills/create-workflow/templates/workflow-template.yml"}
+  files: /home/smh/.agents/skills/create-workflow/templates/workflow-template.yml:1
+  output:
+    1	schema_version: "1.0"
+    2	
+    3	workflow:
+    4	  id: feature-cycle
+    5	  name: Feature Development Cycle
+    6	  version: "1.0.0"
+    7	  description: "Automated SDD workflow"
+    8	
+    9	requires:
+    10	  speckit_version: ">=0.8.5"
+    11	
+    12	inputs:
+    13	  spec:
+    14	    type: string
+    15	    required: true
+    16	    prompt: "Describe the feature"
+    17	
+    18	  integration:
+    19	    type: string
+    20	    default: "auto"
+    21	
+    22	steps:
+    23	  - id: specify
+    24	    type: command
+    25	    command: speckit.specify
+    26	    integration: "{{ inputs.integration }}"
+    27	    input:
+    28	      args: "{{ inputs.spec }}"
+    ... (27 more lines)
+
+[tool] specify workflow --help 2>&1 | head -40; echo ---; specify --version 2>&1 (pending)
+  input: specify workflow --help 2>&1 | head -40; echo ---; specify --version 2>&1
+
+[client] session/request_permission (running)
+
+[tool] Bash (completed)
+  kind: execute
+  input: specify workflow --help 2>&1 | head -40; echo ---; specify --version 2>&1
+  output:
+    Usage: specify workflow [OPTIONS] COMMAND [ARGS]...                            
+                                                                                    
+     Manage and run automation workflows                                            
+                                                                                    
+    ╭─ Options ────────────────────────────────────────────────────────────────────╮
+    │ --help          Show this message and exit.                                  │
+    ╰──────────────────────────────────────────────────────────────────────────────╯
+    ╭─ Commands ───────────────────────────────────────────────────────────────────╮
+    │ run      Run a workflow from an installed ID or local YAML path.             │
+    │ resume   Resume a paused or failed workflow run.                             │
+    │ status   Show workflow run status.                                           │
+    │ list     List installed workflows.                                           │
+    │ add      Install a workflow from catalog, URL, or local path.                │
+    │ remove   Uninstall a workflow.                                               │
+    │ update   Update installed workflow(s) to the latest catalog version.         │
+    │ enable   Enable a disabled workflow.                                         │
+    │ disable  Disable a workflow without removing it.                             │
+    │ search   Search workflow catalogs.                                           │
+    │ info     Show workflow details and step
+
+[thinking] All references are clear. Now let me plan the implementation.
+           
+           ## Structure to create
+           
+           ```
+           /home/smh/myskills/deep-research/
+           ├── SKILL.md
+           ├── workflow.yml
+           └── scripts/
+               └── driver.py
+           ```
+           
+           ## Design of driver.py
+           
+           Subcommands: `preflight | broad-search | deep-dive | synthesize | verify | assert-passed | finalize | selftest` — plus `repair` (needed for the repair branch! The task says "driver 子命令：preflight
+
+[thinking] | broad-search | deep-dive | synthesize | verify | assert-passed | finalize | selftest" but then also says "**修复分支**：workflow.yml 里 if ... → `repair` → `verify-again`... repair 是一次 codex 调用". So repair must also be a handler. Wait — the listed subcommands don't include repair, but the repair branch needs a `repair` step calling driver. Let me re-read.
+           
+           "driver 子命令：`preflight | broad-search | deep-dive | synthesize | verify | assert-passed | finalize | selftest`。workflow.yml 全部为固定 shell 步骤调 driver"
+           
+           Then later: "**修复分支**：workflow.yml 里 `if`（condition 照抄 explore-repo 的 `contains('VERDICT=repairable')`）→ `repair` → `verify-again` → `final-check`(assert-passed) → `finalize`。repair 是一次 codex 调用..."
+           
+           So the workflow has steps named `repair` and `verify-again`. The repair step must run something — presumably `driver.py repair`. The initial list omitted `repair` but the repair branch section ...
+
+[thinking] = os.getcwd()
+           - CONTRACT_PATH = ".agent/luna/task.json"
+           - MODEL = "gpt-6-luna"
+           - OUTROOT = ".agent/luna/research"
+           - METASO_SEARCH_URL = "https://metaso.cn/api/v1/search"
+           - METASO_READER_URL = "https://metaso.cn/api/v1/reader"
+           - SCOPES = {"webpage", "news", "wechat", "arxiv", "github"}
+           - Direction id regex: ^[A-Za-z0-9][A-Za-z0-9_-]{0,15}$
+           - task_id regex: [A-Za-z0-9][A-Za-z0-9._-]*
+           
+           ### contract()
+           Validate:
+           - required: task_id, topic, objective, directions
+           - directions: 1..12, id unique and matches regex, each 1..8 non-empty questions
+           - scopes ⊆ SCOPES, default ["webpage"]
+           - numeric domains:
+             - broad_queries 1..6 default 4
+             - queries_per_direction 1..6 default 3
+             - size_per_query
+
+[thinking] 1..10 default 10
+             - max_searches default 24, must be ≥ broad_queries + len(directions)*queries_per_direction
+             - max_fetches 0..30 default 8
+             - fulltext_max_chars default 40000
+             - max_attempts ≥1 default 2
+             - step_timeout_seconds default 1200
+             - timeout_seconds default 5400
+           - plan_file optional: if present must be safe_rel and file exists
+           - plan_file: null default
+           
+           ### preflight
+           - contract()
+           - git available, in git repo (rev-parse --git-dir)
+           - acpx/codex/python3 on PATH
+           - METASO_API_KEY env non-empty → fatal if missing
+           - if plan_file given: safe_rel check + os.path.isfile
+           - also validate allowed_write_paths with safe_rel
+           - create outdir + subdirs (prompts, logs, queries, raw, fulltext, fetch-requests, notes, findings)
+           - write baseline.json (porcelain) + contract.snapshot.json
+           
+           ### sources.json structure
+           ```json
+           {
+             "sources": [
+               {"sid
+
+[thinking] ": "S1", "url": ..., "title": ..., "snippet": ..., "summary": ..., "date": ..., "scope": ..., "query_ids": ["broad-q1"], "direction": null}
+             ],
+             "searches": [
+               {"qid": "broad-q1", "q": "...", "scope": "webpage", "direction": null, "count": 10, "ok": true, "at": "ISO"}
+             ],
+             "fetches": [
+               {"sid": "S3", "ok": true, "chars": 12345, "at": "..."}
+             ],
+             "budget": {"used": 3, "max": 24}
+           }
+           ```
+           
+           Wait, the task spec says: `searches[]` 记每次 `{qid,q,scope,direction,count,ok,at}`；`budget{used,max}`. And fetch 记录 ≤ max_fetches. The spec doesn't fully define fetches[] structure but verify checks "fetch 记录 ≤ max_fetches（损坏=fatal）". I'll add a "fetches" array.
+
+[thinking] The sources.json starts as `{"sources": [], "searches": [], "fetches": [], "budget": {"used": 0, "max": c["max_searches"]}}` — created at preflight or lazily. Better at preflight so the file always exists.
+           
+           ### URL normalization
+           - strip fragment: url.split('#', 1)[0]
+           - strip trailing slashes: rstrip('/') — but careful for root URLs like "https://example.com/" → "https://example.com". Spec says 去尾斜杠, so rstrip("/") is
+
+[thinking] fine.
+           - Also maybe lowercase scheme/host? Spec only says 去fragment、去尾斜杠. Keep it minimal per spec.
+           
+           ### sid assignment
+           Global increasing S1..Sk across the whole run. Sources appended in order of first occurrence.
+           
+           ### Search execution (trusted script)
+           - urllib POST to metaso, Bearer key, body {"q", "scope", "includeSummary": true, "size", "includeRawContent": false, "conciseSnippet": true}
+           - Note: meta-search SKILL.md shows `"size": "10"` as string. The task spec body says `{"q","scope","includeSummary":true,"size","includeRawContent":false,"conciseSnippet":true}` without specifying string or int. The curl example uses "10" as string. Hmm. To be safe, send size as string like the documented curl. Actually metaso API accepts both probably. The skill doc shows string. I'll send string: str(size). Hmm wait — but the task says body `{"q","scope",...}` — field names only. The documented wo...
+
+[thinking] 'll follow the working example (string), since that's the verified usage from meta-search SKILL.md.
+           - timeout 30s, retry 1 time, on failure record {"ok": false} not counted against budget
+           - raw response to raw/<qid>.json
+           - budget checked BEFORE initiating search: if used >= max, drop query and record (record what? "超限的查询丢弃并记录" — record in searches[] with ok=false? But then budget.used == len(searches) invariant breaks... wait: "budget.used == len(searches) 且
+
+[thinking] ≤ max_searches". Hmm — if dropped queries are recorded in searches[], then budget.used == len(searches) fails unless used counts all searches records. Let me re-read.
+           
+           "**预算在发起搜索前检查，超限的查询丢弃并记录，不报错**" — dropped queries are recorded (somewhere).
+           "sources.json 完整性：... searches[].qid 唯一、每条 source 的 query_ids ⊆ 已有 qid、budget.used == len(searches) 且 ≤ max_searches"
+           
+           So budget.used == len(searches) must hold. If dropped-over-budget queries were recorded in searches[], this breaks. So dropped queries must be recorded elsewhere — e.g., a `dropped` array. That's the consistent interpretation: searches[] records actual executed attempts (both ok and failed-network); budget.used == len(searches) ≤ max. Dropped (never initiated) go to a `dropped` list.
+           
+           Wait, but also: "仍失败记 `{"ok":false}` 不计预算" — network-failed searches don't count against budget. But budget.used == len(searches)
+
+[thinking] — so len(searches) includes failed ones, meaning used includes failed ones too? Contradiction: "不计预算" (doesn't count toward budget) vs "budget.used == len(searches)".
+           
+           Hmm. Let me think carefully. Two consistent options:
+           
+           Option A: budget.used counts executed search attempts (including network failures). Then "失败重试 1 次，仍失败记 {"ok":false} 不计预算" contradicts.
+           
+           Option B: budget.used counts only successful searches. Then budget.used == len(searches) fails if there are failed ones.
+
+[thinking] The verify spec explicitly says "budget.used == len(searches) 且 ≤ max_searches（损坏=fatal）". So the invariant is used == len(searches). The cleanest resolution: budget check happens before initiating; a search that gets initiated (attempted) is recorded in searches[] and increments used — including network-failed ones. "不计预算" in the task text then refers to... hmm, it says failed ones don't consume budget. 
+           
+           Actually, wait. Let me re-read the original: "超时 30s，失败重试 1
+
+[thinking] 次，仍失败记 `{\"ok\":false}` 不计预算". Maybe "不计预算" means the failure itself doesn't count as one of the planned queries in the sense of... no.
+           
+           Since the task gives an explicit machine-checkable invariant ("budget.used == len(searches) 且 ≤ max_searches"), and a softer statement about failures not counting budget, I need to reconcile. The principal contradiction: the invariant is verifiable and must hold. If failed searches don't increment used, then used != len(searches) when failures exist → verify would flag corruption → fatal. That can't be intended.
+           
+           Most sensible design: searches[] records every initiated search attempt (ok true/false). budget.used = number of initiated searches = len(searches). Network failure still consumes a budget slot (it was an attempt). Then what does "不计预算" mean? 
+           
+           Alternative: failed searches get recorded in searches[] but with ok=false, and budget.used counts ...
+
+[thinking] doesn't count against the *query plan* budget... no.
+           
+           Let me think about which interpretation makes the system work best. The purpose of "不计预算" is presumably to avoid a network blunder (metaso down) wasting the entire research budget — being generous to execution. The purpose of "budget.used == len(searches)" is a bookkeeping integrity check.
+           
+           A consistent design that satisfies both textually: searches[] only records searches that were actually initiated; budget.used == len(searches). "不计预算" applies to *retries*: a failed attempt retried
+
+[thinking] once counts as ONE entry (one qid) not two. That is: one query = one budget unit regardless of internal retry; if both attempts fail, the record is {"ok": false} and... hmm, but it's still in searches[] so it's counted.
+           
+           OK here's another consistent design: budget counts only successful searches, and searches[] records only successful searches too — failed searches are logged to raw/<qid>.json ({"ok": false}) and to a separate `failed` array, not to searches[]. Then budget.used == len(searches) holds trivially, and failed searches don't consume budget ("不计预算"). And "broad-search 结束若成功搜索为 0 条 → fatal" — success==0 is fatal.
+           
+           But then "searches[] 记每次 {qid,q,scope,direction,count,ok,at}" — the `ok` field would always be true... unless the ok field is there precisely because failures ARE recorded. Ugh.
+           
+           Let me decide based on what makes verify meaningful and the spec self-consistent:
+           
+           Int...
+
+[thinking] and the generous-failure policy):
+           - searches[] records every *initiated* search (each executed query attempt with its final outcome after 1 retry): {qid, q, scope, direction, count, ok, at}. count = number of results returned (0 on failure).
+           - budget.used = len(searches) — initiated searches consume budget. Wait, that makes failures consume budget, contradicting "不计预算".
+           
+           Interpretation 2:
+           - searches[] records every initiated search including failures.
+           - budget.used = number of searches with ok=true.
+           - verify invariant "
+
+[thinking] budget.used == len(searches)" — would fail with failures.
+           
+           Interpretation 3:
+           - searches[] records only... 
+           
+           Hold on, let me re-read the exact verify wording once more: "budget.used == len(searches) 且 ≤ max_searches（损坏=fatal）". 
+           
+           And the budget check: "预算在发起搜索前检查，超限的查询丢弃并记录".
+           
+           I think the intended semantics, reading holistically:
+           - A query proposal that passes budget check gets *initiated* → recorded in searches[] → budget.used increments (used = len(searches)).
+           - "仍失败记 {"ok":false} 不计预算" — hmm what if this means: the raw response file records ok:false... "记 {"ok":false}" — the thing that gets recorded as {"ok":false} is the raw response? No — raw/<qid>.json gets the metaso raw response. On failure there's no metaso response, so driver writes {"ok": false} into raw/<qid>.json. "不计预算" — 
+           
+           You know what, I think the most defensible reconciliation given the hard invariant:
+
+[thinking] budget counts initiated searches; the "不计预算" phrase refers to *dropped-due-to-over-limit* queries (they're recorded but not counted, since they were never initiated). Actually that matches the OTHER sentence: "超限的查询丢弃并记录，不报错" — dropped queries are recorded and don't count (they're in a `dropped` list, not searches[]).
+           
+           Hmm, but "仍失败记 {"ok":false} 不计预算" is attached to the network failure path...
+           
+           Decision (I'll document this as a taken trade-off
+
+[thinking] in the final report): 
+           - searches[] = every initiated search, with ok true/false.
+           - budget.used = len(searches); pre-initiation check drops queries when used >= max (dropped recorded separately in sources.json "dropped": [{qid,q,scope,direction,reason}]).
+           - Network-failed searches: recorded in searches[] with ok=false and count=0, and they DO consume budget... 
+           
+           vs. not consuming:
+           
+           Actually wait — one more reading. What if "不计预算" means: a failed search doesn't count toward the *query plan*
+
+[thinking] (i.e., doesn't produce sources), and budget accounting... 
+           
+           Let me just go with the interpretation that satisfies the verify invariant exactly, since verify is the acceptance gate (机制化验收 is the whole point of this workflow):
+           
+           **Final design**: 
+           - `searches[]` records every executed attempt (ok or failed).
+           - `budget.used == len(searches)`, checked ≤ max before each initiation.
+           - On network failure after retry: record {ok:false, count:0}; raw/<qid>.json gets {"ok": false, "error": ...}. This consumes budget.
+           - Over-limit queries: recorded in `dropped[]` with reason "budget-exhausted", never initiated, no qid consumption... but they were assigned qids in canonical queries. qid uniqueness: dropped queries keep their qid in dropped[], and the searches[].qid uniqueness check only covers searches[]. Fine.
+           
+           And I'll note in the report: "任务文本中『失败不计预算』与『budget.used == len(searches)』存在冲突，取后者（发起即...
+
+[thinking] this is exactly the kind of contradiction analysis the user's AGENTS.md wants. Good.
+           
+           Hmm wait, actually, let me reconsider once more. "仍失败记 {\"ok\":false} 不计预算" — could "预算" here refer to *fetch* budget? No, it's about search.
+           
+           Or maybe: retry doesn't count twice (the internal retry). "失败重试 1 次，仍失败记 {"ok":false} 不计预算" = "on failure, retry once; if it still fails, record ok:false" and the RET
+
+[thinking] RY doesn't count as an extra budget unit. That reads naturally! The retry is part of the same qid/budget unit. "不计预算" = the retry doesn't consume additional budget. Hmm, that's plausible: 失败→重试（重试这次不计预算）→仍失败→记ok:false。
+           
+           But then does the whole failed query count? Ambiguous. My design: one qid = one budget unit regardless of retries (satisfies "retry doesn't count"), and every initiated qid counts (satisfies used == len(searches)). The only edge: fully-failed searches consume budget. I'll document this.
+           
+           Actually hmm, wait. Let me reconsider option: failed searches recorded in searches[] with ok=false, budget.used counts only ok=true. Verify checks "budget.used == len(searches)". If a failure occurs, verify fails with corruption=fatal → whole run dies because metaso had a hiccup. That's terrible design. So no.
+           
+           vs. my design: failed searches consume budget. If metaso fails, you lose a ...
+
+[thinking] Go.
+           
+           Also "broad-search 结束若成功搜索为 0 条 → fatal" — if all broad searches failed → fatal. Good, that catches metaso being down.
+           
+           ### fetch flow
+           - codex output artifacts: notes/broad.md, findings/Di.md, queries/*.json, and fetch proposals {"sids": [...]}. Where do fetch proposals come from? "codex 产出可含 fetch 提案 `{"sids":["S3",...]}`（落 fetch-requests/ 留档）". So codex writes a JSON file with
+
+[thinking] fetch proposal. Where does codex write it? The prompt tells codex to write e.g. `<outdir>/fetch-requests/broad.json`. Wait the artifact list says `fetch-requests/broad.json  fetch-requests/<D>.json  # codex 原始 fetch 提案留档`. So codex writes the proposal file directly to fetch-requests/<stage>.json. Then driver reads it, validates sids against sources.json, fetches those not yet fetched, writes fulltext/S<sid>.txt truncated to fulltext_max_chars, records in fetches[].
+           
+           Budget: max_fetches limits number of fetch attempts (len(fetches) ≤ max_fetches). Over-limit dropped with record. Single failure → log, continue.
+           
+           If codex doesn't write a fetch proposal file → no fetches that stage. That's fine (fetch is optional: "产出可含").
+           
+           But wait — fetch proposal validation: what if sids invalid (not in sources.json, malformed)? Spec says "driver 对其中 sid ∈ sources.json 且尚未抓取的项" — just filter. Malformed...
+
+[thinking] array of strings)? Since this is codex output, and the queries JSON proposal gets a re-submit-once mechanism... The spec explicitly defines the re-submit mechanism only for "queries/fetch 提案不合法" — "codex 输出的 JSON 提案校验失败（queries/fetch 提案不合法）：同一次调用允许重提 1 次...再失败即 fatal". Hmm, so fetch proposals also get schema validation with one retry. But then it also says fetch handling just filters valid sids...
+           
+           Let me parse: the queries proposal must be a valid JSON array of query objects with schema; if codex writes garbage → retry once → fatal. The fetch proposal: `{"sids": [...]}` — if the file is unparseable or wrong schema → that's "fetch 提案不合法" → retry once → fatal. If parseable but contains unknown sids → filter them out (not a failure). That's the consistent reading. And fetch-requests/ keeps the "原始提案留档".
+           
+           Hmm wait, actually — re-reading: "fetch-requests/broad.json fetch-
+
+[thinking] requests/<D>.json # codex 原始 fetch 提案留档". And in the broad-search stage: "(c) codex 读结果摘要 → 写 notes/broad.md + fetch 提案；(d) driver 抓全文". So during stage (c), codex writes BOTH notes/broad.md AND the fetch proposal file. Then (d) driver fetches.
+           
+           So the codex calls per stage:
+           - broad-search: call 1 (write queries/broad.json), driver searches, call 2 (write notes/broad.md + fetch-
+
+[thinking] requests/broad.json), driver fetches.
+           - deep-dive per direction Di: call 1 (write queries/Di.json), driver searches, call 2 (write findings/Di.md + fetch-requests/Di.json), driver fetches.
+           - synthesize: call (write report.md). No fetch after synthesize (spec doesn't mention).
+           - repair: one call (edit report/findings/notes only).
+           
+           JSON proposal retry mechanism: after a codex call that should produce a JSON proposal, driver validates:
+           - queries/<stage>.json: must be JSON array of objects {"q": str non-empty, "scope": optional valid scope, "size": optional int 1..10}? The task says driver "按 schema 校验并改写为 canonical". What's the query schema? Spec: `queries/broad.json  queries/<D1..Dn>.json # 校验通过的查询提案（canonical）`. The canonical form presumably: array of {"q", "scope", "size"}. And counts: broad queries ≤ broad_queries? The plan is: broad_queries count for broad stage, queries_per_directi...
+
+[thinking] direction. Should driver enforce the count? "broad_queries 1..6 默认 4" is contract-level. The proposal should contain exactly ≤ that many? I'd say: driver takes at most N queries from the proposal (extra dropped), requires ≥1 valid. If the file is invalid JSON/schema or has 0 valid queries → retry once with error-annotated prompt → fatal.
+           
+           - fetch-requests/<stage>.json: {"sids": [...]} — sids array of strings matching S<digits>. Invalid JSON/schema → retry once → fatal. Unknown
+
+[thinking] sids → filtered.
+           
+           What does "重提" mean operationally: driver generates an extra prompt (containing the error) and calls codex again; the retry prompt tells codex to fix the proposal file. Note codex rewrites the file (or writes alongside?). I'd have the retry prompt ask codex to overwrite the same proposal file. The prompts/ dir keeps every prompt: prompts/<call-id>.md.
+           
+           Call IDs: e.g. `broad-queries`, `broad-queries-retry`, `broad-notes`, `broad-notes
+
+[thinking] -retry`? Retry applies to notes call too (its fetch proposal could be invalid)? The spec: "codex 输出的 JSON 提案校验失败（queries/fetch 提案不合法）". The fetch proposal accompanies a notes/findings call. If the fetch proposal is invalid → retry that call once (the call's main deliverable might be fine but the fetch proposal broken — retry re-runs the whole call; simpler and matches "同一次调用允许重提 1 次"). Hmm, but re-running the notes call would rewrite notes... fine, it's idempotent-ish (codex writes the file again).
+           
+           Actually wait, is the retry for notes call only when fetch proposal invalid? What if notes/broad.md missing/too short — that's a verify-level repairable failure, not a proposal failure. So retry only triggers on JSON proposal invalidity (queries file invalid, or fetch-request file invalid). Notes content issues → verify → repair branch. Clean separation.
+           
+           logs/<call-id>.log — each call's s...
+
+[thinking] queries-retry1`, `broad-notes`, `broad-notes-retry1`, `D1-queries`, `D1-queries-retry1`, `D1-notes`(→ findings), `D1-findings-retry1`, `synthesize`, `repair-attempt2`... Let me use systematic names:
+           - broad stage: `broad-queries`, `broad-notes`
+           - deep dive Di: `D1-queries`, `D1-findings` (well `<did>-queries`, `<did>-findings`)
+           - synthesize: `synthesize`
+           - repair: `repair`
+           Retries append `-retry`.
+           
+           ### Prompt design (all Chinese)
+           Per spec: "prompt 全部中文，明确：只读给定文件、只写指定产物文件、禁止访问网络、引用格式 [S<数字>]".
+           
+           Broad queries prompt:
+           - 契约（topic, objective, directions, scopes, constraints, plan_file content if any — 契约+plan_file）
+           - task: write queries/broad.json — array of up to N query objects {"q","scope","size"} for broad orientation search. JSON only? Cod
+
+[thinking] ex writes file; driver validates.
+           
+           Broad notes prompt:
+           - 契约摘要 + search digest (title/link/snippet/summary per source, with sid) 
+           - task: write notes/broad.md (≥500字节, with [S#] citations) + fetch-requests/broad.json {"sids":[...]} (可选,选最重要的全文).
+           
+           Deep dive per direction:
+           - queries prompt: 契约+该方向 questions+broad notes+已有 sources 摘要 → queries/Di.json
+           - findings prompt: 新结果摘要+notes/broad.md
+
+[thinking] +fulltext 索引 → findings/Di.md (≥300字节, answer each question with ≥1 [S#]) + fetch-requests/Di.json
+           
+           Wait, re-read: deep-dive (c): "codex 读新结果摘要+notes/broad.md+fulltext 索引 → 写 findings/Di.md（≥300 字节，逐条 questions 给回答，每条至少 1 个 [S#] 引用）+ fetch 提案；(d) driver 抓全文"。
+           
+           Hmm — (d) fetches AFTER findings are written. So the fetches from Di's proposal arrive after findings/Di.md was written — the fulltext fetched in (d) benefits later directions and synthesize. Interesting ordering but that's what's specified. Wait, but then the findings for Di can't use fulltext fetched at Di's own proposal... but it CAN use fulltext from broad stage and earlier directions. And the "fulltext 索引" given to the findings call includes whatever exists. And synthesize gets the full index including everything. OK, follow spec exactly.
+           
+           Hmm wait, actually
+
+[thinking] let me re-read the broad stage: "(c) codex 读结果摘要 → 写 notes/broad.md（≥500 字节，含 [S#] 引用）+ fetch 提案；(d) driver 抓全文。" Same pattern. And deep-dive (c): "codex 读新结果摘要+notes/broad.md+fulltext 索引 → 写 findings/Di.md ... + fetch 提案；(d) driver 抓全文"。
+           
+           Yes — fetch happens after the notes/findings for that stage are written. The fetched fulltext informs subsequent stages. That's the spec's design: fetch requests reference sids from the just-obtained results, and the full text gets used by later stages (deeper dives and synthesize). OK.
+           
+           Synthesize prompt: 契约+plan+notes+全部 findings+sources.json+fulltext 索引 → report.md with fixed sections. Fixed section structure:
+           ```
+           # <title free>
+           ## 执行摘要
+           ## <D1 id> ... (one per direction, in contract order)
+           ## 交叉对比与矛盾
+           ## 证据缺口
+
+[thinking] ## 结论
+           ```
+           Wait: "每个 `## <方向id>`（各方向一节，按契约顺序）" — heading is the direction id? "## <方向id>" — like "## D1"? Or "## D1 标题"? Spec: `## <方向id>`。I'll instruct: `## <方向id> <标题>` where heading starts with the direction id. Verify check: report contains a `## ` heading whose text starts with each direction id, in contract order, all between 执行摘要 and 交叉对比
+
+[thinking] 与矛盾. Simpler verify: for section order, check the fixed headings appear in order: `## 执行摘要` < first direction heading < ... < `## 交叉对比与矛盾` < `## 证据缺口` < `## 结论`. And each direction id appears as a heading. Let me design the verify precisely:
+           
+           required ordered headings: ["## 执行摘要"] + [f"## {did}" for each direction] + ["## 交叉对比与矛盾", "## 证据缺口", "## 结论"]. Check each `^## <id>`
+
+[thinking] heading exists (regex match at line start: `^## {re.escape(did)}(\s|$)`) and positions strictly increasing, and all after position of `## 执行摘要`... well including 执行摘要 in the sequence handles it. Also headings must be actual headings at line starts. I'll parse lines: collect all lines matching `^##\s+(.*)$`, then check the expected sequence appears as a subsequence in order with exact prefix matching? Simpler: find each expected heading via regex `(?m)^## {id}\b` — hmm, direction ids like "D1": `^## D1( |$)`. Let me implement: for each expected heading text (exact string for fixed ones, prefix match for direction ones), find the earliest line-index ≥ previous. For direction headings, accept lines where the heading text == did or starts with did + space.
+           
+           Also: what about stray other `## ` headings? Spec doesn't forbid extra headings... but fixed structure says exact order. Extra headin...
+
+[thinking] ##`-heading list, and also... to be strict: no EXTRA `##` headings allowed? The spec says "固定章节及顺序（verify 逐字检查标题、顺序）". 逐字 = verbatim check of the fixed headings. I'll implement: extract all level-2 headings in order; require that filtering to the expected set preserves order and all expected ones present. Extra headings → not a failure unless they break order? Hmm, "逐字检查标题、顺序" — I'll require the heading sequence to EXACTLY equal the expected sequence
+
+[thinking] (no extras). That's the strongest and simplest. But wait — "每个 `## <方向id>`（各方向一节，按契约顺序）" — if codex writes "## D1 认证机制现状" that's the direction section. With exact-equality I'd have to fix the heading to exactly "## D1". Simpler for verify: expected headings are exactly: "## 执行摘要", "## D1", "## D2", ..., "## 交叉对比与矛盾", "## 证据缺口", "## 结论"
+
+[thinking] — i.e., direction headings are exactly the direction id. The prompt instructs codex to write `## D1 <标题可加在正文首行>` — no wait. Cleanest: prompt says the heading line must be exactly `## <方向id>`. H1 title is free. Verify: level-2 heading sequence must equal expected exactly. Deterministic. Done. I'll allow the direction heading to be exactly the id (no extra text) — the section body carries the title. Hmm, but a section titled just "D1" is less readable... The prompt can tell codex: first line of body = direction title. OK.
+           
+           Actually, let me reconsider — allowing `## D1 认证现状` and verifying prefix `D1` is friendlier and still deterministic. Exact-match is simpler to verify unambiguously ("逐字检查"). I'll go with: heading line must start with the direction id followed by end-of-line or a space (regex `^## {did}(?:\s.*)?$`), and the FULL sequence of `##` headings must match the expected pattern...
+
+[thinking] heading in order maps to expected: fixed ones verbatim, direction ones by that regex). No extra level-2 headings. That's both friendly and strict. And level-1 `#` title: exactly one at top? Spec: "`# `（标题自由）" — free title. I'll require the file starts with a `# ` line (report has a title). Hmm, "逐字检查标题、顺序" refers to the listed structure. I'll check: first non-empty line starts with "# " (title, free text). If not → failure (missing title). Reasonable.
+           
+           ### verify checks (from spec)
+           1. 文件齐全：report.md、notes/broad.md、每个 findings/<Di>.md、sources.json — repairable if missing? Missing files: report/findings missing = repairable (codex can rewrite them in repair). sources.json missing/corrupt = fatal (driver-owned).
+           2. report 章节与顺序、≥1000字节；findings 各≥300字节、notes ≥500字节 → repairable.
+           3. 闭环引用：all `[S<digits>]` in report
+
+[thinking] +notes+findings resolve to sources.json sids (dangling = repairable); report cites ≥ len(directions) distinct sids; each findings ≥1 citation. repairable.
+           4. sources.json 完整性：sid unique & consecutive (S1..Sk), url http(s), searches[].qid unique, source.query_ids ⊆ qids, budget.used == len(searches) ≤ max_searches, fetch 记录 ≤ max_fetches — 损坏=fatal.
+           5. 写入边界: porcelain diff vs baseline must be within {产物
+
+[thinking] 目录 + .specify/ + 契约 allowed_write_paths}; violation = fatal. Whitelist includes `.specify/` root.
+           
+           Verdict: fatal if any fatal-class failure; else repairable if any; else pass.
+           
+           attempt tracking: attempts.json like explore-repo? Spec says "repair 计入 attempts（上限 max_attempts），attempt 记进 verify.json". I'll keep attempts.json (initial generation attempts count: initial run = attempt 1). explore-repo counts each explore/repair as attempt. Here: attempt 1 = the initial full pipeline
+
+[thinking] ; repair increments. When does attempt increment — at repair time. verify.json's "attempt" = current attempts value. max_attempts ≥1 default 2: so 1 initial + (max_attempts - 1) repairs? Or max_attempts total including initial? explore-repo: cmd_explore increments then runs; cmd_repair checks attempts >= max then fails. With max_attempts=2: explore (attempt 1), verify → repairable → repair (attempt 2), verify → still repairable → assert-passed fails. So total attempts ≤ max_attempts including the first. I'll mirror: broad-search (or rather, the "produce" side)... hmm, in deep-research the producing happens across multiple driver subcommands. Where to put the attempt increment? Simplest: cmd_repair increments; check `attempts >= max_attempts` → fail code=1 (so assert-passed will report). Initial attempts.json written at preflight = 1? Let me: preflight writes attempts.json {attempts: 1...
+
+[thinking] 1, run repair call. verify reads attempts.json. Mirrors explore-repo semantics.
+           
+           ### repair prompt
+           Input: verify.json failures + existing report/findings/notes paths; instruct: only edit files under report.md / findings/*.md / notes/broad.md (exactly those three locations), no new searches, citations must resolve. Note: repair cannot fix fatal (workflow only routes repairable).
+           
+           ### finalize
+           summary.json: task_id, workflow_id "deep-research", model, attempts, report absolute path, 来源数 (len sources), 搜索使用数
+
+[thinking] (budget.used), finished_at + SUCCESS file.
+           
+           ### selftest
+           Offline fixtures testing:
+           1. 契约校验各拒绝路径 (invalid task_id, missing topic, directions empty, >12, dup ids, bad id chars, questions empty, bad scope, numeric out of range, max_searches < plan, plan_file missing/abs)
+           2. 查询 schema 校验 (valid/invalid queries proposals)
+           3. URL 归一化去重与 sid 分配
+           4. [S#] 引用抽取与悬空检测
+           5. 报告章节顺序检查
+           6. 预算记账
+           7. violates() 越界判定
+           
+           To make these testable offline, structure driver with pure functions:
+           - validate_contract(c) → list of error strings (or raises) — testable
+           - canonicalize_queries(proposal, limits) → (canonical, errors)
+           - normalize_url(url)
+           - add_sources / merge function: given existing sources.json dict + raw results + qid/direction → updated dict (pure)
+           - extract_citations(text) → set of sid strings
+           - check_report_sections
+
+[thinking] (text, direction_ids) → list of failures
+           - budget logic — part of merge/search planning: plan_searches(queries, budget) → (to_run, dropped)
+           - violates(path, roots)
+           
+           I'll write these as pure functions and selftest asserts a battery of cases. fail() calls sys.exit — for contract validation, I'll separate "collect errors" from "report". contract() reads + validates + fills defaults; validate returns errors list; contract() fails on errors. Selftest calls validate directly with dicts (no file IO) — but contract() reads
+
+[thinking] from file. I'll make contract_from_dict(c) → normalized dict or raises ContractError with messages; selftest feeds dicts.
+           
+           For network/codex: isolated in run_codex() and http functions; selftest doesn't touch them.
+           
+           ### Timeout handling
+           - codex calls: timeout = step_timeout_seconds (per-call!). Task contract has step_timeout_seconds (default 1200) — "超时（step_timeout_seconds）与退出码非 0 均 fatal". Note explore-repo used timeout_seconds for the whole explore; here per-step.
+           - timeout_seconds
+
+[thinking] (5400) = overall workflow-level hint — hmm, what uses it? The contract has both. step_timeout applies to each codex call. timeout_seconds — overall budget... The engine doesn't enforce it; maybe driver doesn't use it at all beyond contract validation (documented in SKILL.md as a recommended external timeout). Or repair prompt? I'll record it in contract snapshot and mention in SKILL.md that it's the overall expectation (user can pass to `specify workflow run`? engine may not support). Simplest: validate it (positive int
+
+[thinking] ) and document; driver itself enforces step_timeout per codex call. I'll note in SKILL.md that timeout_seconds 是整体预期上限（供人参考/外部计时），机器强制的是每步 step_timeout_seconds。Hmm — but honest: engine doesn't read it. Fine, document as declarative.
+           
+           Actually wait — should timeout_seconds ≥ step_timeout_seconds? Not enforced; skip. Just validate positive int.
+           
+           ### Numeric coercion
+           Contract values might be strings from hand-written JSON; I'll coerce int() where sensible and fail on non-int-like. Keep strict-ish: must be int (bool excluded!). Note bool is subclass of int in Python — guard with isinstance(x, bool) checks.
+           
+           ### Digest files for codex reading
+           The codex prompt says "只读给定文件" — the prompt embeds the digests directly (self-contained), plus points to files it may read (contract snapshot, plan file path, notes path, findings paths, sources.json). Simplest robust approach: embed digests in the pr...
+
+[thinking] (e.g., snippet 200 chars, summary 400 chars). Prompt files land in prompts/ for audit.
+           
+           Search digest format (embedded in notes/findings prompts):
+           ```
+           [S3] 标题 — https://...
+             摘要: ...
+             片段: ...
+             日期: ...
+           ```
+           
+           Fulltext index (for later prompts): list of `S<sid> → fulltext/S<sid>.txt（N 字符）`.
+           
+           ### Workflow.yml steps
+           
+           ```yaml
+           # deep-research：编排者给计划的网络深入研究，脚本管搜索，AI 只读结果写产出。
+           # 契约固定读 .agent/luna/task.json；所有 shell.run 为固定命令，无插值。
+           schema_version: "1.0"
+           workflow:
+             id: deep-research
+             name: Verified Deep Research
+             version: "1.0.0"
+             author: "create-workflow"
+             description: "按契约计划执行多方向网络深研：可信脚本调用 metaso 搜索与抓取，Codex 只读结果写产出，闭环验收引用、预算与写入边界"
+           requires:
+             speckit_version: ">=1.2.0"
+           steps:
+             - id: preflight
+               type: shell
+               run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" preflight'
+             - id: broad-search
+               type: shell
+               run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" broad-search'...
+
+[thinking] ive'
+             - id: synthesize
+               type: shell
+               run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" synthesize'
+             - id: verify-first
+               type: shell
+               run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+             - id: repair-if-fixable
+               type: if
+               condition: "{{ steps.verify-first.output.stdout | contains('VERDICT=repairable') }}"
+               then:
+                 - id: repair
+                   type: shell
+
+[thinking] run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" repair'
+                 - id: verify-again
+                   type: shell
+                   run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+             - id: final-check
+               type: shell
+               run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" assert-passed'
+             - id: finalize
+               type: shell
+               run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/d
+
+[thinking] river.py" finalize'
+           ```
+           
+           Handler ↔ step mapping: preflight, broad-search, deep-dive, synthesize, verify (verify-first, verify-again), repair, assert-passed (final-check), finalize, plus selftest (not in workflow). 
+           
+           ### File writing details
+           
+           Driver writes canonical queries/<stage>.json. Codex writes the proposal where? Spec: "(a) codex 读契约+plan_file → 写 `queries/broad.json`（提案文件直接写在产物目录，driver 读后按 schema 校验并改写为 canonical）". So codex writes queries/broad.json itself, then driver reads+validates+rewrites canonical in place. Same file. OK.
+           
+           fetch-requests/<stage>.json: codex writes; driver reads, filters, fetches. Does driver rewrite it? "codex 原始 fetch 提案留档" — leave raw as-is.
+           
+           ### Search result parsing
+           metaso response JSON: `webpages[]` each {title, link, summary, snippet, date}. Defensive: `data.get("webpages") or []`, fields str()-coer
+
+[thinking] ced with fallback "". count = len(webpages). Response shape may vary — be defensive, record raw always.
+           
+           raw/<qid>.json content: the raw response body (JSON). On failure: {"ok": false, "error": ...}. On success: raw body parsed? Spec: "原始响应落 raw/<qid>.json" — write the body text as-is. I'll write the parsed JSON (pretty) or raw text if unparseable. Simplest: write the decoded text body. If JSON parse fails → treat as ok=false? A 200 with non-JSON body → failure. Hmm: parse json; if fails → ok=false. Write raw text either way (truncated? full text could be big; size 10 → fine, keep full).
+           
+           HTTP errors: urllib raises HTTPError → read body for error message. Retry once (fresh request). Timeout 30s each attempt.
+           
+           qid naming: `broad-q1`, `broad-q2`... `D1-q1`... unique across run since stage-prefixed. Driver assigns qids when canonicalizing: for broad stage: `broad
+
+[thinking] -q{i}`; direction: `{did}-q{i}`.
+           
+           Canonical query object: {"qid": ..., "q": ..., "scope": ..., "size": ...}. 
+           
+           size: default contract size_per_query; proposal may override within 1..10.
+           
+           scope: default... contract scopes list — which scope does a query use if proposal omits? Default c["scopes"][0]? Or "webpage"? Spec says scopes is the allowed subset. Proposal can pick from scopes; default = scopes[0] (or "webpage" if in scopes). I'll default to
+
+[thinking] scopes[0].
+           
+           Count limits: broad proposal valid queries taken up to broad_queries; per-direction up to queries_per_direction. Extra → dropped (recorded in dropped? or just trimmed). I'll trim silently but note count in canonical file? Simpler: canonical file contains the accepted ones; trimmed ones just don't run. Not an error. (Prompt tells codex the exact max count anyway.)
+           
+           ### sources.json update merge
+           After executing searches for a stage:
+           ```
+           for each executed search result:
+               searches.append({qid,q,scope,direction,count,ok,
+
+[thinking] at})
+               if ok: for each webpage: nurl=normalize(link); if nurl not in index: append source {sid:S{n},url:nurl,...,query_ids:[qid],direction}; else: existing.query_ids.append(qid) if qid not in; (direction stays first-seen value? if existing.direction is None and this search has direction D → set direction=D? That's reasonable promotion.) 
+           budget.used = len(searches)
+           ```
+           Spec source fields: `{sid,url,title,snippet,summary,date,scope,query_ids[],direction
+
+[thinking] (null|"D1"..)}`. direction of a source = direction of the search that found it (null for broad). If found again in a later direction search → query_ids gains the qid; direction stays original? Or updates? I'll keep first non-null... Actually simplest deterministic: direction = direction of first search that surfaced it (could be null from broad); later directional hit only appends query_ids. Hmm, but a source found in broad AND D2 is arguably relevant to D2. The verify doesn't check direction consistency. Keep first-seen semantics,
+
+[thinking] document. Actually — let me promote: if source.direction is null and later found by a directional search, set direction to that direction. That seems more useful and harmless. I'll do that.
+           
+           ### Fetch execution
+           For each sid in proposal (order preserved): 
+           - sid must match ^S\d+$ and exist in sources index
+           - skip if already in fetches with ok... or if fulltext/S<sid>.txt exists? Track fetched_ok set from fetches[] entries with ok=true. "尚未抓取" = not successfully fetched. If previously failed → retry allowed? "对其中 sid ∈ sources.json 且尚未抓取的项" — I'll treat "尚未抓取" as no successful fetch record; a failed one can be retried if re-proposed (cheap, fine).
+           - budget: if len(fetches) >= max_fetches → drop with record (fetch_dropped? I'll record in sources.json "fetch_dropped": [{sid, reason}]). Hmm, adding more keys to sources.json... The spec's sources.json description lists sources/searches/budg...
+
+[thinking] 记录 ≤ max_fetches" implies fetch records live in sources.json. I'll include "fetches": [...] in sources.json. And dropped searches list "dropped": [...]. These extra keys are driver bookkeeping; verify tolerates them.
+           - POST reader {"url": url-of-sid}, Accept: text/plain, Bearer. Response text → truncate to fulltext_max_chars chars → fulltext/S<sid>.txt. Record {sid, ok, chars, at}. Failure: {sid, ok:false, error, at}, log line to stdout/stderr,
+
+[thinking] continue.
+           
+           Reader timeout: 30s, retry once? Spec for search says retry 1; reader — "单条失败记日志继续" — no retry mention. I'll do timeout 60s no retry... hmm, or same retry-once for symmetry? Spec explicitly gave retry for search only. Keep reader single attempt, 30s timeout, failure recorded, continue. Actually a transient blip would waste a slot... spec says "单条失败记日志继续" — keep single attempt. OK.
+           
+           ### Stages as driver subcommands
+           
+           cmd_broad_search
+
+[thinking] :
+           1. c = contract(); load sources.json (must exist from preflight)
+           2. if budget check: needed = broad_queries... run codex call 1 → queries/broad.json proposal
+              - prompt embeds: topic, objective, directions overview, scopes, constraints, plan content, instructions: write ONLY queries/broad.json as JSON array of ≤ N objects {"q": "...", "scope": "webpage"|..., "size": 10}; queries in Chinese unless topic clearly English; distinct angles covering the directions broadly.
+              - validate; on invalid → retry once (extra prompt with error) → fatal if still invalid
+              - canonicalize → rewrite queries/broad.json
+           3. execute searches (plan_searches with budget) → update sources.json, raw files
+           4. if successful searches this stage == 0 → fatal ("broad-search 结束若成功搜索为 0 条 → fatal")
+              Wait — "成功搜索为 0 条" — of this stage. If budget exhausted before stage (all dropped), then 0 success → fatal. Hmm, ...
+
+[thinking] max_searches ≥ broad + directions*per_dir, so broad always has room at this point. OK fatal on 0 success.
+           5. codex call 2 → digest of new sources (all sources so far = the broad ones) → write notes/broad.md + fetch-requests/broad.json
+              - validate fetch proposal (if file exists): JSON object {"sids": [..]}; invalid → retry once → fatal? Spec says fetch proposal invalid → retry once → fatal. But fetch proposal is optional ("可含") — absent file = no fetch
+
+[thinking] es, not an error. Present but malformed → retry once → fatal.
+              Hmm wait, careful: "codex 产出可含 fetch 提案" — absent OK. Malformed → the retry mechanism. OK.
+           6. driver fetches → fulltext files.
+           
+           cmd_deep_dive: for each direction in contract order:
+           1. codex call → queries/<did>.json (prompt: direction questions + broad notes content + existing sources digest)
+           2. execute searches (direction=did)
+              - 0 successful searches for a direction: fatal or continue? Spec only mandates fatal for broad. A direction with 0 results... searches failed (network) → I'll continue with warning (findings may cite broad sources). Hmm — but if queries proposal had 0 valid → that's proposal-invalid → retry → fatal. Network failure of all queries in a direction → record ok:false, continue. Findings can still be written from broad sources. OK, continue (logged).
+           3. codex call → digest of NEW results (this direct...
+
+[thinking] fetch-requests/<did>.json
+           4. fetch.
+           
+           Between directions: sources.json accumulates; "已有 sources 摘要" for next direction's query prompt = full sources digest (or recent?). Spec: "(a) codex 读契约+该方向 questions+broad notes+已有 sources 摘要" — 已有 sources 摘要 = digest of sources.json so far. Could get long with 24 searches × 10 = up to 240 sources... digest trimmed per entry (title + url + one-line snippet trimmed to ~120 chars). Cap digest at
+
+[thinking] ... all sources with short lines. 240 lines × ~150 chars ≈ 36KB prompt. Acceptable. Trim harder: snippet 100 chars, no summary in query-stage digest. For findings stage "新结果摘要" = only this direction's new sources (fuller: snippet+summary trimmed).
+           
+           cmd_synthesize: codex call → report.md. Prompt embeds: contract (topic/objective/directions+questions), plan content, notes/broad.md content (inline), all findings contents (inline), sources.json digest (sid→url+title),
+
+[thinking] fulltext index. Inline file contents — notes 500B+, findings 300B+ each, fine. But sources could be 240 entries — digest with url+title only. OK.
+           
+           Wait — prompt says codex "读契约+plan+notes+全部 findings+sources.json+fulltext 索引" — I can either inline contents or give paths and let codex read files (codex CAN read files — it's an agent with file access; acpx --approve-all). Inlining makes prompts self-contained & auditable; but big. Giving paths
+
+[thinking] is more token-efficient. explore-repo's prompt gave objective inline and let codex explore the repo itself. For determinism and audit, I'll inline the small stuff (notes, findings, digests) and give paths for fulltext (index inline). Contract snapshot path given + inlined key fields. plan_file: inline content (bounded? plan file could be large — truncate to e.g. 20000 chars in prompt; actually just inline with truncate 20k, note truncation).
+           
+           Hmm, one concern: prompts/*.md files get written per call for audit — those contain the digests. Good for auditability.
+           
+           cmd_repair: reads verify.json, builds repair prompt (failures + paths of report/findings/notes), one codex call. Constraints: only edit those files; no searches; citations must resolve; section structure must hold.
+           
+           cmd_verify: as designed. Note porcelain whitelist: [outdir, ".specify"] + allowed_write_paths. Spec: "白名单额外加 `.sp...
+
+[thinking] workflow_id "deep-research", model, attempts, report abs path, source count, search used, finished_at; SUCCESS file.
+           
+           cmd_selftest: battery.
+           
+           ### Edge: `[S#]` citation regex
+           `\[S(\d+)\]` — extract sid numbers; resolve against sources.json sid set. Dangling = cited number not in sid set. Also handle `[S3]`-style only (per spec 引用格式 `[S<数字>]`).
+           
+           ### sid 连续性检查
+           sids == [f"S{i}" for i in 1..
+
+[thinking] len] exactly.
+           
+           ### query_ids ⊆ qids
+           each source.query_ids entries ∈ {s.qid for s in searches}.
+           
+           ### budget.used == len(searches) ≤ max_searches.
+           
+           ### fetches len ≤ max_fetches.
+           
+           ### url http(s): startswith http:// or https://.
+           
+           Now — attempts and step counts: codex calls per run: broad(2) + directions×2 + synthesize(1) = 2+2n+1. Each has step_timeout 1200s. Overall timeout_seconds 5400 documented.
+           
+           ### Logging
+           Driver prints progress lines to stdout (engine captures). fail() prints to stderr exit 2 (contract/preflight) — note explore-repo uses exit 2 for fatal via fail(), exit 1 for attempt-limit. Mirror.
+           
+           ### Prompt file naming
+           prompts/<call-id>.md where call-id ∈ {broad-queries, broad-notes, <did>-queries, <did>-findings, synthesize, repair} + optional "-retry" suffix. logs/<call-id>.log.
+           
+           Retry prompt: separate file prompts/<call-id>-retry
+
+[thinking] .md containing original prompt + error annotation? Spec: "driver 生成一份附错误说明的追加 prompt 再调一次" — an ADDITIONAL prompt (追加), i.e., a follow-up message in a NEW codex invocation telling it the previous proposal was invalid and to fix the file. It's a fresh `codex exec` with a prompt referencing the file to fix. I'll generate a short retry prompt: state the expected schema, the validation errors, and instruct to rewrite the exact file path. Codex session is fresh (exec), so it must contain enough
+
+[thinking] context: the file path, schema, errors. That's enough — codex reads the existing (invalid) file and rewrites it. 
+           
+           ### Now contract() details — full validation code
+           
+           ```python
+           def contract_errors(c):
+               errs = []
+               # required
+               for k in ("task_id", "topic", "objective", "directions"): missing/blank → err
+               task_id regex
+               directions: list, 1..12
+                 each: dict with id (regex, unique), title? — wait, direction has {"id","title
+
+[thinking] ","questions"}. Is title required? Example: {"id": "D1", "title": "子方向标题", "questions": [...]}. Spec validation list: "directions 1..12 个；id 唯一且 ...；每个 1..8 条非空 questions" — title not mentioned in validation. I'll require id+questions per spec; title optional (default ""). Hmm — but example includes title; prompts benefit. I'll treat title as optional-but-recommended; validation: if present must be non-empty string. Let me just make it optional with default "".
+                 questions: list 1..8 of non-empty strings
+               scopes: list ⊆ SCOPES, non-empty after default; (default ["webpage"]; if provided must be non-empty subset)
+               numeric fields with ranges as above; max_searches ≥ broad_queries + n*queries_per_direction
+               plan_file: None or str; if str → safe_rel (but safe_rel fails hard... in validate I return errors; do path checks in preflight where fail() is fine. But spec says "plan_fi...
+
+[thinking] 是仓库相对路径（用 explore-repo 的 safe_rel 校验）且文件存在" under preflight-ish contract validation (fail=exit 2 风格照抄 contract()). I'll do plan_file existence+safe_rel inside contract() itself (like explore-repo does safe_rel in preflight — actually explore-repo validates focus paths in preflight). I'll validate plan_file in contract() (load+validate), since synthesize also needs it. Contract() → reads file, runs pure validation, then plan_file checks, fills defaults, returns c.
+
+[thinking] allowed_write_paths: list of str → safe_rel validated in preflight (verify needs them too; verify calls safe_rel like explore-repo).
+               constraints: list of str.
+           ```
+           
+           bool guard: isinstance(v, bool) → reject for numeric fields.
+           
+           Numeric coercion: accept int only? If someone writes "4"... I'll accept int-convertible (via int(v) after str check) — hmm, keep it strict but forgiving: try int(v) (floats like 4.0 → reject? int("4") works, int(4.0) works...). Simplest: 
+           ```python
+           def as_int(v, name, default, lo, hi, errs):
+               if v is None: return default
+               if isinstance(v, bool) or not isinstance(v, int): 
+                   try: v = int(str(v))
+                   except: errs.append(...); return default
+               ...
+           ```
+           I'll do: coerce via int(v) if isinstance(v,(int,str)) and not bool; range check. Good enough.
+           
+           ### selftest cases — enumerate:
+           
+           1. contract validation:
+              - missing task_id → error
+
+[thinking] - bad task_id chars → error
+              - empty directions → error; 13 directions → error; dup ids → error; id too long (17 chars) → error; id with bad char (D$1) → error
+              - 0 questions → error; 9 questions → error; blank question → error
+              - bad scope → error
+              - broad_queries=0 → error; =7 → error
+              - queries_per_direction=7 → error
+              - size_per_query=11 → error
+              - max_searches <
+
+[thinking] plan requirement → error
+              - max_fetches=31 → error; =0 OK
+              - max_attempts=0 → error
+              - valid minimal contract → no errors, defaults filled (scopes default webpage, broad 4, per-dir 3, size 10, max_searches 24)
+           2. queries schema:
+              - valid: [{"q":"a"},{"q":"b","scope":"news","size":5}] → canonical with qids, defaults
+              - invalid: not-a-list, empty list, item without q, blank q, bad scope, size 0/11, non-int size → errors
+              - trim: 5 queries with limit 4 → 4 kept
+           3. URL normalize & dedupe & sid:
+              - "https://a.com/x/#frag" == "https://a.com/x" → dedupe
+              - "https://a.com/x/" vs "https://a.com/x" → dedupe
+              - different → new sid S1,S2; second hit appends query_id, no new sid
+              - direction promotion null→D1
+           4. citations
+
+[thinking] :
+              - extract from text "[S1] and [S23]" → {S1,S23}; "[S0]"? — sid regex \d+ matches 0; sources start S1 → S0 dangling. fine.
+              - dangling detection: cited {S1,S5} vs sources {S1..S3} → {S5}
+              - distinct citation count in report ≥ n directions check
+           5. report sections:
+              - correct structure with 2 directions → no failures
+              - missing 结论 → failure
+              - out of order (证据缺口
+
+[thinking] before 交叉对比) → failure
+              - extra ## heading → failure
+              - direction heading with suffix "## D1 背景" → OK (prefix match)
+           6. budget accounting:
+              - plan_searches: budget used=max → all dropped
+              - used = max-1, 2 queries → 1 run 1 dropped
+              - after merge, budget.used == len(searches)
+           7. violates():
+              - path under outdir root → False
+              - ".specify/x" with ".specify" root → False
+              - ancestor of root (the collapsed ".agent" entry) → False
+              - unrelated "src/main.py" → True
+              - allowed_write_paths extra root → covered
+           
+           Also fetch filtering: filter_fetch_sids(proposal, sources, fetched) → valid/pending. Could add to selftest.
+           
+           Now, write the code. It'll be long (~900 lines). Let me be careful about:
+           
+           - `re` patterns for sid: `^S\d+$`
+           - citation regex: `\[S(\d+)\]`
+           - ISO timestamps: datetime.now(timezone.utc).isoformat()
+           
+           Driver structure:
+           
+           ```python
+           #!/usr/bin/env python3
+           """deep-r...
+
+[thinking] "
+           SCOPES = ("webpage", "news", "wechat", "arxiv", "github")
+           TASK_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+           DID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,15}")
+           CITE_RE = re.compile(r"\[S(\d+)\]")
+           SID_RE = re.compile(r"^S\d+$")
+           
+           FIXED_TAIL_SECTIONS = ("## 交叉对比与矛盾", "##
+
+[thinking] 证据缺口", "## 结论")
+           HEAD_SECTION = "## 执行摘要"
+           ```
+           
+           Pure helpers... then command functions... then selftest... then HANDLERS.
+           
+           Let me now also decide how the codex prompt includes "禁止访问网络" positively... writing-for-agents says avoid negation-only; pair prohibition with the positive statement: "你的全部信息来自本 prompt 与指定文件；本任务不需要也没有任何联网工具调用" — the task explicitly requires prompts to state 禁止访问网络, so include it plainly.
+           
+           Also "只写指定产物文件"
+
+[thinking] — enumerate exact paths per call.
+           
+           Now, one subtle thing: acpx invocation exactly as explore-repo: `acpx --cwd REPO --approve-all --model MODEL codex exec -f <abs prompt path>`. Copy verbatim.
+           
+           run_codex(c, call_id, prompt_path): logs to logs/<call_id>.log, timeout=step_timeout_seconds, returncode != 0 → fatal; TimeoutExpired → fatal.
+           
+           write_prompt(c, call_id, text) → writes prompts/<call_id>.md, returns abs path.
+           
+           Proposal validation with retry:
+           
+           ```python
+           def codex_write_json(c, call_id, target_rel, schema_check, build_retry_note):
+               # run codex with main prompt; validate; if invalid: retry prompt once; if still invalid: fatal
+           ```
+           Generalized: schema_check(data) → (ok, errors, canonical). Two uses: queries, fetch. Different retry content. I'll implement inline per stage for clarity instead of over-abstracting. Hmm, four near-identical blocks (broad-queries, Di-queries) + two fetch...
+
+[thinking] Di-findings). Abstract one helper `run_proposal_call(c, call_id, main_prompt_builder, proposal_path, validator)` where validator(data) → (canonical|None, errors). For fetch: canonical=None conceptually — validator returns (filtered_sids, []). Let me define validator returning (result, errors); retry once if errors non-empty; fatal if still errors.
+           
+           For the queries file: codex writes proposal to queries/<stage>.json; driver validates; if ok → rewrite canonical (add qid/scope/size defaults, trim to limit) to
+
+[thinking] same path.
+           
+           For fetch: codex writes fetch-requests/<stage>.json {"sids":[...]}; driver validates (dict with "sids" list of SID_RE strings); canonical = filtered against sources + not-yet-fetched; over-budget → drop rest.
+           
+           Missing proposal file after codex call: for queries → invalid (retry). For fetch → treat as no-proposal (skip fetching) — wait, but "codex 产出可含 fetch 提案" — absence is legitimate. But what if codex wrote garbage non-JSON? Present-but-invalid → retry once → fatal. Absent → skip. Hmm — risk: codex "escapes" by never writing fetch file. Not a verify failure (fetch optional). Fine.
+           
+           Queries file absent → definitely invalid → retry once → fatal.
+           
+           Now the digest builders:
+           
+           ```python
+           def source_digest(sources, max_chars_per_field): lines " [S3] title — url\n   摘要: summary(trim)\n   片段: snippet(trim)\n"
+           def fulltext_index(fetches): lines " - S3 → fulltext/S3.txt (
+
+[thinking] 12345 字符, url)"
+           ```
+           
+           Merge function (pure-ish):
+           
+           ```python
+           def merge_search_results(sj, executed):  # sj = sources.json dict, executed = [{qid,q,scope,direction,count,ok,at,webpages:[{title,link,snippet,summary,date}]}]
+               for e in executed:
+                   sj["searches"].append({k: e[k] for k in ("qid","q","scope","direction","count","ok","at")})
+                   if e["ok"]:
+                       for wp in e["webpages
+
+[thinking] "]:
+                           nurl = normalize_url(wp.get("link",""))
+                           if not nurl: continue
+                           idx = sj["_index"] ... 
+           ```
+           — need URL→sid index; derive from sources list each call (idempotent since we save). I'll compute index from existing sources on the fly: `by_url = {s["url"]: s for s in sj["sources"]}`. Pure enough, no hidden state. 
+           
+           ```python
+                           if nurl in by_url: s=by_url[nurl]; if qid not in s["query_ids"]: append; if s["direction"] is None and e["direction"]: s["direction"]=e["direction"]
+                           else: sid=f"S{len(sj['sources'])+1}"; append new source; by_url[nurl]=s
+                   sj["budget"]["used"] = len(sj["searches"])
+           ```
+           
+           execute_searches(c, sj, queries, direction):
+           ```python
+               run, dropped = plan_searches(queries, sj["budget"])
+               for d in dropped: sj.setdefault("dropped",[]).append({**d
+
+[thinking] , "reason":"budget-exhausted", "at": now()})
+               executed = []
+               for cq in run:
+                   qid = cq["qid"]
+                   data = metaso_search(q, scope, size)  # returns dict {ok, webpages, error}
+                   write raw/<qid>.json (raw body or error)
+                   executed.append({...})
+               merge_search_results(sj, executed)
+               save sources.json
+               return run, executed
+           ```
+           
+           metaso_search: 
+           ```python
+           def metaso_search(q, scope, size, api_key):
+               body = json.dumps({"q": q, "scope": scope, "includeSummary": True, "size": str(size), "includeRawContent": False, "conciseSnippet": True}).encode()
+               last_err = None
+               for attempt in (1, 2):
+                   try:
+                       req = urllib.request.Request(SEARCH_URL, data=body, headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
+                       with urllib.request.urlopen(req, timeout=30) as r:
+                           text =
+
+[thinking] r.read().decode("utf-8", "replace")
+                       data = json.loads(text)
+                       webpages = data.get("webpages") or []
+                       norm = [{"title": str(w.get("title") or ""), "link": str(w.get("link") or ""), "snippet": str(w.get("snippet") or ""), "summary": str(w.get("summary") or ""), "date": str(w.get("date") or "")} for w in webpages if isinstance(w, dict)]
+                       return {"ok": True, "webpages": norm, "raw": text}
+                   except Exception as e:
+                       last_err = f"{type(e).__name__}: {e}"
+               return {"ok": False, "webpages": [], "error": last_err, "raw": json.dumps({"ok": False, "error": last_err}, ensure_ascii=False)}
+           ```
+           
+           metaso_fetch(url, api_key): similar single attempt, returns {"ok", "text"/"error"}.
+           
+           Truncation: fulltext[:max_chars] chars.
+           
+           Now write everything. Also `main` usage & HANDLERS including selftest.
+           
+           One
+
+[thinking] more design point — cmd_verify write-boundary check requires baseline.json exists; if missing (verify before preflight?) → fatal via fail() (exit 2)? explore-repo's verify does read_json directly (exception → traceback). I'll wrap: if missing → failures fatal "baseline.json 缺失（preflight 未运行？）" with verdict fatal. Better graceful.
+           
+           Also cmd_verify requires sources.json: missing → fatal-class failure (driver-owned file).
+           
+           The repair branch: workflow if-condition routes only repairable. repair reads verify.json — exists by then.
+
+[thinking] cmd_repair must also handle: verify.json verdict fatal → shouldn't happen (condition), but if called → fail gracefully? assert-passed will catch anyway. Keep simple: repair runs regardless of verdict (it's only routed on repairable).
+           
+           Attempts: preflight writes attempts.json {"attempts": 1} only if not exists (resume-safety: don't reset on re-run of preflight after resume). explore-repo: cmd_explore writes attempts fresh each call... Actually explore-repo's explore increments from existing file. For us, preflight is the "
+
+[thinking] attempt starter". On resume after failure mid-run, preflight might rerun? Engine resumes from failed step, not from start. Keep: write attempts.json if absent.
+           
+           Edge: repair when max_attempts=1 → attempts(1) >= 1 → fail(code=1) → workflow fails at repair step → assert-passed never runs; status failed. Consistent with explore-repo.
+           
+           Hmm wait — there's subtlety: if verdict repairable and max_attempts reached, the repair step fails the whole workflow. But spec: "repair 计入 attempts（上限
+
+[thinking] max_attempts）". With default max_attempts=2: initial(1) + repair(2) OK. Second repair impossible. And explore-repo's SKILL.md says "max_attempts（默认 2）次探索后仍 repairable 按失败终止" — mirror in ours: attempt cap.
+           
+           Now — fulltext index handed to findings/synthesize prompts: from sources.json fetches[] where ok — list sid, chars, url.
+           
+           Digest trimming constants: SNIPPET_TRIM=160, SUMMARY_TRIM=320 in digests.
+           
+           Prompt sizes: fine.
+           
+           Let me also think about **repair prompt details**: inputs = verify.json failures + paths (report.md, notes/broad.md, findings/Di.md) + rules: only edit these files (list explicit), keep section structure, citations [S#] must exist in sources.json (give sid→url list so it can fix dangling refs), no new files, no network. After repair, verify-again runs.
+           
+           For the sid list in repair prompt: sources digest (sid, url, title) inline.
+           
+           ### Verify: "report 引用的不同 sid 数 ≥ 方向
+
+[thinking] 数"
+           
+           count distinct sids in report.md ≥ len(directions). repairable if not.
+           
+           ### sources.json check "sid 唯一且连续"
+           `[s["sid"] for s in sources] == [f"S{i}" for i in range(1, len+1)]`.
+           
+           ### Also validate sources entries have needed fields? url http(s) check specified. Keep to spec list.
+           
+           ### files existence checks list:
+           - report.md, notes/broad.md, findings/<did>.md each, sources.json — missing → repairable? For report/findings/
+
+[thinking] notes: repairable (repair can write them). sources.json missing → fatal.
+           
+           Order verdict logic: fatal-class → "fatal"; else failures → "repairable"; else "pass".
+           
+           fatal-class markers: I'll compute with explicit flags rather than substring matching (cleaner than explore-repo's "致命" substring, but explore-repo used substring; spec here says 损坏=fatal, 越界=fatal). I'll collect failures as tuples? Simpler: two lists — failures (repairable) and fatal_failures. verify.json: {"verdict", "failures": [...all...], "attempt"}. Mark fatal ones with prefix "（致命）" like explore-repo so substring logic also works. I'll do two lists and concatenate with "（致命）" prefix on fatal ones; verdict = fatal if fatal_failures else repairable if failures else pass. Clean.
+           
+           ### now SKILL.md
+           
+           Following writing-for-agents + explore-repo style. Structure:
+           
+           ```
+           ---
+           name: deep-research
+           description: 编排者给计划的网络深入研究：按「广域→逐子方向...
+
+[thinking] 」执行，可信脚本调用 metaso 搜索，AI 只读结果写产出，机制化闭环验收（引用可解析、方向全覆盖、预算守恒、写入不越界）。适用于要交付带来源登记报告的多方向调研；随问随答、无计划的一次性查询不适用。
+           ---
+           
+           # deep-research：闭环验收的网络深研工作流
+           
+           在**研究工作目录**（任意 git 仓库根）操作。契约 `.agent/luna/task.json`，产物 `.agent/luna/research/<task_id>/`。工作流与驱动在本技能目录。
+           
+           ## 1. 写任务契约
+           schema + directions 示例 + 数值默认表 + preflight 会校验什么（含 max_searches ≥ 计划）
+           
+           ## 2. 环境要求
+           METASO_API_KEY 必须非空（缺失 preflight 即败）；密钥只从环境读，不落盘、不写进产物。acpx/codex/python3/git。
+           
+           ## 3. 运行
+           specify workflow run <基目录>/workflow.yml --json；完成标准。
+
+[thinking] ## 4. 失败恢复
+           status/resume + log.jsonl。
+           
+           ## 5. 判读结果
+           verify.json 三态语义；report.md 固定章节列表；sources.json 是引用唯一事实源；闭环是机制校验不是语义正确性担保（边界声明）；搜索由脚本确定性执行、AI 不触网。
+           
+           ## 6. 汇报字段
+           task_id、run_id、verdict、报告路径、搜索预算 used/max、attempts、模型。
+           
+           ## 参考资料
+           - 裁决约定（verify 恒
+
+[error] RUNTIME: 'list' object has no attribute 'get'

@@ -1,9 +1,7 @@
-# 仅作 Workflow Schema 结构参考；不能直接运行生产任务。
-# 使用 /create-workflow 时按目标项目生成真实 YAML，并准备/审核所有引用的脚本。
 schema_version: "1.0"
 workflow:
-  id: luna-worker
-  name: Verified Codex Worker
+  id: ticket-status-audit
+  name: Ticket Status Audit
   version: "1.0.0"
 steps:
   - id: preflight
@@ -26,11 +24,15 @@ steps:
       - id: verify-again
         type: shell
         run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+  - id: deep-dive
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" deepdive'
+  - id: verify-final
+    type: shell
+    run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
   - id: final-check
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" assert-passed'
   - id: finalize
     type: shell
     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" finalize'
-# driver.py 应约定：verify 退出码 0=通过，1=可修复失败，其余=致命失败；
-# final-check 强制检查最终报告，避免 continue_on_error 掩盖首次失败。

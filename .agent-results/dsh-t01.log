@@ -1,0 +1,1526 @@
+[client] initialize (running)
+
+[client] session/new (running)
+
+[thinking] Let me start by understanding the task. I need to create a `deep-research/` skill directory in `/home/smh/myskills`, following the structure of the existing `explore-repo/` skill. The task is very detailed:
+           
+           1. First read:
+              - `/home/smh/myskills/explore-repo/workflow.yml` + `scripts/driver.py` + `SKILL.md`
+              - `/home/smh/myskills/meta-search/SKILL.md` and `/home/smh/myskills/archive/meta-fetch/SKILL.md`
+              - `/home/smh/.claude/skills/writing-for-agents/SKILL.md`
+           
+           2. Then create the deep-research skill with:
+              - `workflow.yml`
+              - `scripts/driver.py`
+              - `SKILL.md`
+           
+           3. Run self-checks.
+           
+           Let me start by reading the reference files. I should also load the `writing-for-agents` skill since the task mentions it and it's in the available skills.
+           
+           Let me plan:
+           - Read explore-repo files (workflow.yml, scripts/driver.py, SKILL.md)
+           - Read meta-search/SKILL.md, archive/meta-fetch/SKILL.md
+           -...
+
+[tool] bash (running)
+  input: ls -la /home/smh/myskills/ && ls -la /home/smh/myskills/explore-repo/ && ls -la /home/smh/myskills/explore-repo/scripts/ 2>/dev/null
+
+[tool] bash (completed)
+  kind: other
+  input: ls -la /home/smh/myskills/ && ls -la /home/smh/myskills/explore-repo/ && ls -la /home/smh/myskills/explore-repo/scripts/ 2>/dev/null
+  output:
+    总计 5584
+    drwxrwxr-x  26 smh smh   20480 10月 14 20:58 .
+    drwxr-x--- 286 smh smh   20480 10月 14 21:05 ..
+    drwxrwxr-x   2 smh smh    4096 10月 14 21:05 .agent-results
+    -rw-rw-r--   1 smh smh     579  9月 10 15:33 agents.json
+    -rw-------   1 smh smh   10185 10月 11 21:58 AGENTS.md
+    -rw-rw-r--   1 smh smh    3742 10月  5 22:58 .aider.chat.history.md
+    -rw-rw-r--   1 smh smh     103 10月  5 22:11 .aider.input.history
+    drwxrwxr-x 174 smh smh   20480 10月 12 20:39 archive
+    drwxrwxr-x   2 smh smh    4096 10月 12 12:33 bro
+    drwxr-xr-x   4 smh smh    4096 10月 14 19:40 create-workflow
+    drwxrwxr-x   3 smh smh    4096 10月 14 19:46 explore-repo
+    drwxrwxr-x   8 smh smh    4096 10月 14 20:47 .git
+    -rw-rw-r--   1 smh smh     464 10月 10 00:39 .gitignore
+    drwxrwxr-x   3 smh smh    4096 10月 12 00:35 how
+    drwxrwxr-x   3 smh smh    4096 10月 11 21:56 jev-code-review
+    drwxrwxr-x   3 smh smh    4096 10月 11 21:56 luyben-distillation-control
+    drwxrwxr-x   2 smh smh    4096 10月 13 01:31 machines
+    drwxrwxr-x   5 smh smh    4096 10月  8 15:34 manager
+    drwxrwxr-x   3 smh smh    4096 10月 13 17:15 matlab-chemeng-simulation
+    drwxrwxr-x   2 smh smh    4096 10月 11 21:56 meta-search
+    drwxrwxr-x   2 smh smh    4096 10月 11 21:56 open-code-review-delegate
+    drwxrwxr-x   5 smh smh    4096 10月  4 00:47 .pi
+    drwxrwxr-x   2 smh smh    4096 10月 14 20:59 prompts
+    drwxrwxr-x   3 smh smh    4096 10月  5 22:42 .pytest_cache
+    drwxrwxr-x   3 smh smh    4096 10月 11 21:56 seader-separations
+    -rw-------   1 smh smh      32  6月 26 15:40 .secret.key
+    -rw-rw-r--   1 smh smh 1187840  9月 10 12:57 skills-manager.db
+    ... (20 more lines)
+
+[tool] skill (running)
+  input: {"name":"writing-for-agents"}
+
+[tool] skill (completed)
+  kind: other
+  input: {"name":"writing-for-agents"}
+  output:
+    <skill_content name="writing-for-agents">
+    <skill_resources>
+    Base directory for this skill: /home/smh/.agents/skills/writing-for-agents
+    Resolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed.
+    </skill_resources>
+    
+    <skill_instructions>
+    一份用于编写智能体所阅读的任何文档的参考：一个技能、一份 `AGENTS.md` / `CLAUDE.md`、一份通过指针触达的文档。包装方式各异，但写作规则是一致的：同样的杠杆让每份文档都变得可预测，因为智能体每次运行采取的是同一个*流程*，而不是产出同一个输出。
+    
+    当你正在编写的文档是一个技能时，请阅读 [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md)，了解前置元数据、调用方式的选择，以及路由技能。
+    
+    ## 上下文指针
+    
+    **上下文指针（context pointer）** 是智能体上下文中持有的一条引用，它指向一份"上下文之外"的资料，并编码了触达该资料的条件。技能的 `description` 就是一条；`AGENTS.md` 中指向某份文档的一行也是同一回事。决定智能体何时、以多高的可靠性触达这份资料的，是这条指针的*措辞*，不是它的指向。一个本应被触达的指向目标，却藏在一段措辞含糊的指针背后：这是一个方差 bug：先打磨措辞；只有当打磨失败时，才把资料直接内联进去。
+    
+    一条指针承担两件事：说明这份资料是什么，以及列出应当触发触达它的**分支**（branch 是这份文档所处理的一种独立情形，所以不同次运行会走不同的路径）。每一条始终加载的指针里的每一个词，在每一次轮次中都在付代价，所以它需要比正文更严格的精简：
+    
+    - **把"引导词"前移**：指针是触发工作真正发生的地方。
+    - **一个分支对应一个触发词。** 同义词把同一个分支换了个说法写两遍，本质上是一个分支；把它们合并，只保留真正不同的分支。
+    - **去掉正文已经承载的身份信息。**
+    
+    ## 两种负载
+    
+    你新增的每一份文档与每一条指针，都在花两种预算之一：
+    
+    - **上下文负载（Context load）**：始终加载的资料占据智能体窗口的代价：一行 `AGENTS.md`、一条技能描述，任何始终留在上下文里、无论是否触发都在消耗 token 与注意力的东西。
+    - **认知负载（Cognitive load）**：消耗在人类身上的代价：有哪些文档存在、各自在什么时候用。人类就是这个索引。它不是要被最小化的代价：它是人类能动性的价格；把它花在需要人类判断的地方，在不需要的地方去除。
+    
+    ... (57 more lines)
+
+[thinking] Now let me read the reference files: explore-repo's workflow.yml, scripts/driver.py, SKILL.md, meta-search/SKILL.md, archive/meta-fetch/SKILL.md, and the writing-for-agents SKILL-MECHANICS.md.
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/explore-repo/workflow.yml"}
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/explore-repo/scripts/driver.py"}
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/explore-repo/SKILL.md"}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/explore-repo/workflow.yml"}
+  output:
+    <path>/home/smh/myskills/explore-repo/workflow.yml</path>
+    <type>file</type>
+    <content>
+    1: # explore-repo：Codex 只读探索仓库，可信脚本独立验收。
+    2: # 契约固定读 .agent/luna/task.json；所有 shell.run 为固定命令，无插值。
+    3: schema_version: "1.0"
+    4: workflow:
+    5:   id: explore-repo
+    6:   name: Verified Repo Exploration
+    7:   version: "1.0.0"
+    8:   author: "create-workflow"
+    9:   description: "Codex 只读探索仓库，产出带证据索引的报告；可信脚本核验引用真实性与写入边界"
+    10: requires:
+    11:   speckit_version: ">=1.2.0"
+    12: steps:
+    13:   - id: preflight
+    14:     type: shell
+    15:     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" preflight'
+    16:   - id: explore
+    17:     type: shell
+    18:     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" explore'
+    19:   - id: verify-first
+    20:     type: shell
+    21:     run: 'python3 "$SPECKIT_WORKFLOW_DIR/scripts/driver.py" verify'
+    22:   - id: repair-if-fixable
+    23:     type: if
+    24:     condition: "{{ steps.verify-first.output.stdout | contains('VERDICT=repairable') }}"
+    25:     then:
+    ... (15 more lines)
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/explore-repo/scripts/driver.py"}
+  output:
+    <path>/home/smh/myskills/explore-repo/scripts/driver.py</path>
+    <type>file</type>
+    <content>
+    1: #!/usr/bin/env python3
+    2: """explore-repo 可信驱动：preflight / explore / repair / verify / assert-passed / finalize。
+    3: 
+    4: 裁决约定：verify 恒以 0 退出（引擎对非零 shell 退出直接判失败，不进修复分支），
+    5: 裁决写入 verify.json（结构为 {verdict, failures, attempt}），stdout 末行输出 VERDICT=<pass|repairable|fatal>；
+    6: assert-passed 读取 verify.json 强制终态，绕过裁决即失败。
+    7: """
+    8: import json
+    9: import os
+    10: import re
+    11: import shutil
+    12: import subprocess
+    13: import sys
+    14: from datetime import datetime, timezone
+    15: 
+    16: REPO = os.getcwd()
+    17: CONTRACT_PATH = ".agent/luna/task.json"
+    18: MODEL = "gpt-6-luna"
+    19: REQUIRED_SECTIONS = ("## Findings", "## Evidence", "## Open Questions")
+    20: CITE_RE = re.compile(
+    21:     r"(?:[\w.-]+/)*[\w.-]+\.(?:py|js|tsx?|jsx|go|rs|java|kt|swift|c|cc|h|hpp|cpp|cs|rb|php|sh|md|json|ya?ml|toml|txt|sql)"
+    22: )
+    23: 
+    24: 
+    25: def fail(msg, code=2):
+    ... (302 more lines)
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/explore-repo/SKILL.md"}
+  output:
+    <path>/home/smh/myskills/explore-repo/SKILL.md</path>
+    <type>file</type>
+    <content>
+    1: ---
+    2: name: explore-repo
+    3: description: 对仓库做可信验收的只读探索：陌生仓库定位实现、梳理调用链与架构、变更前影响面调研、交接上手。Codex 产出带证据索引的报告，可信脚本核验每条引用真实存在、写入不越界。适用于要交付可复现报告的调研任务；无报告产物的随问随答不适用。
+    4: ---
+    5: 
+    6: # explore-repo：证据可核验的仓库探索工作流
+    7: 
+    8: 在**目标仓库根目录**操作。任务契约固定为 `.agent/luna/task.json`，产物固定在 `.agent/luna/explore/<task_id>/`。工作流 YAML 与可信驱动位于本技能目录（`workflow.yml`、`scripts/driver.py`）。
+    9: 
+    10: ## 1. 写任务契约
+    11: 
+    12: 按下列 schema 写 `.agent/luna/task.json`（相对路径按仓库根解析）：
+    13: 
+    14: ```json
+    15: {
+    16:   "task_id": "explore-auth-001",
+    17:   "objective": "梳理认证子系统的入口与调用链",
+    18:   "focus_paths": ["src/auth/"],
+    19:   "exclude_paths": ["node_modules/", "dist/"],
+    20:   "allowed_write_paths": [],
+    21:   "constraints": ["只读探索", "不得访问网络"],
+    22:   "max_attempts": 2,
+    23:   "timeout_seconds": 1800
+    24: }
+    25: ```
+    ... (48 more lines)
+
+[thinking] Now let me read the meta-search/SKILL.md and archive/meta-fetch/SKILL.md files.
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/meta-search/SKILL.md"}
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/archive/meta-fetch/SKILL.md"}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/meta-search/SKILL.md"}
+  output:
+    <path>/home/smh/myskills/meta-search/SKILL.md</path>
+    <type>file</type>
+    <content>
+    1: ---
+    2: name: meta-search
+    3: description: 用 metaso 搜索网页知识：返回带摘要和 URL 的结果条目。需要查资料、验证事实、补充上下文，或 WebSearch 不可用/结果不佳时使用。
+    4: ---
+    5: 
+    6: # meta-search — metaso 网页搜索
+    7: 
+    8: 密钥从环境变量 `METASO_API_KEY` 读。`q` 写具体问题（中文即可），`size` 一般 10。**经 context-mode 触发**：把下面的 curl 放进 `ctx_batch_execute`（`queries` 写明要从结果里取什么信息，命中片段随结果一起返回）或 `ctx_execute` 里执行——原始 JSON 只进索引，对话里只出现命中窗口；不要在 Bash 里裸跑：
+    9: 
+    10: ```bash
+    11: curl -s https://metaso.cn/api/v1/search \
+    12:   -H "Authorization: Bearer $METASO_API_KEY" \
+    13:   -H "Content-Type: application/json" \
+    14:   -d '{"q": "<问题>", "scope": "webpage", "includeSummary": true, "size": "10", "includeRawContent": false, "conciseSnippet": true}'
+    15: ```
+    16: 
+    17: `scope` 可选：`webpage`（默认）、`news`、`wechat`、`arxiv`、`github`。
+    18: 
+    19: 响应 JSON 里 `webpages[]` 每条有 `title`、`link`、`summary`、`snippet`、`date`。需要某条的全文，用 meta-fetch 按 `link` 取原文。
+    
+    (End of file - total 19 lines)
+    </content>
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/archive/meta-fetch/SKILL.md"}
+  output:
+    <path>/home/smh/myskills/archive/meta-fetch/SKILL.md</path>
+    <type>file</type>
+    <content>
+    1: ---
+    2: name: meta-fetch
+    3: description: 用 metaso reader 抓取网页正文：给定 URL 返回提取好的纯文本。WebFetch 拿不到内容（反爬、需要 JS 渲染、微信公众号文章）或想要干净的正文时使用。
+    4: ---
+    5: 
+    6: # meta-fetch — metaso 网页正文抓取
+    7: 
+    8: 密钥从环境变量 `METASO_API_KEY` 读。`url` 换成目标页面。**经 context-mode 触发**：把下面的 curl 放进 `ctx_batch_execute`（`queries` 写明要读正文的哪些部分）或 `ctx_execute` 里执行——整篇正文只进索引，对话里只出现命中窗口；在 Bash 里裸跑会把整篇文章灌进对话：
+    9: 
+    10: ```bash
+    11: curl -s https://metaso.cn/api/v1/reader \
+    12:   -H "Authorization: Bearer $METASO_API_KEY" \
+    13:   -H "Accept: text/plain" \
+    14:   -H "Content-Type: application/json" \
+    15:   -d '{"url": "<目标URL>"}'
+    16: ```
+    17: 
+    18: 响应是提取好的正文纯文本（不是 JSON），可能很长——先用 head/jq 截取，或只读需要的部分。配合 meta-search：搜到 `link` 后用它取全文。
+    
+    (End of file - total 18 lines)
+    </content>
+
+[thinking] Now let me read the writing-for-agents SKILL-MECHANICS.md since it's referenced by the skill instructions. Let me also look at what `specify` is and how it works — let me check the create-workflow skill too since it may be the skill that generates these workflow skills. Let me check.
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/.agents/skills/writing-for-agents/SKILL-MECHANICS.md"}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/.agents/skills/writing-for-agents/SKILL-MECHANICS.md"}
+  output:
+    <path>/home/smh/.agents/skills/writing-for-agents/SKILL-MECHANICS.md</path>
+    <type>file</type>
+    <content>
+    1: # 技能机制
+    2: 
+    3: [`writing-for-agents`](SKILL.md) 中专门针对技能（skill）的分支：当文档是一个技能时会发生变化的内容：前置元数据（frontmatter）、调用方式的选择，以及路由技能（router skill）。除此之外的所有写作规则，均适用 `SKILL.md` 中的通用参考。
+    4: 
+    5: ## 调用方式
+    6: 
+    7: 两种选择，在两种"负载"之间权衡：
+    8: 
+    9: - **模型调用（model-invoked）** 的技能保留 `description`，因此智能体可以自主触发它，其他技能也可以触达它。你依然可以手动输入它的名字：模型调用始终*包含*用户触达的能力；`description` 只是为智能体增加发现性，永远不会削弱人类的可达性。这个 `description` 是技能最高层的上下文指针，强制始终驻留在上下文中：用永久的上下文负载，换来可发现性。一个内容全是参考资料的模型调用技能，也是共享参考的一个归宿：另一个技能可以调用它，所以几个技能都需要的那部分参考资料集中放在一处即可。实现要点：省略 `disable-model-invocation`，并写一段面向模型的 `description`，承载触发分支（`SKILL.md` 中关于指针写作的所有规则全部适用）。
+    10: - **用户调用（user-invoked）** 的技能把 `description` 从智能体的触达范围中剥离：只有人类手动输入它的名字才能触发，其他技能也无法触达。零上下文负载，但它消耗认知负载：你成了那个必须记得它存在的索引。实现要点：设置 `disable-model-invocation: true`；此时 `description` 是面向人类的：一句摘要，不再保留触发词列表。
+    11: 
+    12: 只有在智能体必须自己找到这个技能，或者另一个技能必须触达它时，才选择模型调用。如果它只会被手动触发，那就做成用户调用，免去任何上下文负载。
+    13: 
+    14: 两个用户调用的技能都需要的那部分共享参考资料，无法放在它们两者任一处：因为没有 `description`，它们彼此都无法触发对方。把它放到技能系统之外的一个普通文件里：作为任何技能都可以指向的外部参考资料。
+    15: 
+    16: ## 按调用方式拆分
+    17: 
+    18: "何时拆分"的"调用方式"这一刀（"顺序"那一刀在 `SKILL.md` 中）：当存在一个明确的"引导词"（leading word）应该独立触发它（一个你真的会在 prompt 里使用的触发词），或者另一个技能必须触达它时，就把一个技能拆出来作为模型调用的技能。你要为新的"始终加载的 description"付出上下文负载，所以这种独立的可达性必须值得才行。
+    19: 
+    20: ## 路由技能
+    21: 
+    22: 当用户调用的技能多到你记不住时，这种堆积起来的认知负载可以通过**路由技能**来解决：一个用户调用的技能，列出其他所有技能及其各自的适用场景，于是人类只需要记住这一个技能。它只能提示（hint），永远无法触发其他用户调用的技能：用户调用的技能没有 `description`，因此除了人类之外，没有任何东西能触达它们。
+    
+    (End of file - total 22 lines)
+    </content>
+
+[tool] bash (running)
+  input: ls -R /home/smh/myskills/create-workflow/ 2>/dev/null | head -50
+
+[tool] bash (completed)
+  kind: other
+  input: ls -R /home/smh/myskills/create-workflow/ 2>/dev/null | head -50
+  output:
+    /home/smh/myskills/create-workflow/:
+    references
+    SKILL.md
+    templates
+    
+    /home/smh/myskills/create-workflow/references:
+    workflow-authoring.md
+    workflows.md
+    
+    /home/smh/myskills/create-workflow/templates:
+    workflow-template.yml
+
+[thinking] The `create-workflow` skill is likely the skill that creates these workflow skills. Let me read it to understand the conventions for workflow authoring and how `specify workflow run` works. This will be very helpful for writing a consistent workflow.
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/create-workflow/SKILL.md"}
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/create-workflow/references/workflow-authoring.md"}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/create-workflow/SKILL.md"}
+  output:
+    <path>/home/smh/myskills/create-workflow/SKILL.md</path>
+    <type>file</type>
+    <content>
+    1: ---
+    2: name: create-workflow
+    3: description: 创建或修改 Spec Kit Workflow，并在通过校验后打包为独立技能。用于设计新的工作流类型、调整现有工作流、修复工作流结构或安装已验证的工作流技能。
+    4: argument-hint: "<要创建或修改的工作流>"
+    5: disable-model-invocation: true
+    6: ---
+    7: 
+    8: # 创建 Spec Kit Workflow
+    9: 
+    10: Workflow 是 YAML 定义的编排：它决定**什么时候执行、执行什么、步骤间如何传值、何时暂停或分支**。Skill 定义能力与操作规则；Workflow 只通过已注册命令引用 Skill。
+    11: 
+    12: 本技能只产出可检查的 workflow 技能目录，不运行 workflow 执行业务任务。
+    13: 
+    14: ## 工作步骤
+    15: 
+    16: 1. **界定工作流。** 提取触发场景、输入、输出、副作用、权限边界、失败处理和独立验收方式。查 `references/workflow-authoring.md`、`references/workflows.md` 与 `specify workflow --help`，确认字段和命令符合本机安装版本。完成标准：适用范围与验收条件明确，每项依赖的 CLI 能力都有版本依据。
+    17: 2. **检查现有资产。** 读 `templates/workflow-template.yml` 与目标安装位置的同名技能。模板只给结构参考。完成标准：目标名称、版本处理、所需脚本、兼容性影响均已确定。
+    18: 3. **实现工作流及依赖。** 在独立技能目录写 `workflow.yml`、`SKILL.md` 和全部被引用的 `scripts/`。节点 ID 唯一；shell 调用固定可审计，输入经文件或可信脚本读取；`requires` 不是安全边界，权限由沙箱、文件权限或外部隔离提供。完成标准：每个被引用的脚本、验证器、输入路径都真实存在，没有占位实现，也没有「缺依赖时自动放行」。
+    19: 4. **校验候选版本。** 在临时目录备齐完整候选技能，先跑 `specify workflow --help` 探测本机可用子命令、按版本选校验路径（新版若有 `validate` 子命令则直接用它做结构校验）。本机 1.2.0 无 `validate`，实际路径为：YAML 解析器查语法 + 结构自检（节点 ID 唯一、步骤引用可解析、被引用脚本存在）+ 核对 frontmatter 与脚本依赖；必要时在隔离目录用 `specify workflow run <候选 workflow.yml> --json` 做无副作用冒烟（本地 YAML 文件可在 Spec Kit 项目外运行，此行为需按本机版本实测确认）。完成标准：所有适用的静态校验通过，依赖齐全，无未解释的校验错误。校验失败时保留已安装版本，只改候选版本。
+    20: 5. **打包并安装（用户要求时）。** 候选通过校验后，用 `writing-for-agents` 规范写 `SKILL.md`，按用途安装到 `~/.claude/skills/<name>/`（跨仓库）或 `<项目根>/.claude/skills/<name>/`（项目专用）。双位置规则：源库 `~/myskills/<name>/` 是唯一编辑入口（git 管理），校验通过后才同步到安装位，同步后 `diff -r` 确认两侧一致。技能名用 kebab-case，与 `workflow.id` 相同。完成标准：目标目录含 `SKILL.md`、`workflow.yml`、全部脚本，元数据可解析，已安装内容与通过校验的候选一致。用户只要求创建或修改时，交付候选目录与校验结果。
+    21: 6. **报告结果。** 报告技能名、workflow ID、文件位置、Spec Kit 版本、执行过的校验、依赖状态、遗留限制。明确区分静态校验与实际执行验证。
+    22: 
+    23: ## 硬性约束
+    24: 
+    25: - AI 执行步骤没有独立步骤类型，一律经 `shell` 固定调用 `acpx --model gpt-6-luna codex exec -f <prompt 文件>`；时长与沙箱经 acpx 参数约束，prompt 一律经文件传入。
+    ... (14 more lines)
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/create-workflow/references/workflow-authoring.md"}
+  output:
+    <path>/home/smh/myskills/create-workflow/references/workflow-authoring.md</path>
+    <type>file</type>
+    <content>
+    1: # Workflow 编写规范
+    2: 
+    3: Workflow 用 `.yml`/`.yaml` 定义，描述执行顺序与控制逻辑；Skill 通过 `SKILL.md` 定义能力与操作规则。只有当集成已把某能力注册为可调用命令时，workflow 才能用 `command` 引用它。
+    4: 
+    5: ## YAML 结构
+    6: 
+    7: ```yaml
+    8: schema_version: "1.0"
+    9: 
+    10: workflow:
+    11:   id: feature-development
+    12:   name: Feature Development
+    13:   version: "1.0.0"
+    14:   description: "Feature development workflow"
+    15: 
+    16: requires:
+    17:   speckit_version: ">=0.8.5"
+    18: 
+    19: inputs:
+    20:   spec:
+    21:     type: string
+    22:     required: true
+    23: 
+    24: steps:
+    25:   - id: specify
+    ... (166 more lines)
+
+[thinking] Now let me look at the `specify` CLI to understand how workflow run works, and check the spec version. Also, let me check the create-workflow/templates/workflow-template.yml and references/workflows.md.
+           
+           Let me also verify the spec environment: `specify workflow --help`.
+
+[tool] bash (running)
+  input: which specify; specify workflow --help 2>&1 | head -60
+
+[tool] bash (completed)
+  kind: other
+  input: which specify; specify workflow --help 2>&1 | head -60
+  output:
+    /home/smh/.local/bin/specify
+                                                                                    
+     Usage: specify workflow [OPTIONS] COMMAND [ARGS]...                            
+                                                                                    
+     Manage and run automation workflows                                            
+                                                                                    
+    ╭─ Options ────────────────────────────────────────────────────────────────────╮
+    │ --help          Show this message and exit.                                  │
+    ╰──────────────────────────────────────────────────────────────────────────────╯
+    ╭─ Commands ───────────────────────────────────────────────────────────────────╮
+    │ run      Run a workflow from an installed ID or local YAML path.             │
+    │ resume   Resume a paused or failed workflow run.                             │
+    │ status   Show workflow run status.                                           │
+    │ list     List installed workflows.                                           │
+    │ add      Install a workflow from catalog, URL, or local path.                │
+    │ remove   Uninstall a workflow.                                               │
+    │ update   Update installed workflow(s) to the latest catalog version.         │
+    │ enable   Enable a disabled workflow.                                         │
+    │ disable  Disable a workflow without removing it.                             │
+    │ search   Search workflow catalogs.                                           │
+    │ info     Show workflow details and step graph.                               │
+    │ resolve  Show layer attribution for a resolved workflow.                     │
+    │ catalog  Manage workflow catalogs                                            │
+    │ step     Manage workflow step types                                          │
+    │ overlay  Manage workflow overlays                                            │
+    ╰───────────────────────...
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/create-workflow/references/workflows.md"}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/create-workflow/references/workflows.md"}
+  output:
+    <path>/home/smh/myskills/create-workflow/references/workflows.md</path>
+    <type>file</type>
+    <content>
+    1: # Workflows
+    2: 
+    3: Workflows automate multi-step Spec-Driven Development processes — chaining commands, prompts, shell steps, and human checkpoints into repeatable sequences. They support conditional logic, loops, fan-out/fan-in, and can be paused and resumed from the exact point of interruption.
+    4: 
+    5: ## Run a Workflow
+    6: 
+    7: ```bash
+    8: specify workflow run <source>
+    9: ```
+    10: 
+    11: | Option           | Description                                   |
+    12: | ---------------- | --------------------------------------------- |
+    13: | `-i` / `--input` | Pass input values as `key=value` (repeatable) |
+    14: | `--json`         | Emit the run outcome as a single JSON object  |
+    15: 
+    16: Runs a workflow from a catalog ID, URL, or local file path. Inputs declared by the workflow can be provided via `--input` or will be prompted interactively.
+    17: 
+    18: Example:
+    19: 
+    20: ```bash
+    21: specify workflow run speckit -i spec="Build a kanban board with drag-and-drop task management"
+    22: ```
+    23: 
+    24: With `--json`, a single machine-readable object is printed instead of formatted text (the default output is unchanged when the flag is omitted):
+    25: 
+    ... (1108 more lines)
+
+[thinking] I now have a good understanding of the conventions. Let me check a couple more things:
+           
+           1. `specify workflow run` details, `SPECKIT_WORKFLOW_DIR` env var
+           2. The `.agent/luna` convention - the task contract path
+           3. Whether `gpt-6-luna` model is a convention
+           
+           Let me check whether `acpx` exists and the exact behavior of `specify workflow run` with `--json`. Also let me check the version of specify.
+           
+           Let me now check the spec version and look at the workflow template.
+
+[tool] bash (running)
+  input: specify --version 2>&1; which acpx codex python3 git; echo "---"; ls /home/smh/myskills/create-workflow/templates/
+
+[tool] bash (completed)
+  kind: other
+  input: specify --version 2>&1; which acpx codex python3 git; echo "---"; ls /home/smh/myskills/create-workflow/templates/
+  output:
+    specify 1.2.0
+    /home/smh/.nvm/versions/node/v26.1.0/bin/acpx
+    /home/smh/.local/bin/codex
+    /home/smh/.uv/venvs/default/bin/python3
+    /usr/bin/git
+    ---
+    workflow-template.yml
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/create-workflow/templates/workflow-template.yml"}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/create-workflow/templates/workflow-template.yml"}
+  output:
+    <path>/home/smh/myskills/create-workflow/templates/workflow-template.yml</path>
+    <type>file</type>
+    <content>
+    1: schema_version: "1.0"
+    2: 
+    3: workflow:
+    4:   id: feature-cycle
+    5:   name: Feature Development Cycle
+    6:   version: "1.0.0"
+    7:   description: "Automated SDD workflow"
+    8: 
+    9: requires:
+    10:   speckit_version: ">=0.8.5"
+    11: 
+    12: inputs:
+    13:   spec:
+    14:     type: string
+    15:     required: true
+    16:     prompt: "Describe the feature"
+    17: 
+    18:   integration:
+    19:     type: string
+    20:     default: "auto"
+    21: 
+    22: steps:
+    23:   - id: specify
+    24:     type: command
+    25:     command: speckit.specify
+    ... (33 more lines)
+
+[thinking] Now I have a good picture. Let me check:
+           1. How `SPECKIT_WORKFLOW_DIR` gets set — the explore-repo workflow.yml uses `"$SPECKIT_WORKFLOW_DIR/scripts/driver.py"`. Since we run `specify workflow run <path>/workflow.yml`, the workflow dir would be resolved.
+           2. Also check how `.agent/luna/task.json` is the contract path convention — `CONTRACT_PATH = ".agent/luna/task.json"` in explore-repo. My task says the deep-research contract is also `.agent/luna/task.json`. Good.
+           3. The product dir is `.agent/luna/research/<task_id>/`.
+           
+           Now, key design decisions for the deep-research driver.py:
+           
+           **Commands**: `preflight | broad-search | deep-dive | synthesize | verify | assert-passed | finalize | selftest`. Plus `repair` needs to exist too — wait, the workflow.yml has `repair` step: `python3 ... driver.py repair`. The task lists driver subcommands as: `preflight | broad-search | deep-dive | synthesiz...
+Now let me check the Python environment and confirm PyYAML availability for the workflow.yml validation check:
+
+
+[tool] bash (running)
+  input: python3 -c "import yaml; print('yaml ok', yaml.__version__)"; python3 --version; echo "---"; git -C /home/smh/myskills status --porcelain | head -20
+
+[tool] bash (completed)
+  kind: other
+  input: python3 -c "import yaml; print('yaml ok', yaml.__version__)"; python3 --version; echo "---"; git -C /home/smh/myskills status --porcelain | head -20
+  output:
+    yaml ok 6.0.3
+    Python 3.12.3
+    ---
+     D archive/presets/knowledge/luyben-distillation-control/SKILL.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch01-vle-fundamentals.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch02-column-analysis.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch03-steadystate-simulation.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch04-economic-optimization.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch05-complex-systems.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch06-control-structure-selection.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch07-steadystate-to-dynamic.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch08-complex-column-control.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch09-reactive-distillation.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch10-sidestream-columns.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch11-petroleum-fractionation.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch12-dividing-wall-column.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch13-dynamic-safety-analysis.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch14-co2-capture.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch15-turndown-control.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch16-pressure-compensated-temp-control.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch17-ethanol-dehydration.md
+     D archive/presets/knowledge/luyben-distillation-control/chapters/ch18-external-reset-feedback.md
+     D archive/presets/knowledge/luyben-distillation-control/cheatsheet.md
+
+[thinking] There are pre-existing uncommitted changes in the repo (deletions of luyben-distillation-control from archive). I must NOT touch those — only create files under deep-research/. The AGENTS.md says to commit changes, but the task explicitly says: "只创建 `deep-research/` 下的文件，不要动仓库其他文件，不要 git commit（提交由编排者在校验后完成）". So no commits.
+           
+           Now let me create the deep-research directory and write driver.py.
+The repo has pre-existing uncommitted changes (archive deletions) — I'll leave those untouched per instructions. Now creating the `deep-research/` skill:
+
+
+[tool] bash (running)
+  input: mkdir -p /home/smh/myskills/deep-research/scripts && ls -la /home/smh/myskills/deep-research/
+
+[tool] bash (completed)
+  kind: other
+  input: mkdir -p /home/smh/myskills/deep-research/scripts && ls -la /home/smh/myskills/deep-research/
+  output:
+    总计 32
+    drwxrwxr-x  3 smh smh  4096 10月 14 21:21 .
+    drwxrwxr-x 27 smh smh 20480 10月 14 21:21 ..
+    drwxrwxr-x  2 smh smh  4096 10月 14 21:21 scripts
+
+[thinking] Now let me write the driver.py file. This is the big one. I'll write it carefully and completely.
+Now writing the driver.py — the core of the skill:
+
+
+[tool] write (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","content":"#!/usr/bin/env python3\n\"\"\"deep-research 可信驱动：preflight / broad-search / deep-dive / synthesize / repair / verify / assert-passed / final...
+
+[tool] write (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","content":"#!/usr/bin/env python3\n\"\"\"deep-research 可信驱动：preflight / broad-search / deep-dive / synthesize / repair / verify / assert-passed / final...
+  output:
+    <path>/home/smh/myskills/deep-research/scripts/driver.py</path>
+    <type>file</type>
+    <content>
+    Created file
+    </content>
+
+[thinking] I left a broken line in test_contract_rejections:
+           ```python
+               assert _rejects(directions=[{"id": "D1", "id2": "x", "title": "t", "questions": ["q"]}]) is False or True  # noqa
+           ```
+           That line is nonsense (always True) — I should remove it. Let me fix that. Also let me run selftest now to find issues.
+Now let me fix a leftover junk line in the selftest and run it:
+
+
+[tool] edit (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","old_string":" assert _rejects(directions=[{\"id\": \"D.1\", \"title\": \"t\", \"questions\": [\"q\"]}])\n assert _rejects(directions=[{\"id\": \"D1\",...
+
+[tool] edit (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","old_string":" assert _rejects(directions=[{\"id\": \"D.1\", \"title\": \"t\", \"questions\": [\"q\"]}])\n assert _rejects(directions=[{\"id\": \"D1\",...
+  output:
+    The file /home/smh/myskills/deep-research/scripts/driver.py has been updated successfully.
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && python3 deep-research/scripts/driver.py selftest; echo "EXIT=$?"
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && python3 deep-research/scripts/driver.py selftest; echo "EXIT=$?"
+  output:
+    FAIL: 契约默认值: KeyError: 'plan_file'
+      FAIL: 契约拒绝路径: AssertionError: 
+      ok: 查询提案校验与 canonical
+      ok: URL 归一化/去重/sid 分配
+      ok: [S#] 引用抽取与悬空检测
+      ok: 报告章节顺序检查
+      ok: 预算记账
+      ok: 抓取过滤
+      ok: fetch 提案 schema
+      ok: sources.json 完整性
+      ok: violates 越界判定
+    [deep-research] selftest: 2 项失败
+    EXIT=1
+
+[thinking] Two failures:
+           1. `test_contract_defaults`: KeyError: 'plan_file' — because check_contract only sets plan_file if present; when absent, c has no "plan_file" key. My test asserts c["plan_file"] is None. I should make check_contract set c["plan_file"] = None when absent (normalization). Let me add `c.setdefault("plan_file", None)`.
+           
+           2. `test_contract_rejections`: AssertionError — one of the rejects returned no error. Let me debug which. Let me run a quick check.
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && python3 - <<'EOF' import importlib.util spec = importlib.util.spec_from_file_location("drv", "deep-research/scripts/driver.py") drv = importlib.util.module_from_spec(spec) spec.loader.exec_mod...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && python3 - <<'EOF' import importlib.util spec = importlib.util.spec_from_file_location("drv", "deep-research/scripts/driver.py") drv = importlib.util.module_from_spec(spec) spec.loader.exec_mod...
+  output:
+    (no output)
+
+[thinking] No case is "NOT REJECTED" — so all individual rejections work. But the test failed with AssertionError. Let me look more carefully — the test also includes positive cases:
+           
+           ```python
+               errs, _ = check_contract({**VALID_CONTRACT, "directions": [
+                   {"id": f"D{i}", "title": "t", "questions": ["q"]} for i in range(12)]},
+                   "/tmp/dr-nonexistent-repo")
+               assert not errs
+           ```
+           
+           This creates 12 directions D0..D11. But `next_qid` etc. don't matter. check_contract with 12 directions → should pass. Let me test that. Also:
+           
+           ```python
+               errs, _ = check_contract({**VALID_CONTRACT, "scopes": ["arxiv", "webpage"],
+                                         "broad_queries": 6, "queries_per_direction": 6, "max_searches": 18},
+                                        "/tmp/dr-nonexistent-repo")
+               assert not errs
+           ```
+           Plan budget = 6 + 12*6 = 78 > max_searches 18 → errs! That's the bug in my test — with VALID_CO...
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && python3 - <<'EOF' import importlib.util spec = importlib.util.spec_from_file_location("drv", "deep-research/scripts/driver.py") drv = importlib.util.module_from_spec(spec) spec.loader.exec_mod...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && python3 - <<'EOF' import importlib.util spec = importlib.util.spec_from_file_location("drv", "deep-research/scripts/driver.py") drv = importlib.util.module_from_spec(spec) spec.loader.exec_mod...
+  output:
+    12 dirs errs: ['max_searches=24 小于计划搜索预算 40（broad_queries + 方向数×queries_per_direction），请修改计划']
+    scopes/budget errs: []
+
+[thinking] Found it: with 12 directions, the plan budget is 4 + 12*3 = 40 > max_searches default 24 → rejection. So my positive test "12 directions should pass" conflicts with the plan-budget rule. I need to either raise max_searches in that test case or reduce queries_per_direction. The 12-direction case should set max_searches accordingly, e.g. max_searches=40 (or use queries_per_direction=1: budget = 4+12=16 ≤ 24). Let me fix the test:
+           
+           ```python
+               errs, _ = check_contract({**VALID_CONTRACT, "directions": [
+                   {"id": f"D{i}", "title": "t", "questions": ["q"]} for i in range(12)],
+                   "max_searches": 40}, "/tmp/dr-nonexistent-repo")
+               assert not errs
+           ```
+           
+           And fix test_contract_defaults: add `c.setdefault("plan_file", None)` in check_contract normalization. Let me make both fixes.
+Found both issues. Fixing:
+
+
+[tool] edit (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","new_string":" pf = c.get(\"plan_file\")\n if pf is not None:\n if not isinstance(pf, str) or not pf.strip():\n errs.append(\"plan_file 须为非空字符串或 null\"...
+
+[tool] edit (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","new_string":" pf = c.get(\"plan_file\")\n if pf is not None:\n if not isinstance(pf, str) or not pf.strip():\n errs.append(\"plan_file 须为非空字符串或 null\"...
+  output:
+    The file /home/smh/myskills/deep-research/scripts/driver.py has been updated successfully.
+
+[tool] edit (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","new_string":" # 合法边界\n errs, _ = check_contract({**VALID_CONTRACT, \"directions\": [\n {\"id\": f\"D{i}\", \"title\": \"t\", \"questions\": [\"q\"]} f...
+
+[tool] edit (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","new_string":" # 合法边界\n errs, _ = check_contract({**VALID_CONTRACT, \"directions\": [\n {\"id\": f\"D{i}\", \"title\": \"t\", \"questions\": [\"q\"]} f...
+  output:
+    The file /home/smh/myskills/deep-research/scripts/driver.py has been updated successfully.
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && python3 deep-research/scripts/driver.py selftest; echo "EXIT=$?"
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && python3 deep-research/scripts/driver.py selftest; echo "EXIT=$?"
+  output:
+    ok: 契约默认值
+      ok: 契约拒绝路径
+      ok: 查询提案校验与 canonical
+      ok: URL 归一化/去重/sid 分配
+      ok: [S#] 引用抽取与悬空检测
+      ok: 报告章节顺序检查
+      ok: 预算记账
+      ok: 抓取过滤
+      ok: fetch 提案 schema
+      ok: sources.json 完整性
+      ok: violates 越界判定
+    [deep-research] selftest: 11 项全部通过
+    EXIT=0
+
+[thinking] Selftest passes. Now write workflow.yml.
+Selftest passes (11/11). Now writing workflow.yml:
+
+
+[tool] write (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/workflow.yml","content":"# deep-research：编排者给出计划的网络深入研究；可信脚本确定性调用 metaso API，AI 不触网。\n# 契约固定读 .agent/luna/task.json；所有 shell.run 为固定命令（driver.py <子命令>），无插值。\nschema_versi...
+
+[tool] write (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/workflow.yml","content":"# deep-research：编排者给出计划的网络深入研究；可信脚本确定性调用 metaso API，AI 不触网。\n# 契约固定读 .agent/luna/task.json；所有 shell.run 为固定命令（driver.py <子命令>），无插值。\nschema_versi...
+  output:
+    <path>/home/smh/myskills/deep-research/workflow.yml</path>
+    <type>file</type>
+    <content>
+    Created file
+    </content>
+
+[thinking] Now write SKILL.md following writing-for-agents guidance and aligned with explore-repo/SKILL.md style.
+Now writing SKILL.md per writing-for-agents guidance:
+
+
+[tool] write (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/SKILL.md","content":"---\nname: deep-research\ndescription: 编排者给出计划的网络深入研究：按「计划→广域搜索→逐子方向深潜→综合闭环」产出引用可核验的调研报告。适用于先写子方向计划、最终交付带闭环引用报告的研究任务；搜索由可信脚本确定性调用 metaso API，AI 不触网。无...
+
+[tool] write (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/SKILL.md","content":"---\nname: deep-research\ndescription: 编排者给出计划的网络深入研究：按「计划→广域搜索→逐子方向深潜→综合闭环」产出引用可核验的调研报告。适用于先写子方向计划、最终交付带闭环引用报告的研究任务；搜索由可信脚本确定性调用 metaso API，AI 不触网。无...
+  output:
+    <path>/home/smh/myskills/deep-research/SKILL.md</path>
+    <type>file</type>
+    <content>
+    Created file
+    </content>
+
+[thinking] Now run the self-checks:
+           1. `python3 -c "import yaml,sys; yaml.safe_load(open('deep-research/workflow.yml'))"` 
+           2. selftest exit 0 (done, re-run to be sure)
+           3. no-arg → usage + non-zero
+           4. handler mapping table
+           5. smoke test in /tmp/dr-smoke with preflight
+           6. confirm no AI-output-to-shell path
+           
+           Let me run 1, 2, 3 and also validate the workflow with `specify` if possible (structure check). Also chmod +x driver.py.
+           
+           Let me also verify the workflow.yml structure against the engine — I could try `specify workflow info` on it or a dry validation. create-workflow said 1.2.0 has no `validate` subcommand. But `specify workflow run` would actually run it (not safe). There's `specify workflow info <path>`? info takes an installed ID... Let me check if `specify workflow info` works with a local file path — probably not. Let me check `specify workflow --help` subcommands again: run, resume, statu...
+Now running the delivery self-checks 1–3:
+
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && chmod +x deep-research/scripts/driver.py && echo "== check 1: yaml parse ==" && python3 -c "import yaml,sys; d=yaml.safe_load(open('deep-research/workflow.yml')); print('YAML OK; workflow id =...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && chmod +x deep-research/scripts/driver.py && echo "== check 1: yaml parse ==" && python3 -c "import yaml,sys; d=yaml.safe_load(open('deep-research/workflow.yml')); print('YAML OK; workflow id =...
+  output:
+    == check 1: yaml parse ==
+    YAML OK; workflow id = deep-research
+    steps: ['preflight', 'broad-search', 'deep-dive', 'synthesize', 'verify-first', 'repair-if-fixable', 'final-check', 'finalize']
+    == check 2: selftest ==
+    selftest exit=0
+    == check 3: no-arg usage ==
+    no-arg exit=2
+    [stderr]
+    [deep-research] FATAL: 用法: driver.py <preflight|broad-search|deep-dive|synthesize|repair|verify|assert-passed|finalize|selftest>
+
+[thinking] Checks 1-3 pass. Now check 4: handler mapping — extract all driver subcommands referenced in workflow.yml and compare with HANDLERS keys.
+           
+           Let me write a quick verification script that:
+           1. Extracts `driver.py <subcommand>` from workflow.yml run fields.
+           2. Imports driver.py HANDLERS.
+           3. Confirms the sets match.
+Check 4 — handler mapping (workflow.yml commands vs driver.py HANDLERS):
+
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && python3 - <<'EOF' import yaml, re, importlib.util spec = importlib.util.spec_from_file_location("drv", "deep-research/scripts/driver.py") drv = importlib.util.module_from_spec(spec) spec.loade...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && python3 - <<'EOF' import yaml, re, importlib.util spec = importlib.util.spec_from_file_location("drv", "deep-research/scripts/driver.py") drv = importlib.util.module_from_spec(spec) spec.loade...
+  output:
+    workflow.yml shell 步骤 → 子命令:
+      preflight        -> preflight
+      broad-search     -> broad-search
+      deep-dive        -> deep-dive
+      synthesize       -> synthesize
+      verify-first     -> verify
+      repair           -> repair
+      verify-again     -> verify
+      final-check      -> assert-passed
+      finalize         -> finalize
+    
+    HANDLERS: ['assert-passed', 'broad-search', 'deep-dive', 'finalize', 'preflight', 'repair', 'selftest', 'synthesize', 'verify']
+    workflow 用到: ['assert-passed', 'broad-search', 'deep-dive', 'finalize', 'preflight', 'repair', 'synthesize', 'verify']
+    workflow 引用但 HANDLERS 缺失: 无
+    HANDLERS 有但 workflow 未引用: {'selftest'}
+    无插值约定：所有 run 为固定字符串 ✓
+
+[thinking] Check 4 passes: all workflow-referenced subcommands exist in HANDLERS; `selftest` is intentionally extra (offline self-test, not part of the run flow).
+           
+           Now check 5: smoke test in /tmp/dr-smoke:
+           - mkdir /tmp/dr-smoke, git init, write minimal valid contract (.agent/luna/task.json with 1 direction)
+           - run `METASO_API_KEY=dummy python3 /home/smh/myskills/deep-research/scripts/driver.py preflight` with cwd /tmp/dr-smoke
+           - confirm preflight OK and baseline.json written
+           - delete /tmp/dr-smoke
+           
+           Note: preflight calls contract() → check_contract, git rev-parse, tool checks, METASO_API_KEY check, then makedirs + baseline. Let me run it.
+Check 5 — smoke test in a scratch git repo (preflight only):
+
+
+
+
+[tool] bash (running)
+  input: rm -rf /tmp/dr-smoke && mkdir -p /tmp/dr-smoke/.agent/luna && cd /tmp/dr-smoke && git init -q . && cat > .agent/luna/task.json <<'EOF' { "task_id": "research-smoke-001", "topic": "冒烟测试主题", "objective": "验证 preflight 可...
+
+[tool] bash (completed)
+  kind: other
+  input: rm -rf /tmp/dr-smoke && mkdir -p /tmp/dr-smoke/.agent/luna && cd /tmp/dr-smoke && git init -q . && cat > .agent/luna/task.json <<'EOF' { "task_id": "research-smoke-001", "topic": "冒烟测试主题", "objective": "验证 preflight 可...
+  output:
+    [deep-research] preflight OK: task=research-smoke-001 outdir=/tmp/dr-smoke/.agent/luna/research/research-smoke-001
+    preflight exit=0
+    --- 产物 ---
+    /tmp/dr-smoke/.agent/luna/research/research-smoke-001/attempts.json
+    /tmp/dr-smoke/.agent/luna/research/research-smoke-001/baseline.json
+    /tmp/dr-smoke/.agent/luna/research/research-smoke-001/contract.snapshot.json
+    --- baseline 内容 ---
+    {
+      "preexisting": [
+        ".agent/"
+      ]
+    }
+
+[thinking] Preflight works in the empty scratch repo with a dummy key. Note the baseline correctly captures `.agent/` as the untracked folded dir (which is the contract file's parent — it's in baseline so it won't be flagged later).
+           
+           Let me also do a negative check on preflight: missing METASO_API_KEY → should fail exit 2. Quick test in the smoke repo before deleting. Also verify the contract.snapshot.json content is normalized. Then delete /tmp/dr-smoke.
+Preflight works. Let me also verify the missing-key fatal path and snapshot normalization, then clean up:
+
+
+[tool] bash (running)
+  input: cd /tmp/dr-smoke && echo "== 缺 METASO_API_KEY → 应 exit 2 ==" && (env -u METASO_API_KEY python3 /home/smh/myskills/deep-research/scripts/driver.py preflight; echo "exit=$?") 2>&1 | tail -2; echo "== 缺契约 → 应 exit 2 ==" ...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /tmp/dr-smoke && echo "== 缺 METASO_API_KEY → 应 exit 2 ==" && (env -u METASO_API_KEY python3 /home/smh/myskills/deep-research/scripts/driver.py preflight; echo "exit=$?") 2>&1 | tail -2; echo "== 缺契约 → 应 exit 2 ==" ...
+  output:
+    == 缺契约 → 应 exit 2 ==
+    [deep-research] FATAL: 缺少任务契约 .agent/luna/task.json
+    exit=2
+    == snapshot 规范化 ==
+    [stderr]
+    bash: 第 1 行： cd: /tmp/dr-smoke: 没有那个文件或目录
+    bash: 第 1 行： cd: /tmp/dr-smoke: 没有那个文件或目录
+    [exit code: 1]
+
+[thinking] The first part (missing METASO_API_KEY) output got swallowed — and /tmp/dr-smoke seems gone? Wait, "bash: 第 1 行： cd: /tmp/dr-smoke: 没有那个文件或目录" — /tmp/dr-smoke doesn't exist?? But I created it in the previous command... Oh! The commands run in parallel? No — they run sequentially in one shell. Hmm, wait: the previous command created /tmp/dr-smoke. But now cd /tmp/dr-smoke fails.
+           
+           Wait, actually looking at the output — the first echo "== 缺 METASO_API_KEY..." and its result are missing entirely from stdout, and then "== 缺契约 → 应 exit 2 ==" shows only the tail. And then cd /tmp/dr-smoke fails.
+           
+           Hmm, did /tmp/dr-smoke get deleted? Maybe the sandbox... Let me check: the sandbox policy is workspace-write; /tmp might be a separate tmpfs that got cleaned? Or... wait, actually the first part's output was `2>&1 | tail -2` — the output shows only ONE block "== 缺契约..." before the cd failure. It see...
+
+[tool] bash (running)
+  input: ls -la /tmp/dr-smoke 2>&1; ls /tmp/ | grep -i dr-smoke 2>&1; echo "---"; cd /tmp && mkdir -p dr-smoke/.agent/luna && cd dr-smoke && git init -q . && cat > .agent/luna/task.json <<'EOF' { "task_id": "research-smoke-001...
+
+[tool] bash (completed)
+  kind: other
+  input: ls -la /tmp/dr-smoke 2>&1; ls /tmp/ | grep -i dr-smoke 2>&1; echo "---"; cd /tmp && mkdir -p dr-smoke/.agent/luna && cd dr-smoke && git init -q . && cat > .agent/luna/task.json <<'EOF' { "task_id": "research-smoke-001...
+  output:
+    ls: 无法访问 '/tmp/dr-smoke': 没有那个文件或目录
+    ---
+    == 缺 METASO_API_KEY → 应 exit 2 ==
+    exit=2
+    == snapshot 规范化 ==
+    scopes ['webpage'] | bq 2 | qpd 2 | max_searches 8 | mf 2 | fulltext 40000 | ma 2 | step_to 1200 | to 5400 | plan_file None
+    [stderr]
+    [deep-research] FATAL: 环境变量 METASO_API_KEY 未设置（必填；仅检查存在性，密钥不落盘）
+
+[thinking] Interesting — /tmp/dr-smoke vanished between commands. The earlier command created it and preflight worked (we saw output). Then it disappeared. This might be a tmpfs cleanup or the sandbox behavior. Anyway, I recreated it and:
+           
+           1. Missing METASO_API_KEY → exit 2 with correct FATAL message ✓
+           2. Snapshot normalization correct ✓ (defaults applied: fulltext_max_chars 40000, max_attempts 2, step_timeout_seconds 1200, timeout_seconds 5400, plan_file None)
+           
+           The earlier "缺契约" test also passed (exit 2).
+           
+           Now let me run a couple more smoke checks within this repo:
+           - verify with a minimal happy path? That requires full artifacts. Actually, let me simulate an end-to-end offline "verify" run without codex/network by fabricating artifacts, to validate the verify + write-boundary + assert-passed + finalize path. This is a valuable integration test of the mechanism (not requiring network/codex). I c...
+Excellent — negative paths work. Now let me integration-test the verify/assert/finalize machinery offline (fabricated artifacts, no codex/network) in the smoke repo:
+
+
+[tool] bash (running)
+  input: cd /tmp/dr-smoke && OD=.agent/luna/research/research-smoke-001 && mkdir -p $OD/notes $OD/findings $OD/fulltext $OD/raw $OD/queries $OD/fetch-requests # sources.json：2 次成功搜索、3 条来源、1 次抓取 cat > $OD/sources.json <<'EOF' {...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /tmp/dr-smoke && OD=.agent/luna/research/research-smoke-001 && mkdir -p $OD/notes $OD/findings $OD/fulltext $OD/raw $OD/queries $OD/fetch-requests # sources.json：2 次成功搜索、3 条来源、1 次抓取 cat > $OD/sources.json <<'EOF' {...
+  output:
+    == verify（应 pass）==
+    exit=2
+    == assert-passed + finalize ==
+    [stderr]
+    bash: 第 1 行： cd: /tmp/dr-smoke: 没有那个文件或目录
+    bash: 行 3: /sources.json: 只读文件系统
+    bash: 行 20: /fulltext/S1.txt: 没有那个文件或目录
+    Traceback (most recent call last):
+      File "<stdin>", line 2, in <module>
+    FileNotFoundError: [Errno 2] No such file or directory: '.agent/luna/research/research-smoke-001/notes/broad.md'
+    [deep-research] FATAL: 缺少任务契约 .agent/luna/task.json
+    Traceback (most recent call last):
+      File "<string>", line 1, in <module>
+    FileNotFoundError: [Errno 2] No such file or directory: '/verify.json'
+    [deep-research] FATAL: 缺少任务契约 .agent/luna/task.json
+    [exit code: 2]
+
+[thinking] /tmp/dr-smoke keeps vanishing between bash calls! And now even `/sources.json` writes go to a read-only filesystem. It seems /tmp is not stable in this environment — or the sandbox denies /tmp writes? Wait — earlier the first smoke test in /tmp/dr-smoke DID work (preflight OK, files created, cat baseline worked). Then in the NEXT bash call, /tmp/dr-smoke was gone.
+           
+           Hmm — this suggests each bash call may run in a fresh sandbox where /tmp is ephemeral, OR the sandbox cleans /tmp between calls. The task said "临时目录冒烟：建 /tmp/dr-smoke，在里面 git init ... 跑 preflight ... 结束后删除 /tmp/dr-smoke". So /tmp/dr-smoke should persist within a single command at least.
+           
+           The earlier successful preflight run happened entirely within ONE bash command (mkdir + git init + cat task.json + preflight + find + cat). And it worked. The next command (negative tests) failed to find /tmp/dr-smoke — so /tmp contents don...
+/tmp doesn't persist across bash invocations here — the whole smoke test must run in one command. Combining everything:
+
+
+[tool] bash (running)
+  input: set -u SM=/tmp/dr-smoke rm -rf "$SM" && mkdir -p "$SM/.agent/luna" && cd "$SM" && git init -q . cat > .agent/luna/task.json <<'EOF' { "task_id": "research-smoke-001", "topic": "冒烟测试主题", "objective": "验证机制", "plan_file...
+
+[tool] bash (completed)
+  kind: other
+  input: set -u SM=/tmp/dr-smoke rm -rf "$SM" && mkdir -p "$SM/.agent/luna" && cd "$SM" && git init -q . cat > .agent/luna/task.json <<'EOF' { "task_id": "research-smoke-001", "topic": "冒烟测试主题", "objective": "验证机制", "plan_file...
+  output:
+    == preflight ==
+    [deep-research] preflight OK: task=research-smoke-001 outdir=/tmp/dr-smoke/.agent/luna/research/research-smoke-001
+    == verify（应 pass）==
+    [deep-research] verify: 1 failure(s)
+    VERDICT=repairable
+    verdict= repairable | failures= ["章节标题或顺序不符：期望 ['执行摘要', 'D1', '交叉对比与矛盾', '证据缺口', '结论']，实际 ['执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', '执行摘要', 'D1', '交叉对比与矛盾', '证据缺口', '结论']"] | attempt= 0
+    == assert-passed + finalize ==
+    == repairable：注入悬空引用 =...
+
+[thinking] The verify machinery works. The "failure" in my fabricated report was because my Python `"摘要内容。" * 200` created the string `"# 冒烟报告\n\n## 执行摘要\n\n摘要内容。"` repeated 200 times → so there were ~200 "## 执行摘要" headings. My fabricated report was malformed (my own test-data bug, not a driver bug). The mechanism correctly detected the section mismatch.
+           
+           So the verify logic works correctly:
+           - First verify: repairable (section order error due to my malformed test report).
+           - assert-passed correctly failed (verdict not pass).
+           - Repairable path: dangling S99 detected ✓.
+           - Fatal path: stray-outside.txt flagged 写入越界（致命）✓, and `.specify/` dir was NOT flagged (only stray-outside.txt flagged) ✓.
+           
+           Now let me redo the happy-path with a CORRECT report to confirm pass → finalize → summary.json + SUCCESS. I'll do it in one command again.
+           
+           Let me also confirm: `.specify/workflows/runs/abc/state.json` was not ...
+The verify machinery works correctly — my fabricated report was malformed (repeated `## 执行摘要` from the Python `* 200`), and the mechanism caught it exactly as intended. The fatal path also correctly flagged `stray-outside.txt` while NOT flagging `.specify/`. Let me redo with a well-formed report to confirm the full pass→finalize path:
+
+
+[tool] bash (running)
+  input: set -u SM=/tmp/dr-smoke rm -rf "$SM" && mkdir -p "$SM/.agent/luna" && cd "$SM" && git init -q . cat > .agent/luna/task.json <<'EOF' { "task_id": "research-smoke-001", "topic": "冒烟测试主题", "objective": "验证机制", "plan_file...
+
+[tool] bash (completed)
+  kind: other
+  input: set -u SM=/tmp/dr-smoke rm -rf "$SM" && mkdir -p "$SM/.agent/luna" && cd "$SM" && git init -q . cat > .agent/luna/task.json <<'EOF' { "task_id": "research-smoke-001", "topic": "冒烟测试主题", "objective": "验证机制", "plan_file...
+  output:
+    [deep-research] preflight OK: task=research-smoke-001 outdir=/tmp/dr-smoke/.agent/luna/research/research-smoke-001
+    == verify（应 pass）==
+    [deep-research] verify: 0 failure(s)
+    VERDICT=pass
+    verdict= pass | attempt= 0 | failures= []
+    == assert-passed + finalize ==
+    [deep-research] assert-passed OK
+    [deep-research] finalize OK: /tmp/dr-smoke/.agent/luna/research/research-smoke-001
+    summary: {
+      "task_id": "research-smoke-001",
+      "workflow_id": "deep-research",
+      "model": "gpt-6-luna",
+      "attempts": 0,
+      "report": "/tmp/dr-smoke/.agent/luna/research/research-smoke-001/report.md",
+      "source_count": 3,
+      "searches_used": 2,
+      "finished_at": "2026-10-14T13:28:26.980089+00:00"
+    }
+    SUCCESS 文件 ✓ (pass)
+    == 清理 ==
+    已删除 /tmp/dr-smoke
+
+[thinking] The full happy path works: preflight → verify (pass) → assert-passed → finalize with summary.json (task_id, workflow_id "deep-research", model, attempts, report abs path, source_count, searches_used, finished_at) + SUCCESS file.
+           
+           Also the repairable and fatal paths were verified in the previous run. And /tmp/dr-smoke was deleted.
+           
+           Now check 6: confirm no path in driver.py or SKILL.md that interpolates AI output into shell commands. Let me grep for any subprocess/shell usage and confirm:
+           - subprocess.run is only used for: git rev-parse, git status --porcelain, and acpx codex exec.
+           - codex prompt is passed via `-f <file>` (absolute path of a driver-generated prompt file).
+           - No AI output (from logs, notes, queries, etc.) is interpolated into any command.
+           
+           Let me grep the driver for subprocess usage and os.system / shell=True usage.
+Full pass path confirmed and /tmp/dr-smoke cleaned up. Now check 6 — verify no AI output ever reaches a shell command:
+
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && echo "== subprocess / shell 相关调用 ==" && grep -n "subprocess\|shell=True\|os.system\|Popen\|shutil.which" deep-research/scripts/driver.py && echo "== codex 命令构造 ==" && grep -n "acpx\|codex" dee...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && echo "== subprocess / shell 相关调用 ==" && grep -n "subprocess\|shell=True\|os.system\|Popen\|shutil.which" deep-research/scripts/driver.py && echo "== codex 命令构造 ==" && grep -n "acpx\|codex" dee...
+  output:
+    == subprocess / shell 相关调用 ==
+    14:本脚本从不把 AI 输出拼进 shell 命令。可测函数与 subprocess/codex 调用解耦，selftest 离线自测。
+    20:import subprocess
+    85:    out = subprocess.run(
+    573:            r = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT,
+    575:        except subprocess.TimeoutExpired:
+    840:    if shutil.which("git") is None:
+    842:    subprocess.run(["git", "rev-parse", "--git-dir"], cwd=REPO,
+    845:        if shutil.which(tool) is None:
+    == codex 命令构造 ==
+    5:流程：计划→广域搜索→逐子方向深潜→综合闭环；AI（codex）只提查询、读结果、写产出，不接触网络。
+    14:本脚本从不把 AI 输出拼进 shell 命令。可测函数与 subprocess/codex 调用解耦，selftest 离线自测。
+    518:    """读取 codex 的 fetch 提案并执行抓取；schema 非法重提 1 次，仍失败 fatal。"""
+    548:# ---------------------------------------------------------------- codex 调用
+    564:def run_codex(c, od, call_id, prompt_path):
+    565:    """acpx 固定调用 codex；stdout/stderr 落 logs/<call-id>.log；超时或非 0 退出 fatal。"""
+    569:    cmd = ["acpx", "--cwd", REPO, "--approve-all", "--model", MODEL,
+    570:           "codex", "exec", "-f", os.path.abspath(prompt_path)]
+    584:    run_codex(c, od, call_id, p)
+    589:    """codex 产出 JSON 提案；校验失败附错误说明重提 1 次；仍失败 fatal（不算 repair attempt）。"""
+    == 确认 codex 输出路径（仅文件传递）==
+    117:def read_json(path):
+    226:        raw = read_json(p)
+    250:        return int(read_json(p)["attempts"])
+    263:        return read_json(p)
+    280:        src = read_json(p)
+    522:    obj = read_json(proposal_path)
+    528:        obj = read_json(proposal_path)
+    ... (15 more lines)
+
+[thinking] Check 6 confirmed:
+           - `subprocess.run` used exactly 3 places:
+             1. line 85: `git status --porcelain -z` (porcelain_paths) — reads git output, no AI involved.
+             2. line 573: acpx codex exec — command is a fixed list `["acpx", "--cwd", REPO, "--approve-all", "--model", MODEL, "codex", "exec", "-f", os.path.abspath(prompt_path)]`. prompt_path is a driver-generated file path (from write_prompt), NOT AI output. The AI reads the prompt file and writes its output to files; the driver never feeds AI output into any command.
+             3. line 842: git rev-parse — fixed command.
+           - No `shell=True`, no `os.system`, no string interpolation of AI content into commands.
+           - The only command that involves codex passes the prompt via `-f <absolute prompt file path>` — the prompt text is written by the driver to prompts/<call_id>.md; codex output goes to files (queries/, fetch-requests/, notes/, findings/, report...
+Check 6 confirmed — the only subprocess calls are fixed `git` commands and the fixed `acpx ... codex exec -f <driver-generated prompt path>`; no AI output ever reaches a command line. Now a structural validation of the workflow per create-workflow guidance, plus a compile check:
+
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && python3 -m py_compile deep-research/scripts/driver.py && echo "py_compile OK" && python3 - <<'EOF' import yaml wf = yaml.safe_load(open("deep-research/workflow.yml")) assert wf["schema_version...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && python3 -m py_compile deep-research/scripts/driver.py && echo "py_compile OK" && python3 - <<'EOF' import yaml wf = yaml.safe_load(open("deep-research/workflow.yml")) assert wf["schema_version...
+  output:
+    py_compile OK
+    步骤 id 唯一: ['preflight', 'broad-search', 'deep-dive', 'synthesize', 'verify-first', 'repair-if-fixable', 'repair', 'verify-again', 'final-check', 'finalize']
+    所有 shell run 引用 driver.py 且无插值 ✓
+    script 存在: True
+
+[thinking] All structural checks pass. Now let me do a few final reviews:
+           
+           1. Review the driver.py once more for any bugs I might have missed — particularly the interaction between `cmd_verify`'s citation checks when sources.json exists but src could be a partial dict, and the `labels` dict usage.
+           
+           2. Let me also verify the flow for the `deep-dive` when sources.json has no "fetches" key etc. — load_sources returns skeleton with all keys. But `register_search_results` etc. handle missing keys via setdefault in record functions. In `build_deep_findings_prompt`, `remaining_fetch(c, src)` uses src.get("fetches", []) ✓. In `process_fetch_proposal`, `already = {s["sid"] for s in src.get("fetches", [])}` ✓.
+           
+           3. One issue I want to double-check: `cmd_broad_search` reads `src = load_sources(od)` after `run_search` calls, and checks `src["searches"]` — but run_search writes sources.json, so load_sources g...
+A couple of robustness guards worth adding — `cmd_repair` should fail cleanly if verify.json is missing:
+
+
+[tool] edit (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","new_string":"def cmd_repair():\n c = contract()\n od = outdir_of(c)\n vpath = os.path.join(od, \"verify.json\")\n if not os.path.isfile(vpath):\n fail...
+
+[tool] edit (failed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","new_string":"def cmd_repair():\n c = contract()\n od = outdir_of(c)\n vpath = os.path.join(od, \"verify.json\")\n if not os.path.isfile(vpath):\n fail...
+  output:
+    Error: cannot edit "/home/smh/myskills/deep-research/scripts/driver.py": file changed since it was read — re-read the file, then retry
+
+[thinking] The file changed since read? Probably py_compile created __pycache__ but that wouldn't change driver.py. Actually maybe the mtime changed from py_compile write... no, py_compile writes to __pycache__/driver.cpython-312.pyc, not driver.py. Hmm, but the edit tool tracks read-state; I edited earlier then ran things. Let me re-read the relevant portion and retry.
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && grep -n "def cmd_repair" -A 8 deep-research/scripts/driver.py
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && grep -n "def cmd_repair" -A 8 deep-research/scripts/driver.py
+  output:
+    940:def cmd_repair():
+    941-    c = contract()
+    942-    od = outdir_of(c)
+    943-    v = read_json(os.path.join(od, "verify.json"))
+    944-    if v.get("verdict") != "repairable":
+    945-        fail(f"当前裁决为 {v.get('verdict')}，无修复分支")
+    946-    n = attempts(od)
+    947-    if n >= max(1, int(c["max_attempts"])):
+    948-        fail(f"已达修复次数上限 {c['max_attempts']}，不再修复", code=1)
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","offset":938,"limit":16}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","offset":938,"limit":16}
+  output:
+    <path>/home/smh/myskills/deep-research/scripts/driver.py</path>
+    <type>file</type>
+    <content>
+    938: 
+    939: 
+    940: def cmd_repair():
+    941:     c = contract()
+    942:     od = outdir_of(c)
+    943:     v = read_json(os.path.join(od, "verify.json"))
+    944:     if v.get("verdict") != "repairable":
+    945:         fail(f"当前裁决为 {v.get('verdict')}，无修复分支")
+    946:     n = attempts(od)
+    947:     if n >= max(1, int(c["max_attempts"])):
+    948:         fail(f"已达修复次数上限 {c['max_attempts']}，不再修复", code=1)
+    949:     write_json(os.path.join(od, "attempts.json"), {"attempts": n + 1})
+    950:     run_one(c, od, f"repair-{n + 1}", build_repair_prompt(c, od, v.get("failures", [])))
+    951:     print(f"[deep-research] repair OK（第 {n + 1} 次）")
+    952: 
+    953: 
+    
+    (Showing lines 938-953 of 1411. Use offset=954 to continue.)
+    </content>
+
+[tool] edit (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","new_string":"def cmd_repair():\n c = contract()\n od = outdir_of(c)\n vpath = os.path.join(od, \"verify.json\")\n if not os.path.isfile(vpath):\n fail...
+
+[tool] edit (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","new_string":"def cmd_repair():\n c = contract()\n od = outdir_of(c)\n vpath = os.path.join(od, \"verify.json\")\n if not os.path.isfile(vpath):\n fail...
+  output:
+    The file /home/smh/myskills/deep-research/scripts/driver.py has been updated successfully.
+
+[thinking] Let me re-run selftest and also test the repair guards quickly in a scratch repo. Also re-run py_compile.
+           
+           Let me also test:
+           - repair with verify.json verdict not repairable → fail
+           - repair with verify.json missing → fail
+           - repair when attempts >= max_attempts → fail exit 1
+           
+           And verify the assert-passed guard (already tested). Let me do it in one command.
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && python3 -m py_compile deep-research/scripts/driver.py && python3 deep-research/scripts/driver.py selftest >/dev/null 2>&1 && echo "selftest exit=0 ✓" set -u SM=/tmp/dr-guard rm -rf "$SM" && mk...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && python3 -m py_compile deep-research/scripts/driver.py && python3 deep-research/scripts/driver.py selftest >/dev/null 2>&1 && echo "selftest exit=0 ✓" set -u SM=/tmp/dr-guard rm -rf "$SM" && mk...
+  output:
+    selftest exit=0 ✓
+    preflight ✓
+    == repair: verify.json 缺失 → 应 exit 2 ==
+    exit=2
+    == repair: verdict=fatal → 应 exit 2 ==
+    exit=2
+    == repair: attempts 已达上限 → 应 exit 1 ==
+    exit=1
+    == assert-passed: verify.json 缺失 → 应 exit 2 ==
+    exit=2
+    已清理 /tmp/dr-guard
+
+[thinking] All guards work. Now let me do a final review of the complete driver.py to make sure everything is coherent. Let me read through the file once more — particularly checking:
+           
+           1. The `verify` handler's allowed list — uses `os.path.relpath(od, REPO)` — od is built from REPO so relpath is correct.
+           
+           2. Any remaining issue: in `cmd_verify`, `baseline = set(read_json(os.path.join(od, "baseline.json"))["preexisting"])` — if baseline.json missing → traceback. Should I guard? Preflight always writes it before verify runs in the workflow. But on a resume edge... it's fine, preflight runs first. Leave it.
+           
+           3. `build_broad_notes_prompt` and others reference `od` absolute paths in prompts — od is `os.path.join(REPO, ...)` where REPO = os.getcwd() (absolute). ✓.
+           
+           4. Let me re-read the full driver to spot any remaining issues. Let me view the middle sections quickly — the parts I haven't re-read sinc...
+All guards pass. Let me do a final full read-through of the driver for coherence:
+
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","limit":180,"offset":700}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","limit":180,"offset":700}
+  output:
+    <path>/home/smh/myskills/deep-research/scripts/driver.py</path>
+    <type>file</type>
+    <content>
+    700:               '{"sids": ["S1", ...]}，选择值得抓全文的来源 sid'
+    701:               f"（剩余全文预算 {remaining_fetch(c, src)} 条，含本次）。",
+    702:               "## 只写",
+    703:               f"- {os.path.join(od, 'notes', 'broad.md')}",
+    704:               f"- {os.path.join(od, 'fetch-requests', 'broad.json')}",
+    705:               ]
+    706:     return "\n".join(parts) + "\n"
+    707: 
+    708: 
+    709: def build_deep_queries_prompt(c, od, d):
+    710:     src = load_sources(od)
+    711:     parts = _preamble(c) + [
+    712:         "",
+    713:         "## 阶段",
+    714:         f"子方向 {d['id']}（{d['title']}）深潜：为回答该方向的问题提出聚焦查询。",
+    715:         "## 只读",
+    716:         f"- {os.path.join(REPO, CONTRACT_PATH)}（任务契约，本方向 questions 见下）",
+    717:         f"- {os.path.join(od, 'notes', 'broad.md')}（广域综述）",
+    718:         f"- {os.path.join(od, 'sources.json')}（已有来源登记表）",
+    719:     ]
+    720:     parts += ["", "## 已有来源摘要", build_source_digest(src["sources"])]
+    721:     parts += ["", "## 该方向要回答的问题",
+    722:               *[f"- {q}" for q in d["questions"]],
+    723:               "## 任务",
+    724:               f"提出恰好 {c['queries_per_direction']} 条聚焦查询（中文），"
+    ... (158 more lines)
+
+[thinking] The driver code looks coherent. Let me now review the SKILL.md once more for writing-for-agents quality and verify the frontmatter YAML parses. Also let me double check that the SKILL.md's description is a proper pointer.
+           
+           Also, let me confirm the final directory structure and re-run all self-checks in one go as a final validation. Then produce the final report.
+           
+           One more thing to verify: the task says "workflow.yml 全部为固定 `shell` 步骤调 driver，无任何插值（照抄 explore-repo 写法，requires speckit_version ">=1.2.0"）" — done.
+           
+           And: "finalize 写 summary.json：task_id、workflow_id "deep-research"、model、attempts、report 绝对路径、来源数、搜索使用数、finished_at + SUCCESS 文件" — done (source_count, searches_used).
+           
+           Also the SKILL.md needs the metaso env requirement "密钥不落盘" — done in section 2 and 参考资料.
+           
+           Let me also double check the frontmatter description doesn't use problematic YAML characters. It's a plain quoted? No quote...
+Let me validate the SKILL.md frontmatter and re-run the complete self-check suite as final validation:
+
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && python3 - <<'EOF' import yaml, re text = open("deep-research/SKILL.md", encoding="utf-8").read() m = re.match(r"^---\n(.*?)\n---\n", text, re.S) assert m, "frontmatter 缺失" fm = yaml.safe_load(...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && python3 - <<'EOF' import yaml, re text = open("deep-research/SKILL.md", encoding="utf-8").read() m = re.match(r"^---\n(.*?)\n---\n", text, re.S) assert m, "frontmatter 缺失" fm = yaml.safe_load(...
+  output:
+    frontmatter OK: name = deep-research
+    description: 编排者给出计划的网络深入研究：按「计划→广域搜索→逐子方向深潜→综合闭环」产出引用可核验的调研报告。适用于先写子方向计划、最终交付带闭环引用报告的研究任务；搜索 ...
+    == 最终清单 ==
+    deep-research/scripts/driver.py
+    deep-research/scripts/__pycache__/driver.cpython-312.pyc
+    deep-research/SKILL.md
+    deep-research/workflow.yml
+    == 全套自检 ==
+    check1 yaml ✓
+    check2 selftest exit=0
+    check3 no-arg exit=2
+
+[thinking] There's a `__pycache__` from py_compile — that should be removed (it's a build artifact, not part of the skill). Let me remove it. Also let me check the .gitignore to see if __pycache__ is ignored in the repo.
+           
+           Let me remove the pycache and do a final directory listing.
+Removing the `__pycache__` build artifact (not part of the skill):
+
+
+[tool] bash (running)
+  input: cd /home/smh/myskills && rm -rf deep-research/scripts/__pycache__ && find deep-research -type f | sort && echo "---" && git status --porcelain -- deep-research/ && echo "--- 确认未触碰仓库其他文件（仅新增 deep-research）---" && git s...
+
+[tool] bash (completed)
+  kind: other
+  input: cd /home/smh/myskills && rm -rf deep-research/scripts/__pycache__ && find deep-research -type f | sort && echo "---" && git status --porcelain -- deep-research/ && echo "--- 确认未触碰仓库其他文件（仅新增 deep-research）---" && git s...
+  output:
+    deep-research/scripts/driver.py
+    deep-research/SKILL.md
+    deep-research/workflow.yml
+    ---
+    ?? deep-research/
+    --- 确认未触碰仓库其他文件（仅新增 deep-research）---
+     M create-workflow/SKILL.md
+     M explore-repo/SKILL.md
+     M explore-repo/scripts/driver.py
+     M explore-repo/workflow.yml
+     M skills-manifest.json
+    ?? .agent-results/
+    ?? "archive/luyben-distillation-control (copy)/"
+    ?? "archive/seader-separations (copy)/"
+    ?? bro/
+    ?? create-workflow/references/workflow-authoring.md
+
+[thinking] There are pre-existing modifications to other files (create-workflow/SKILL.md, explore-repo/SKILL.md, explore-repo/scripts/driver.py, explore-repo/workflow.yml, skills-manifest.json) and untracked stuff — these were all pre-existing before I started (I only created deep-research/). Wait — were explore-repo files modified before I started? Let me check: the git status at the very beginning showed deletions in archive/. I didn't check for M on explore-repo. Let me verify I didn't touch them — I only read them. The `git status --porcelain | grep -v '^ D'` shows ` M explore-repo/...` — but I never wrote to explore-repo. These modifications must have been pre-existing.
+           
+           Let me confirm by checking the mtime/diff of explore-repo files — actually, let me just check `git diff` stat to confirm my session didn't change them. I used the `read` tool only on explore-repo files, never wrote. So they...
+The ` M` entries on `explore-repo/`, `create-workflow/` etc. are pre-existing repo state — I only ever used `read` on those and wrote only under `deep-research/`. Let me do a final read-through of the rest of the driver to close out review:
+
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","limit":180,"offset":880}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","limit":180,"offset":880}
+  output:
+    <path>/home/smh/myskills/deep-research/scripts/driver.py</path>
+    <type>file</type>
+    <content>
+    880:             src = record_search_dropped(src, item, None, "budget")
+    881:             write_sources(od, src)
+    882:             print(f"[deep-research] 搜索超预算，丢弃 {item['qid']}", file=sys.stderr)
+    883:             continue
+    884:         run_search(c, od, item["qid"], item["q"], item["scope"], None)
+    885:     src = load_sources(od)
+    886:     if not src["searches"]:
+    887:         fail("广域搜索无任何成功查询（成功搜索为 0 条）")
+    888:     if not src["sources"]:
+    889:         fail("广域搜索未获得任何来源")
+    890:     # (c) codex 写综述笔记 + fetch 提案
+    891:     run_one(c, od, "broad-notes", build_broad_notes_prompt(c, od, pf), t0)
+    892:     # (d) 可信脚本抓全文
+    893:     process_fetch_proposal(c, od, "broad", os.path.join(od, "fetch-requests", "broad.json"), t0)
+    894:     src = load_sources(od)
+    895:     print(f"[deep-research] broad-search OK: 搜索 {len(src['searches'])} 次, "
+    896:           f"来源 {len(src['sources'])} 条, 抓取 {len(src.get('fetches', []))} 条")
+    897: 
+    898: 
+    899: def cmd_deep_dive():
+    900:     c = contract()
+    901:     od = outdir_of(c)
+    902:     t0 = time.monotonic()
+    903:     ensure_sources(od, c)
+    904:     for d in c["directions"]:
+    ... (158 more lines)
+
+[thinking] Everything looks coherent. Let me read the last chunk (verify continuation through the end) to double check.
+
+[tool] read (running)
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","limit":120,"offset":1059}
+
+[tool] read (completed)
+  kind: other
+  input: {"file_path":"/home/smh/myskills/deep-research/scripts/driver.py","limit":120,"offset":1059}
+  output:
+    <path>/home/smh/myskills/deep-research/scripts/driver.py</path>
+    <type>file</type>
+    <content>
+    1059:     if notes_text and len(notes_text.strip().encode("utf-8")) < 500:
+    1060:         failures.append("notes/broad.md 不足 500 字节")
+    1061:     for d in c["directions"]:
+    1062:         ft = _read_or(od, "findings/" + d["id"] + ".md")
+    1063:         findings_text[d["id"]] = ft
+    1064:         if ft and len(ft.strip().encode("utf-8")) < 300:
+    1065:             failures.append(f"findings/{d['id']}.md 不足 300 字节")
+    1066: 
+    1067:     # --- report 固定章节（逐字检查标题与顺序）
+    1068:     if report_text:
+    1069:         failures += check_report_sections(report_text, [d["id"] for d in c["directions"]])
+    1070: 
+    1071:     # --- 闭环引用：[S#] 可解析；report 覆盖方向数；findings 至少 1 引用
+    1072:     sid_set = {s["sid"] for s in (src or {}).get("sources", [])} if src else set()
+    1073:     labels = {"report.md": report_text, "notes/broad.md": notes_text}
+    1074:     labels.update({f"findings/{k}.md": v for k, v in findings_text.items()})
+    1075:     for label, text in labels.items():
+    1076:         if not text:
+    1077:             continue
+    1078:         cited = extract_citation_sids(text)
+    1079:         dangling = set(cited) - sid_set
+    1080:         if dangling:
+    1081:             failures.append(f"悬空引用（可修复）: {label} 引用了不存在的 {sorted(dangling)}")
+    1082:     if report_text:
+    1083:         report_sids = set(extract_citation_sids(report_text))
+    ... (98 more lines)
+
+[thinking] Everything checks out. One last subtle issue I want to reconsider: in `cmd_verify`, the write-boundary check reads `baseline.json` — if it's missing it would traceback. But preflight always writes it and is an earlier mandatory step. Acceptable.
+           
+           Another subtle point: in `cmd_verify`, if `report.md` is missing (repairable), the section check is skipped (`if report_text:`), and the report-sids check skipped — good, because a missing report should be flagged once (产物缺失) and repaired.
+           
+           One more consideration: the `verify` computes `attempts(od)` from attempts.json which preflight creates with {"attempts": 0}. ✓.
+           
+           Now — the task mentions one thing I should double-check: "preflight 还检查：... 写 baseline.json 与 contract.snapshot.json（照抄 explore-repo）" ✓.
+           
+           And: "契约校验（preflight，fail=exit 2，风格照抄 explore-repo 的 contract()）" — my contract() fails with exit 2 ✓ (fail default code=2).
+           
+           Wait — one thi...
+The driver is coherent throughout. Final verification — confirm temp dirs cleaned and run the complete self-check battery one last time:
+
+
+[tool] bash (running)
+  input: ls -d /tmp/dr-smoke /tmp/dr-guard /tmp/dr-smoke2 2>&1 | head; echo "--- 最终交付物 ---"; cd /home/smh/myskills && ls -la deep-research/ deep-research/scripts/ echo "== 自检 1: yaml ==" && python3 -c "import yaml,sys; yaml.sa...
+
+[tool] bash (completed)
+  kind: other
+  input: ls -d /tmp/dr-smoke /tmp/dr-guard /tmp/dr-smoke2 2>&1 | head; echo "--- 最终交付物 ---"; cd /home/smh/myskills && ls -la deep-research/ deep-research/scripts/ echo "== 自检 1: yaml ==" && python3 -c "import yaml,sys; yaml.sa...
+  output:
+    ls: 无法访问 '/tmp/dr-smoke': 没有那个文件或目录
+    ls: 无法访问 '/tmp/dr-guard': 没有那个文件或目录
+    ls: 无法访问 '/tmp/dr-smoke2': 没有那个文件或目录
+    --- 最终交付物 ---
+    deep-research/:
+    总计 44
+    drwxrwxr-x  3 smh smh  4096 10月 14 21:26 .
+    drwxrwxr-x 27 smh smh 20480 10月 14 21:21 ..
+    drwxrwxr-x  2 smh smh  4096 10月 14 21:30 scripts
+    -rw-------  1 smh smh  6906 10月 14 21:26 SKILL.md
+    -rw-------  1 smh smh  1738 10月 14 21:26 workflow.yml
+    
+    deep-research/scripts/:
+    总计 68
+    drwxrwxr-x 2 smh smh  4096 10月 14 21:30 .
+    drwxrwxr-x 3 smh smh  4096 10月 14 21:26 ..
+    -rwx--x--x 1 smh smh 59616 10月 14 21:29 driver.py
+    == 自检 1: yaml ==
+    通过
+    == 自检 2: selftest ==
+      ok: 契约默认值
+      ok: 契约拒绝路径
+      ok: 查询提案校验与 canonical
+      ok: URL 归一化/去重/sid 分配
+      ok: [S#] 引用抽取与悬空检测
+      ok: 报告章节顺序检查
+      ok: 预算记账
+      ok: 抓取过滤
+    ... (8 more lines)
+
+[thinking] Everything is complete and verified. All temp dirs cleaned. The deliverables are in place:
+           - deep-research/SKILL.md
+           - deep-research/workflow.yml
+           - deep-research/scripts/driver.py
+           
+           All 6 self-checks pass. Now write the final report covering:
+           1. Created file list
+           2. Self-check 1-6 results
+           3. Key design decisions/trade-offs
+           
+           Let me compose the final report in Chinese (the task is in Chinese).
+全部完成。以下是交付报告。
+
+## 创建的文件清单
+
+```
+deep-research/
+├── SKILL.md          # 技能说明（frontmatter name=deep-research + 契约 schema/运行/恢复/判读/汇报/边界声明）
+├── workflow.yml      # 固定 shell 步骤调 driver，无插值；requires speckit_version ">=1.2.0"
+└── scripts/
+    └── driver.py     # 9 个子命令的可信驱动（含离线 selftest），约 1400 行
+```
+
+未触碰仓库其他文件（`explore-repo/`、`create-workflow/` 的 M 状态与 `archive/` 的 D 状态均为会话开始前已存在的改动，我只对其 `read` 过），未做任何 git commit。
+
+## 自检 1–6 结果
+
+**1. workflow.yml YAML 解析** — 通过：`yaml.safe_load` 成功，`workflow.id = deep-research`，另有结构自检（步骤 id 唯一、类型合法、shell run 均引用 driver.py 且含 `{{` 检查为 0）。
+
+**2. `driver.py selftest`** — exit 0，11 项全过：契约默认值、契约拒绝路径、查询提案校验与 canonical、URL 归一化/去重/sid 分配、`[S#]` 引用抽取与悬空检测、报告章节顺序检查、预算记账、抓取过滤、fetch 提案 schema、sources.json 完整性、violates 越界判定。
+
+**3. 无参运行** — 打印 `用法: driver.py <preflight|broad-search|deep-dive|synthesize|repair|verify|assert-passed|finalize|selftest>` 且 exit=2（非 0）。
+
+**4. workflow.yml 子命令 ↔ HANDLERS 对照**（脚本校验，无缺失）：
+
+| workflow.yml 步骤 | driver.py 子命令 | HANDLERS 存在 |
+|---|---|---|
+| preflight | preflight | ✓ |
+| broad-search | broad-search | ✓ |
+| deep-dive | deep-dive | ✓ |
+| synthesize | synthesize | ✓ |
+| verify-first / verify-again | verify | ✓ |
+| repair | repair | ✓ |
+| final-check | assert-passed | ✓ |
+| finalize | finalize | ✓ |
+| （工作流外） | selftest | ✓（有意保留，仅供离线自测） |
+
+**5. 临时目录冒烟** — 在 `/tmp/dr-smoke`（git init + 1 方向最小合法契约 + `METASO_API_KEY=dummy`）跑了 preflight：exit 0、baseline.json 正确记录 `.agent/` 祖先折叠条目、contract.snapshot.json 规范化正确（默认值补齐）；缺 `METASO_API_KEY` exit 2、缺契约 exit 2。另外在同一临时仓库做了**离线端到端机制验证**（伪造产物、不调 codex/网络）：verify 三态全部实测——pass（→ assert-passed → finalize 产出 summary.json + SUCCESS）、repairable（悬空引用 `[S99]`）、fatal（`stray-outside.txt` 越界，而 `.specify/` 运行态目录正确放行）；repair/assert-passed 的各守卫（缺 verify.json、verdict 非 repairable、attempts 达上限）均按预期 exit。`/tmp/dr-smoke`（及 guard、smoke2 临时目录）已删除。
+
+**6. 无 AI 输出进 shell** — 全库核查：driver.py 中 `subprocess.run` 仅 3 处——`git status --porcelain -z`（porcelain_paths）、`git rev-parse --git-dir`、固定列表 `["acpx", "--cwd", REPO, "--approve-all", "--model", MODEL, "codex", "exec", "-f", <driver 生成的 prompt 绝对路径>]`；无 `shell=True`、无 `os.system`、无字符串拼接 AI 内容。AI 产出全部经文件（queries/、fetch-requests/、notes/、findings/、report.md）用 `read_json`/`open` 读回。SKILL.md 中同样无此类路径。
+
+## 重要取舍
+
+1. **搜索失败与预算记账的语义**（规格内最模糊处）：verify 要求 `budget.used == len(searches)`，而规格又说失败「不计预算」——二者只有一种自洽读法：`searches[]` 只含成功搜索（ok:true），失败记 `search_failures[]` + `raw/<qid>.json={"ok":false}`，故 `budget.used == len(searches)` 恒成立、失败确实不耗预算。记录结构仍保留 `ok` 字段以贴合规格字面。
+2. **`repair` 必须存在**：任务列的子命令清单未含 repair，但 workflow.yml 修复分支调用 `driver.py repair`，故 HANDLERS 实现 9 个命令；repair 阶段 driver 不提供任何搜索/抓取能力（prompt 明令禁止 + 无代码路径），attempts 上限在 driver 侧强制（resume 场景防超）。
+3. **提案重提不算 repair attempt**：`propose_json` 对 queries/fetch 提案校验失败时附错误说明重提 1 次（call id 带 `-retry`），再失败 fatal；与 attempts.json 完全解耦。
+4. **`timeout_seconds` 的落点**：引擎对 shell 步骤无总超时，故将其实现为「每个研究阶段（broad-search / deep-dive / synthesize）进程内 wall-clock 上限」，在每次 codex 调用与每次搜索前检查；`step_timeout_seconds` 作单次 codex 调用超时。SKILL.md 已写明。
+5. **全文抓取失败不重试**：规格只给 search 明示「失败重试 1 次」，reader 仅「单条失败记日志继续」，故 reader 单次尝试；失败记 `fetch_failures[]` 并 stderr 留痕，`fetches[]`（≤ max_fetches）只含成功。
+6. **报告章节检查取严格逐字匹配**（H2 序列与期望完全相等）：符合「verify 逐字检查标题、顺序」；`###` 子节不干扰（用 `## ` 前缀精确匹配）。冒烟中伪造的畸形报告（重复 `## 执行摘要`）被正确判 repairable，证明检查有效。
+7. **可测函数与 subprocess/codex 解耦**：契约校验（`check_contract` 纯函数不退出）、URL 归一化、引用抽取、章节检查、预算记账、violates 均无 I/O/子进程，selftest 直接调用；`contract()` 只是包一层 fail()。
+8. **`size` 传字符串**：metaso 官方 skill 文档（meta-search）展示 `"size": "10"` 字符串形式，body 其余字段按规格，未实测 API（冒烟只测 preflight，不触网）。
+9. **白名单额外加 `.specify/` 根**：引擎运行态目录 `.specify/workflows/runs/<id>/` 在本工作流属合法写入，冒烟实测其下文件不被判越界而仓根杂散文件被判 fatal。
+
+**遗留说明**：真实 `specify workflow run` 全流程（会调 codex + metaso 网络）按要求未执行；driver 的 codex/网络路径经静态审查 + 离线机制验证覆盖。
+
+[done] end_turn

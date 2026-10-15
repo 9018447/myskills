@@ -7,6 +7,8 @@ workflow:
   version: "1.0.0"
   author: "create-workflow"
   description: "Codex 只读探索仓库，产出带证据索引的报告；可信脚本核验引用真实性与写入边界"
+requires:
+  speckit_version: ">=1.2.0"
 steps:
   - id: preflight
     type: shell

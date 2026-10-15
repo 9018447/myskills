@@ -29,8 +29,12 @@ description: 对仓库做可信验收的只读探索：陌生仓库定位实现�
 ## 2. 运行
 
 ```bash
-specify workflow run /home/smh/myskills/explore-repo/workflow.yml --json
+specify workflow run <技能基目录>/workflow.yml --json
 ```
+
+`<技能基目录>` 是本技能的安装目录，Claude Code 调用技能时会给出基目录（Base directory）；源库位于 `~/myskills/explore-repo`，与安装位内容一致。workflow 以本地文件路径传入，可在 Spec Kit 项目外的 git 仓库中运行（版本要求见参考资料）。
+
+边界声明：只读约束不是硬沙箱，由「探索提示词约束 + 事后 baseline 比对」实现——`git status --porcelain -z` 解析工作区差异，落在白名单之外的写入判 fatal；探索超时按致命处理。
 
 完成标准：stdout 拿到单个 JSON 对象，`status` 为 `completed`。步骤失败时对象带 `error` 字段。
 
@@ -59,6 +63,8 @@ specify workflow resume <run_id> --json
 
 ## 参考资料
 
-- 裁决语义：`verify` 恒以 0 退出，`verify.json` 是唯一裁决来源；`assert-passed` 步骤强制终态为 `pass`，绕过即失败。
+- 裁决语义：`verify` 恒以 0 退出，`verify.json`（`{verdict, failures, attempt}`）是唯一裁决来源；`assert-passed` 步骤强制终态为 `pass`，绕过即失败。
+- 写入边界：只读靠「提示词约束 + 事后比对」而非硬沙箱；baseline 与复核都用 `git status --porcelain -z`（NUL 分隔，重命名条目取新路径）解析工作区差异，白名单根的祖先折叠条目不算越界，其余白名单之外的写入判 fatal，探索超时同样致命。
+- 版本要求：`workflow.yml` 声明 `requires: speckit_version: ">=1.2.0"`——脚本经 `SPECKIT_WORKFLOW_DIR` 定位、本地文件需可在 Spec Kit 项目外运行，两项行为 1.2.0 起才可靠。
 - 修复上限：`max_attempts`（默认 2）次探索后仍 `repairable` 按失败终止。
 - 引擎状态在当前工作目录 `.specify/workflows/runs/<run_id>/`，与业务产物分开放。

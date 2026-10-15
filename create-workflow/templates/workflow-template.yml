@@ -1,0 +1,55 @@
+schema_version: "1.0"
+
+workflow:
+  id: feature-cycle
+  name: Feature Development Cycle
+  version: "1.0.0"
+  description: "Automated SDD workflow"
+
+requires:
+  speckit_version: ">=0.8.5"
+
+inputs:
+  spec:
+    type: string
+    required: true
+    prompt: "Describe the feature"
+
+  integration:
+    type: string
+    default: "auto"
+
+steps:
+  - id: specify
+    type: command
+    command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-spec
+    type: gate
+    message: "Approve specification?"
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: plan
+    type: command
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
+
+  - id: review-plan
+    type: gate
+    message: "Approve implementation plan?"
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: tasks
+    type: command
+    command: speckit.tasks
+    integration: "{{ inputs.integration }}"
+
+  - id: implement
+    type: command
+    command: speckit.implement
+    integration: "{{ inputs.integration }}"

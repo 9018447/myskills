@@ -2,7 +2,7 @@
 """explore-repo 可信驱动：preflight / explore / repair / verify / assert-passed / finalize。
 
 裁决约定：verify 恒以 0 退出（引擎对非零 shell 退出直接判失败，不进修复分支），
-裁决写入 verify.json，stdout 末行输出 VERDICT=<pass|repairable|fatal>；
+裁决写入 verify.json（结构为 {verdict, failures, attempt}），stdout 末行输出 VERDICT=<pass|repairable|fatal>；
 assert-passed 读取 verify.json 强制终态，绕过裁决即失败。
 """
 import json
@@ -66,21 +66,35 @@ def safe_rel(rel):
 
 def porcelain_paths(repo):
     out = subprocess.run(
-        ["git", "status", "--porcelain"], cwd=repo, capture_output=True, text=True, check=True
+        ["git", "status", "--porcelain", "-z"], cwd=repo, capture_output=True, check=True
     ).stdout
+    records = [os.fsdecode(r) for r in out.split(b"\0")]
     paths = set()
-    for line in out.splitlines():
-        if not line.strip():
+    i = 0
+    while i < len(records):
+        rec = records[i]
+        i += 1
+        if not rec:
             continue
-        p = line[3:]
-        if " -> " in p:
-            p = p.split(" -> ", 1)[1]
-        paths.add(p.strip().strip('"'))
+        paths.add(rec[3:])
+        if "R" in rec[:2] or "C" in rec[:2]:
+            # -z 模式重命名/复制条目为两条记录：带 XY 前缀的是新路径，下一条裸记录是旧路径，跳过
+            i += 1
     return paths
 
 
-def under(path, roots):
-    return any(path == r or path.startswith(r.rstrip("/") + "/") for r in roots)
+def violates(path, roots):
+    """越界判定：path 不在任一白名单根之下、也不是白名单根的祖先目录才算越界。
+
+    porcelain 会把全新未跟踪子树折叠到最上层未跟踪目录（如产物目录的父级），
+    该祖先条目可能在 preflight 之后才首次出现，不代表产物目录之外的写入。
+    """
+    p = path.rstrip("/") + "/"
+    for r in roots:
+        rp = r.rstrip("/") + "/"
+        if p.startswith(rp) or rp.startswith(p):
+            return False
+    return True
 
 
 def read_json(path):
@@ -198,7 +212,7 @@ def cmd_repair():
 def cmd_verify():
     c = contract()
     od = outdir_of(c)
-    failures, warnings = [], []
+    failures = []
 
     report = os.path.join(od, "report.md")
     if not os.path.isfile(report):
@@ -257,13 +271,13 @@ def cmd_verify():
     allowed = [os.path.relpath(safe_rel(r), REPO) for r in c["allowed_write_paths"]]
     allowed.append(os.path.relpath(od, REPO))
     for p in sorted(porcelain_paths(REPO) - baseline):
-        if not under(p, allowed):
+        if violates(p, allowed):
             failures.append(f"写入越界（致命）: {p}")
 
     fatal = any("致命" in f for f in failures)
     verdict = "fatal" if fatal else ("repairable" if failures else "pass")
     write_json(os.path.join(od, "verify.json"),
-               {"verdict": verdict, "failures": failures, "warnings": warnings,
+               {"verdict": verdict, "failures": failures,
                 "attempt": read_json(os.path.join(od, "attempts.json"))["attempts"]})
     print(f"[explore-repo] verify: {len(failures)} failure(s)")
     print(f"VERDICT={verdict}")

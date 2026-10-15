@@ -3,6 +3,10 @@
     "agents": [
       "bro",
       "create-workflow",
+      "explore-repo",
+      "how",
+      "jev-code-review",
+      "meta-fetch",
       "meta-search",
       "technical-writing",
       "ticket-status-audit",
@@ -12,6 +16,7 @@
       "create-workflow",
       "deep-research",
       "explore-repo",
+      "meta-fetch",
       "meta-search",
       "open-code-review-delegate",
       "ticket-status-audit"

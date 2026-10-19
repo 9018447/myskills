@@ -8,6 +8,7 @@
       "jev-code-review",
       "meta-fetch",
       "meta-search",
+      "scientific-figure-making",
       "technical-writing",
       "ticket-status-audit",
       "why"
@@ -16,9 +17,11 @@
       "create-workflow",
       "deep-research",
       "explore-repo",
+      "mentor",
       "meta-fetch",
       "meta-search",
       "open-code-review-delegate",
+      "scientific-figure-making",
       "ticket-status-audit"
     ],
     "cursor": [

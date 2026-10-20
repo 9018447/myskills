@@ -51,18 +51,27 @@ cp <技能目录>/templates/settings-reviewer.json <运行目录>/.pi/settings.j
 ### 4. 派发
 
 ```bash
-acpx --cwd "<运行目录>" --approve-all pi exec -f prompts/tNN.md 2>&1 | tee .agent-results/<角色>-tNN.log
+acpx --cwd "<运行目录>" --approve-all pi exec -f "$PWD/prompts/tNN.md" 2>&1 | tee .agent-results/<角色>-tNN.log
 ```
 
-并行 fanout 时每个代理一条命令，`run_in_background: true`。长任务加 `--timeout <秒>`。
+`-f` 的相对路径从 `--cwd` 目录解析（实测），提示词一律写绝对路径。并行 fanout 时每个代理一条命令，`run_in_background: true`。长任务加 `--timeout <秒>`。
 
-完成标准：进程退出，日志含 `[done] end_turn`，退出码为 0。
+完成标准：进程退出，日志含 `[done] end_turn`，退出码为 0。失败时按下方「失败分支」表处理。
 
 ### 5. 收割
 
-逐个检查 `.agent-results/` 日志，核对实际产出：编码代理用 `git -C <worktree> status` 与 `git diff` 核对改动；审查代理核对发现清单的证据是否指向真实位置。
+逐个检查 `.agent-results/` 日志，核对实际产出：编码代理用 `git -C <worktree> status` 与 `git diff` 核对改动（`.pi/` 是装配产物，显示未跟踪属正常）；审查代理核对发现清单的证据是否指向真实位置。改动核对无误后合并 `git merge fanout/tNN`，再 `git worktree remove .worktrees/tNN` 清理。
 
 完成标准：每个代理的成果已核对并向用户汇报；编码代理的改动按需合并（`git -C .worktrees/tNN merge` 回主分支或由用户决定）。
+
+## 失败分支
+
+| 触发条件 | 一线修复 | 仍失败兜底 |
+|---|---|---|
+| worktree 创建失败（分支或目录已存在） | 换下一个编号 tNN 重试 | `git worktree prune` 清理断链后重试 |
+| 日志缺 `[done] end_turn` 或超时 | 读日志尾部定位：认证、提示词路径、超时上限 | 修复后以同一 tNN 重派 |
+| 收割发现坏改动（改错文件、超出范围、测试不通过） | 废弃该 worktree（`git worktree remove --force` 与 `git branch -D`）换号重派 | 同一提示词连续两次产出坏改动：改写提示词（补边界与验收条件）再派 |
+| 派发立即失败（连接或认证错误） | 运行 `pi auth --help` 对应命令检查凭据就绪状态 | 凭据就绪后再派发 |
 
 ## 扩展新角色
 

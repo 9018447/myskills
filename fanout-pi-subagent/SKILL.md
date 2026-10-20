@@ -11,7 +11,7 @@ description: 通过 acpx 派发带角色规范的 pi 子代理：并行 fanout�
 
 | 角色 | 用途 | 系统提示词 | 工具 | 运行目录 |
 |---|---|---|---|---|
-| coding-agent | 执行编码任务，可写文件 | `templates/coding-agent.md` | 默认全部 | worktree `.worktrees/tNN` |
+| coding-agent | 执行编码任务，可写文件 | 原生默认 | 默认全部 | worktree `.worktrees/tNN` |
 | reviewer-agent | 只读审查，产出发现清单 | `templates/reviewer-agent.md` | 仅 read、grep、find、ls | 主仓库目录 |
 
 模板路径相对本技能目录（技能加载时会给出基目录）。
@@ -32,16 +32,11 @@ git worktree add .worktrees/t01 -b fanout/t01
 
 ### 2. 装配角色
 
-把角色模板复制进运行目录，pi 启动时自动发现：
+coding-agent 使用 pi 原生系统提示词，无需装配。reviewer-agent 把角色模板与工具限制复制进运行目录，pi 启动时自动发现：
 
 ```bash
 mkdir -p <运行目录>/.pi
-cp <技能目录>/templates/coding-agent.md <运行目录>/.pi/APPEND_SYSTEM.md
-```
-
-reviewer-agent 追加复制工具限制配置：
-
-```bash
+cp <技能目录>/templates/reviewer-agent.md <运行目录>/.pi/APPEND_SYSTEM.md
 cp <技能目录>/templates/settings-reviewer.json <运行目录>/.pi/settings.json
 ```
 

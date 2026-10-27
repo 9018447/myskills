@@ -1,4 +1,0 @@
-{
-  "$schema": "https://pi.dev/schemas/settings.schema.json",
-  "defaultTools": ["read", "grep", "find", "ls"]
-}

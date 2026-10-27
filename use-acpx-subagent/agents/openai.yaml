@@ -1,0 +1,4 @@
+interface:
+  display_name: "ACPX Subagent Skill Builder"
+  short_description: "Build repeatable Claude ACP skills from plugin agents"
+  default_prompt: "Use $use-acpx-subagent to convert a plugin agent into a Claude ACP dispatch skill."

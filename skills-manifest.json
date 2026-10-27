@@ -1,51 +1,70 @@
 {
   "agents": {
     "agents": [
-      "bro",
       "create-workflow",
+      "ecc-code-review-acpx",
       "explore-repo",
+      "fanout-pi-subagent",
       "how",
       "jev-code-review",
       "meta-fetch",
       "meta-search",
+      "ponytail",
       "scientific-figure-making",
       "technical-writing",
       "ticket-status-audit",
       "why"
     ],
     "claude": [
+      "bro",
       "create-workflow",
       "deep-research",
+      "ecc-code-review-acpx",
       "explore-repo",
+      "fanout-pi-subagent",
+      "jev-code-review",
       "mentor",
       "meta-fetch",
       "meta-search",
       "open-code-review-delegate",
+      "ponytail",
       "scientific-figure-making",
-      "ticket-status-audit"
+      "show-me",
+      "ticket-status-audit",
+      "use-acpx-subagent"
     ],
     "cursor": [
       "create-workflow",
+      "jev-code-review",
+      "ponytail",
       "ticket-status-audit"
     ],
     "kimi-code": [
       "create-workflow",
+      "jev-code-review",
       "meta-search",
+      "ponytail",
       "ticket-status-audit"
     ],
     "codex": [
       "create-workflow",
+      "jev-code-review",
       "meta-search",
+      "ponytail",
       "ticket-status-audit"
     ],
     "pi": [
       "create-workflow",
+      "jev-code-review",
       "meta-search",
+      "ponytail",
       "ticket-status-audit"
     ],
     "omp": [
       "create-workflow",
+      "jev-code-review",
       "meta-search",
+      "ponytail",
       "ticket-status-audit"
     ]
   },
@@ -169,6 +188,9 @@
       "kimi-code",
       "omp",
       "pi"
+    ],
+    "engineering": [
+      "cursor"
     ]
   }
 }

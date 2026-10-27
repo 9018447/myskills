@@ -1,0 +1,58 @@
+{
+  "name": "ecc-code-review-acpx",
+  "description": "按 ECC 的证据门槛与误报过滤方法审查本地提交范围，通过 acpx 在独立 worktree 中派发并复核。执行器由调用方指定。",
+  "purpose": "对明确的 base..head 提交范围做代码审查，输出可定位、有证据的问题和结构化报告，不自动修改代码或发布远程 review。",
+  "source": {
+    "url": "https://github.com/affaan-m/ECC",
+    "revision": "07971588f8ac7a60080ba8c1b7920c9e8e733e7d",
+    "files": [
+      {
+        "path": "agents/code-reviewer.md",
+        "git_blob": "884d94ec2d45a51ba091519dbee416c7d563e3d6"
+      },
+      {
+        "path": "commands/code-review.md",
+        "git_blob": "9ec5c6dab062b0fc344fa843a946c6dd3ee7b03d"
+      },
+      {
+        "path": "skills/security-review/SKILL.md",
+        "git_blob": "3f26b0df65661425de4e5c40c295e04edcad7a83"
+      },
+      {
+        "path": "skills/verification-loop/SKILL.md",
+        "git_blob": "35cb4b7737ed2389a808b968aa360b00807eaffe"
+      },
+      {
+        "path": "LICENSE",
+        "git_blob": "b832b6f642312312367c07688dc7426db40a82ed"
+      }
+    ]
+  },
+  "workspace_mode": "review",
+  "result_kind": "ecc-review",
+  "dependencies": [
+    {
+      "path": "skills/ecc-code-review/SKILL.md",
+      "reason": "首先读取，执行范围确认、上下文阅读、证据门槛、误报过滤和最终复核。"
+    },
+    {
+      "path": "skills/security-review/SKILL.md",
+      "reason": "涉及认证、输入、秘密、API、支付或数据访问时读取相关检查段落；只作为审查方法，不执行自动修复。"
+    },
+    {
+      "path": "skills/verification-loop/SKILL.md",
+      "reason": "解释检查结果和覆盖缺口；命令只采用调用方指定 checks，不复制其中示例命令。"
+    }
+  ],
+  "stages": [
+    {
+      "id": "review_candidates",
+      "prompt": "prompts/01-review.md"
+    },
+    {
+      "id": "verify_evidence",
+      "prompt": "prompts/02-verify.md"
+    }
+  ]
+}
+

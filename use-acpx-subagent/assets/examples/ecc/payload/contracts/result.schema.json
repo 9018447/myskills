@@ -1,0 +1,113 @@
+{
+  "type": "object",
+  "required": [
+    "status",
+    "summary",
+    "reviewed_files",
+    "limitations",
+    "findings"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "blocked"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewed_files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "severity",
+          "confidence",
+          "title",
+          "file",
+          "side",
+          "line",
+          "snippet",
+          "trigger",
+          "evidence",
+          "guards_checked",
+          "fix"
+        ],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "CRITICAL",
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "head",
+              "base"
+            ]
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "snippet": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trigger": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guards_checked": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fix": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

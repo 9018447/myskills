@@ -1,0 +1,24 @@
+{
+  "run_id": "6612ab2d-9188-4f21-89fe-d3607e3834be-26",
+  "verdicts": [
+    {
+      "action": "patch",
+      "name": "darwin-skill",
+      "ok": false,
+      "findings": [
+        "structure",
+        "self_produced"
+      ],
+      "notes": []
+    },
+    {
+      "action": "patch",
+      "name": "ypm-playbook-worktree-cleanup",
+      "ok": false,
+      "findings": [
+        "self_produced"
+      ],
+      "notes": []
+    }
+  ]
+}

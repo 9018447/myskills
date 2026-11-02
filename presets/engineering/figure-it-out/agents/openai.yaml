@@ -1,0 +1,4 @@
+interface:
+  display_name: "Figure it out · 常务秘书"
+  short_description: "指导常务秘书设计缺失的 Playbook，保留五阶段方法、验证要求和决策记录。"
+  default_prompt: "使用 $figure-it-out，针对大臣委派的工作方法缺口，写出可复用的 Playbook Skill。"

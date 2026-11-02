@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/backnotprop/pstack",
+  "tree_commit": "18b6c36e6e201b110acc62472de987416ac4e23b",
+  "blobs": {
+    "SKILL.md": "2469fb2f5b5306a4136aeea58bc820b863db77f9",
+    "references/synthesizer-prompt.md": "287a350c925c28b44f0e0dc687bb09a843e11100",
+    "references/source-playbook.md": "aa3d877cd539763ff05e266ae0a02dd811441e2b",
+    "references/investigator-prompt.md": "e1c2bbf52197ff600ba6e4552439e630687b7ae2",
+    "references/epistemics.md": "b18abf41dfa245ee55e94f1b3a80c0b750eb10cf",
+    "references/sources/code-archaeology.md": "e3555f809da0a5654ceefe7d2c20080397c03506",
+    "references/sources/incident-postmortem.md": "e7397e7ef374bee3b7f0018ac8e5ddd4322bab12",
+    "references/sources/datadog.md": "536466ddd8ae6543836abb84bdf1efd8e43089ba",
+    "references/sources/sentry.md": "8200fd9f3abbb7fca76d0079663502b33524bd09",
+    "references/sources/notion.md": "d16230a4105fd1dacf870da0950a38faeb9381e6",
+    "references/sources/linear.md": "899c643c078f322afe6ae0ef78a007f8ffd356c1",
+    "references/sources/slack.md": "cadd5618a349adc5eb1dce6fddde38e7221e00fd",
+    "references/sources/databricks.md": "2770763ff5d0d1ad004abcc9a0138c9537ad1978"
+  },
+  "audience": "shared"
+}

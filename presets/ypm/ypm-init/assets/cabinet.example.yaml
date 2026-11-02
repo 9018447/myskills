@@ -1,0 +1,17 @@
+# 此模板的写入目标是 ~/cabinet.yaml（用户级，跨项目共用）。
+version: 1
+minister:
+  agent: claude
+  skills_dir: null  # 初始化时填写真实的用户级 Skills 目录
+civil_servants:
+  permanent_secretary:
+    agent: null
+    acpx_agent: null
+    instructions_file: null
+    skills_dir: null
+  private_secretary:
+    agent: null
+    acpx_agent: null
+    instructions_file: null
+    skills_dir: null
+  permanent_under_secretaries: [] # 可填多人，分别记录 id/agent/acpx_agent/instructions_file/skills_dir

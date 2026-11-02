@@ -1,0 +1,12 @@
+# 首相任命后的示例（写入目标是 ~/cabinet.yaml，用户级）。名称与 Agent 都是占位符，不得自行决定人选。
+version: 1
+civil_servants:
+  permanent_secretary:
+    agent: "<首相指定的 Agent>"
+  private_secretary:
+    agent: "<首相指定的 Agent>"
+  permanent_under_secretaries:
+    - id: pus-1
+      agent: "<首相指定的 Agent A>"
+    - id: pus-2
+      agent: "<首相指定的 Agent B>"

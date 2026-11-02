@@ -1,0 +1,22 @@
+version: 1
+shared_catalog:
+  playbooks: library/playbooks
+  principles: library/principles
+  register_for:
+  - minister
+  - permanent-secretary
+  - private-secretary
+  - permanent-under-secretary
+role_specific_skills:
+  minister:
+  - writing-for-agents
+  - grilling
+  permanent-secretary:
+  - domain-modeling
+  - to-spec
+  - to-tickets
+  private-secretary:
+  - technical-writing
+  permanent-under-secretary:
+  - implement
+  - ponytail

@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "prompt": "新机器刚装好环境，~/cabinet.yaml 里三名公务员的任命和路径都写好了。帮我完成用户级配置，把公务员的档案和技能注册进各 Agent CLI。",
+    "expected": "按 user 入口：读 ~/cabinet.yaml 核对任命 → 核实各 CLI 用户级目录 → 先读 ypm-policy.md → 按 installation.md 用 ln -s 建链（冲突不覆盖）→ 档案 AGENTS.md 链指令文件、岗位技能链给对应公务员、playbook/principle 链给大臣 → 经 acpx 验证技能可被发现（自报职位+按名读 SKILL.md 复述 name）→ 写回 ~/cabinet.yaml → 汇报已注册/缺失/冲突/待验证；全程不派任务、不建项目记录"
+  },
+  {
+    "id": 2,
+    "prompt": "用户级配置都弄好了，现在把当前项目初始化成 YPM 管理的项目。",
+    "expected": "按 init 入口：核对 ~/cabinet.yaml 前置（任命+已验证路径）→ 大臣先跑 writing-for-agents 忠实记录 → Prompt 落盘后经 acpx 派私人秘书，日志与结果写入 .agent-results/ → 私人秘书核对 ADR 索引、Tickets 位置与 .ypm/ 布局，不建状态文件 → 大臣以 cabinet.yaml 核对名册 → 简报；前置缺失时停在边界并指向 /ypm-init user，不猜测任命"
+  },
+  {
+    "id": 3,
+    "prompt": "/ypm-init（不带参数），而且 ~/cabinet.yaml 里私人秘书那栏还是空的。",
+    "expected": "不猜测、不擅自全跑：检查 ~/cabinet.yaml 与链接现状，报告缺哪一级配置、缺哪个任命，请首相指定人选；不开始建链接、不派发任何任务"
+  }
+]

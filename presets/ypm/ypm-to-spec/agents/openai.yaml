@@ -1,0 +1,5 @@
+interface:
+  display_name: "ACPX To Spec"
+  short_description: "把对话变成 spec 并发布"
+policy:
+  allow_implicit_invocation: false

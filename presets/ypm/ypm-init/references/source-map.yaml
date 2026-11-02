@@ -1,0 +1,53 @@
+source: https://github.com/backnotprop/pstack
+license: MIT
+adaptation: 完整工程正文为基础；仅替换 YPM 冲突的角色、派发、模型选择、记录及资源引用。逐项变更见 pstack-adaptation.diff；锁定源与精确替换规则可重现。
+playbooks:
+  investigation: skills/poteto-mode/playbooks/investigation.md
+  bug-fix: skills/poteto-mode/playbooks/bug-fix.md
+  perf-issue: skills/poteto-mode/playbooks/perf-issue.md
+  hillclimb: skills/poteto-mode/playbooks/hillclimb.md
+  runtime-forensics: skills/poteto-mode/playbooks/runtime-forensics.md
+  trace-forensics: skills/poteto-mode/playbooks/trace-forensics.md
+  feature: skills/poteto-mode/playbooks/feature.md
+  refactoring: skills/poteto-mode/playbooks/refactoring.md
+  prototype: skills/poteto-mode/playbooks/prototype.md
+  visual-parity: skills/poteto-mode/playbooks/visual-parity.md
+  authoring-a-skill: skills/poteto-mode/playbooks/authoring-a-skill.md
+  eval: skills/poteto-mode/playbooks/eval.md
+  babysit: skills/poteto-mode/playbooks/babysit.md
+  shipping: skills/poteto-mode/playbooks/shipping.md
+  opening-a-pr: skills/poteto-mode/playbooks/opening-a-pr.md
+  orchestrate: skills/poteto-mode/playbooks/orchestrate.md
+  autonomous-run: skills/poteto-mode/playbooks/autonomous-run.md
+  autopilot-full: skills/poteto-mode/playbooks/autopilot-full.md
+  autopilot-stack: skills/poteto-mode/playbooks/autopilot-stack.md
+  session-pickup: skills/poteto-mode/playbooks/session-pickup.md
+  pause-safely: skills/poteto-mode/playbooks/pause-safely.md
+  multi-phase-plan: skills/poteto-mode/playbooks/multi-phase-plan.md
+  worktree-cleanup: skills/poteto-mode/playbooks/worktree-cleanup.md
+principles:
+  laziness-protocol: skills/principle-laziness-protocol/SKILL.md
+  foundational-thinking: skills/principle-foundational-thinking/SKILL.md
+  redesign-from-first-principles: skills/principle-redesign-from-first-principles/SKILL.md
+  attack-the-premise: skills/principle-attack-the-premise/SKILL.md
+  subtract-before-you-add: skills/principle-subtract-before-you-add/SKILL.md
+  minimize-reader-load: skills/principle-minimize-reader-load/SKILL.md
+  outcome-oriented-execution: skills/principle-outcome-oriented-execution/SKILL.md
+  experience-first: skills/principle-experience-first/SKILL.md
+  exhaust-the-design-space: skills/principle-exhaust-the-design-space/SKILL.md
+  build-the-lever: skills/principle-build-the-lever/SKILL.md
+  model-the-domain: skills/principle-model-the-domain/SKILL.md
+  boundary-discipline: skills/principle-boundary-discipline/SKILL.md
+  type-system-discipline: skills/principle-type-system-discipline/SKILL.md
+  make-operations-idempotent: skills/principle-make-operations-idempotent/SKILL.md
+  migrate-callers-then-delete-legacy-apis: skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md
+  separate-before-serializing-shared-state: skills/principle-separate-before-serializing-shared-state/SKILL.md
+  prove-it-works: skills/principle-prove-it-works/SKILL.md
+  fix-root-causes: skills/principle-fix-root-causes/SKILL.md
+  sequence-verifiable-units: skills/principle-sequence-verifiable-units/SKILL.md
+  test-behavior-not-implementation: skills/principle-test-behavior-not-implementation/SKILL.md
+  explain-the-number: skills/principle-explain-the-number/SKILL.md
+  guard-the-context-window: skills/principle-guard-the-context-window/SKILL.md
+  never-block-on-the-human: skills/principle-never-block-on-the-human/SKILL.md
+  encode-lessons-in-structure: skills/principle-encode-lessons-in-structure/SKILL.md
+commit: 18b6c36e6e201b110acc62472de987416ac4e23b

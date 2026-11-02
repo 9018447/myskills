@@ -1,0 +1,4 @@
+interface:
+  display_name: "No comments · 常务次官"
+  short_description: "保留 pstack 注释审查和修复流程，以常务次官直接执行适配 YPM 分工。"
+  default_prompt: "使用 $no-comments，按大臣指定的范围审查注释并处理接受的发现。"

@@ -1,0 +1,92 @@
+--- pstack/skills/why/SKILL.md
++++ why/SKILL.md
+@@ -1,16 +1,20 @@
+ ---
+ name: why
+ description: "Use for 'why does X work this way', 'why we picked Y', design rationale, regressions, postmortems, or data-backed thresholds. Discovers available MCPs and queries each evidence category (source control, issue tracker, long-form docs, real-time chat, infrastructure observability, error tracking, product analytics warehouse) in parallel, then returns a cited read on decisions and tradeoffs. Use how for runtime behavior."
+-disable-model-invocation: true
+ ---
+ 
+ # Why
+ 
+ Investigate the motivation and intent behind code. The companion `how` skill answers what the code does and how it works. `why` answers what forces led to its shape.
+ 
+-Each spawn below names a role line in the pstack settings file (`~/.cursor/rules/pstack-models.mdc` in Cursor, `~/.claude/rules/pstack-models.md` in Claude Code, `~/.agents/pstack-models.md` in other harnesses) and a default. Set `model` to that line's value, or to the default if the file or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If your subagent tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message or your harness's model list. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **poteto-mode** skill.
++## YPM shared execution policy
+ 
+-Every spawn is `generalPurpose` with `readonly: false` (agent mode). **Do not use readonly/Ask mode.** It strips MCP access, which disables the MCP-backed investigators and the synthesizer's citation spot-checks. Investigators still shouldn't write anything.
++This is one shared Skill for the Minister and all three civil-service roles. Keep the same investigation, evidence standards, and output contract for every role.
++
++- The Minister may dispatch the roles below only through `ypm-dispatch` and acpx, using the Agent appointments and actual CLI parameters in `.ypm/cabinet.yaml`. Before each dispatch, invoke the installed `writing-for-agents` Skill, save a concrete prompt, and register the assignment in `.ypm/tasks.yaml`. Do not select an Agent or model yourself; ask the Prime Minister when an appointment is missing. Independent parallel tasks need separate worktrees; readers may share immutable evidence but must not race on shared records.
++- A civil servant performs the named analytical roles directly as separate passes within the assigned scope. Do not spawn or delegate. Keep each pass's findings separate before synthesis. If independent agents are required, return the role briefs to the Minister for acpx dispatch; never call sequential passes an independent review.
++- Discover the tools and MCP access actually available in the executing Agent. Read-only investigation means no mutations, not a tool mode that removes needed MCP access. Missing access is a reported coverage gap, never an invented search result.
++- Keep Prime Minister decisions, current ADRs, scope, and authorization. Civil servants return findings to the Minister; the Minister reports to the Prime Minister. Extra mutations, external messages, and wider access are not authorized by an investigation.
+ 
+ ## Operating Posture
+ 
+@@ -24,15 +28,15 @@
+ 
+ ## Step 2. Establish the Code Anchor
+ 
+-Before spawning investigators, build the seed context inline: file paths and line ranges, key symbols (functions, classes, constants), the last few commits touching the target, PR numbers from merge commits (pattern `(#1234)` in the subject line), and any linked ticket IDs. Run `git blame -L <start>,<end> <file>` for last-touch commits, `git log --follow -p -- <file>` for full history with patches through renames, `git log --oneline -20 -- <file>` for recent commits with PR numbers visible, and `git log -1 --format=%B <commit>` to extract PR numbers. Then pull the PR bodies and discussion for any substantive commit: `gh pr view <number> --json title,body,author,createdAt,mergedAt,labels,closingIssuesReferences,comments,reviews`. This anchor goes to every investigator and to the synthesizer.
++Before starting investigator roles, build the seed context inline: file paths and line ranges, key symbols (functions, classes, constants), the last few commits touching the target, PR numbers from merge commits (pattern `(#1234)` in the subject line), and any linked ticket IDs. Run `git blame -L <start>,<end> <file>` for last-touch commits, `git log --follow -p -- <file>` for full history with patches through renames, `git log --oneline -20 -- <file>` for recent commits with PR numbers visible, and `git log -1 --format=%B <commit>` to extract PR numbers. Then pull the PR bodies and discussion for any substantive commit: `gh pr view <number> --json title,body,author,createdAt,mergedAt,labels,closingIssuesReferences,comments,reviews`. This anchor goes to every investigator and to the synthesizer.
+ 
+-## Step 3. Spawn Parallel Investigators
++## Step 3. Cover the evidence categories
+ 
+ **Default to the full parallel investigation.** The goal is a complete coverage map, not a minimal one. Document the null, don't skip the search.
+ 
+ ### Discovery
+ 
+-Before spawning investigators, list the MCP servers connected to your harness. Use the available-tools map when present. In Cursor, you can also inspect the `mcps/` directory it exposes for enabled MCP servers. In other harnesses, MCP tools usually appear in your tool list with the server name in the tool name (for example `mcp__<server>__<tool>` in Claude Code).
++Before starting investigator roles, list the MCP servers connected to your harness. Use the available-tools map when present. In Cursor, you can also inspect the `mcps/` directory it exposes for enabled MCP servers. In other harnesses, MCP tools usually appear in your tool list with the server name in the tool name (for example `mcp__<server>__<tool>` in Claude Code).
+ 
+ Map each available MCP to one evidence category:
+ 
+@@ -44,22 +48,22 @@
+ 6. Error / exception tracking
+ 7. Product analytics warehouse
+ 
+-Source control is always available through git and `gh`. For the other six, classify using the MCP name, server instructions, tool names, and resource descriptors. If an MCP could fit more than one category, choose the one matching its primary evidence. Record ambiguous cases in the coverage map.
++Check git history and forge access explicitly; `gh` is usable only when installed and authenticated. A missing checkout or forge is a coverage gap. For the other six, classify using the MCP name, server instructions, tool names, and resource descriptors. If an MCP could fit more than one category, choose the one matching its primary evidence. Record ambiguous cases in the coverage map.
+ 
+-Spawn one investigator per category that has a matching MCP, all in a single message so they run concurrently, each owning exactly one tool or MCP. Don't ask one agent to cover multiple MCPs. `model`: the `why investigators` line, default `grok-4.7-xhigh-fast`.
++Use one investigator role per available evidence category, each owning one source or MCP. Where a category has several relevant MCPs, assign separate passes and list them under that category. The Minister may dispatch independent roles concurrently; a civil servant executes them separately under the shared policy. Preserve null results and access gaps.
+ 
+ Each investigator's prompt is `references/investigator-prompt.md` filled in, plus:
+-- the category playbook `references/sources/<source>.md` for the selected MCP, adapted from the examples in `references/source-playbook.md`
++- the matching category playbook selected from the exact filenames in `references/source-playbook.md`, adapting the example to the actual MCP
+ - `references/sources/incident-postmortem.md` **if the target code looks defensive** (null checks, retry logic, timeout handling, rate limiting, feature flags, egress guards, OOM handlers)
+ - the code anchor and the user's original question
+ 
+-**Other harnesses.** The spawns in this skill use Cursor's `Task` tool. In another harness, use its subagent tool: `Agent` in Claude Code (`subagent_type: general-purpose`), `task` in OpenCode (`subagent_type: general`), `spawn_agent` in Codex. Keep the prompt and the model. Drop parameters your tool doesn't have. If your harness has no subagent tool, as in Pi without an extension, run each investigator yourself, one after another.
++**YPM execution.** Apply the shared execution policy above: the Minister dispatches through acpx; civil servants perform separate passes or return an independence requirement to the Minister.
+ 
+ ### Investigator roster, one per available evidence category
+ 
+ Each category below is uniquely positioned to surface one shape of "why", shown after "Best at". Use it to know what to expect back, to name a gap when a category returns empty, and, only in the rare provably-irrelevant case, to justify a skip.
+ 
+-1. **Source control** (git history, `gh` for PRs, code comments, tests). Always spawn, the only guaranteed source. Best at *implementation-time rationale captured during review*.
++1. **Source control** (git history, `gh` for PRs, code comments, tests). Always attempt this source; report unavailable history or forge access. Best at *implementation-time rationale captured during review*.
+ 2. **Issue / ticket tracker** (e.g. Linear, Jira, GitHub Issues, Plane, Shortcut MCP). Best at *the product or business forcing function*. Strongest when the why is external to engineering.
+ 3. **Long-form documents** (e.g. Notion, Confluence, Google Docs, Coda MCP). Best at *long-form design rationale*, written out before it becomes code.
+ 4. **Real-time team chat** (e.g. Slack, Discord, Microsoft Teams, Mattermost MCP). Best at *real-time deliberation that never reached a doc*. Especially important when the source control, ticket, and doc paper trail is thin.
+@@ -78,7 +82,7 @@
+ 
+ ## Step 4. Synthesize
+ 
+-Spawn one synthesizer. `model`: the `why synthesizer` line, default `claude-opus-5-5-xhigh`. It gets:
++Use one synthesizer role under the shared execution policy. It gets:
+ 1. The investigator findings, including any null results and any categories skipped with justification
+ 2. The code anchor
+ 3. The user's original question
+--- pstack/skills/why/references/source-playbook.md
++++ why/references/source-playbook.md
+@@ -1,6 +1,6 @@
+ # Source playbooks
+ 
+-The why skill spawns one investigator per available evidence category, each reading a single source-specific playbook below. The playbooks are concrete examples for common MCPs. Adapt them for a different MCP in the same category.
++The why skill uses one investigator role per available evidence category under the shared YPM execution policy, each reading a single source-specific playbook below. The playbooks are concrete examples for common MCPs. Adapt them for a different MCP in the same category.
+ 
+ | Category | Playbook | Example MCP it documents |
+ |---|---|---|

@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/backnotprop/pstack",
+  "tree_commit": "18b6c36e6e201b110acc62472de987416ac4e23b",
+  "blobs": {
+    "SKILL.md": "eee99f658ff0d8f44a4ecba40c9262dcf46435da",
+    "references/judgment-reviewer.md": "ec039571c3635d7a05e15276cbfcbd3bfd173390",
+    "references/synthesizer.md": "1a090d86134987719ddb418023020c2ef58a6dae",
+    "references/divergent-reviewer.md": "9ce40b9c46302b3320181d06f47fd0374d128374",
+    "references/tooling-reviewer.md": "54312ea1796f82e7ce66a119de3ddc7ce5eaaffd"
+  },
+  "audience": "shared"
+}

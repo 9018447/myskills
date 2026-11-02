@@ -1,0 +1,400 @@
+{
+  "repository": "https://github.com/backnotprop/pstack",
+  "commit": "18b6c36e6e201b110acc62472de987416ac4e23b",
+  "files": [
+    {
+      "source": "skills/poteto-mode/playbooks/investigation.md",
+      "destination": "library/playbooks/ypm-playbook-investigation/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-investigation",
+      "description": "调查代码、设计依据或现象，给出证据支持的解释；YPM 改编自 pstack investigation Playbook。",
+      "sha256": "10f9c9f931072f7ae6c40ddb7ccf90dac14f03591c149c2735d0fb4422596aeb"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/bug-fix.md",
+      "destination": "library/playbooks/ypm-playbook-bug-fix/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-bug-fix",
+      "description": "复现、定位根因、最小修改、用原始场景证明修好；YPM 改编自 pstack bug-fix Playbook。",
+      "sha256": "f6e71984a465ad5deeb1482436e04a9fac7b82d62a6e081107393b2cc84d263f"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/perf-issue.md",
+      "destination": "library/playbooks/ypm-playbook-perf-issue/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-perf-issue",
+      "description": "对单个性能瓶颈测量、优化和复测；YPM 改编自 pstack perf-issue Playbook。",
+      "sha256": "dcd9e11e173661333c7755d48417d18c9a9539562af691cfb3c44a424712c841"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/hillclimb.md",
+      "destination": "library/playbooks/ypm-playbook-hillclimb/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-hillclimb",
+      "description": "围绕一个可测量目标反复实验，每次一处改动；YPM 改编自 pstack hillclimb Playbook。",
+      "sha256": "1cb78341d8c6b4ca1517043857d006390873b038dc5d8e84c41ca646524153eb"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/runtime-forensics.md",
+      "destination": "library/playbooks/ypm-playbook-runtime-forensics/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-runtime-forensics",
+      "description": "直接调查正在运行的进程；YPM 改编自 pstack runtime-forensics Playbook。",
+      "sha256": "345cdee8d5a3a4d681349d861eca3c70ae73c2bba318d6c14e08a806898fb6fd"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/trace-forensics.md",
+      "destination": "library/playbooks/ypm-playbook-trace-forensics/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-trace-forensics",
+      "description": "分析已有 trace、profile、heap snapshot 等固定工件；YPM 改编自 pstack trace-forensics Playbook。",
+      "sha256": "bc118d3ad69bc1233f1f77bbd478ba34fe37bb3d651cd850f4679c3dc17a9a70"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/feature.md",
+      "destination": "library/playbooks/ypm-playbook-feature/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-feature",
+      "description": "在现有结构中增加有验收标准的能力；YPM 改编自 pstack feature Playbook。",
+      "sha256": "32a4f61344b9dd0706422c7b242b705aaada217fbc85b8cd899845d62af45e34"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/refactoring.md",
+      "destination": "library/playbooks/ypm-playbook-refactoring/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-refactoring",
+      "description": "保持外部行为不变，改善内部结构；YPM 改编自 pstack refactoring Playbook。",
+      "sha256": "ede5f2f96977a1aa1884b4af94a6153427be368916438e20f8bb9f8c9eb25bb1"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/prototype.md",
+      "destination": "library/playbooks/ypm-playbook-prototype/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-prototype",
+      "description": "用可丢弃的小实验比较方案；YPM 改编自 pstack prototype Playbook。",
+      "sha256": "5595c1aad11cf8623d8bf115a83154c48f0cea17b4c822ee36d6f8b7c5eee566"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/visual-parity.md",
+      "destination": "library/playbooks/ypm-playbook-visual-parity/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-visual-parity",
+      "description": "迁移界面时证明视觉结果与基线一致；YPM 改编自 pstack visual-parity Playbook。",
+      "sha256": "5f4b091eef7a753285b673e6ffa37d9d29cf88e533da1b7690739272e9639d86"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "destination": "library/playbooks/ypm-playbook-authoring-a-skill/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-authoring-a-skill",
+      "description": "创建或修改符合 Agent Skills 规范的技能；YPM 改编自 pstack authoring-a-skill Playbook。",
+      "sha256": "b546cf9924eac80ec2c856eec93b2bb16f98e26ee75725486a6b7c4c0e985e65"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/eval.md",
+      "destination": "library/playbooks/ypm-playbook-eval/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-eval",
+      "description": "盲测 Agent、Skill 或提示词效果；YPM 改编自 pstack eval Playbook。",
+      "sha256": "2d23d0360fa774bdee9e4babe11ea2e85a4b78df99cfddee9aa707ad21e88be4"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/babysit.md",
+      "destination": "library/playbooks/ypm-playbook-babysit/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-babysit",
+      "description": "排除代码审查、CI 与合并准备的阻碍；YPM 改编自 pstack babysit Playbook。",
+      "sha256": "ff66362f0d515232015f88072339262228e64d0ec0376694c7a87c1318a29b9d"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/shipping.md",
+      "destination": "library/playbooks/ypm-playbook-shipping/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-shipping",
+      "description": "核对 PR 验收证据并在授权范围内合并；YPM 改编自 pstack shipping Playbook。",
+      "sha256": "fc9e01c6e62110327b807138c8f58489a914e109aae7a53494a7bc2b2d2c4160"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/opening-a-pr.md",
+      "destination": "library/playbooks/ypm-playbook-opening-a-pr/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-opening-a-pr",
+      "description": "把已验证的改动整理成便于审查的提交；YPM 改编自 pstack opening-a-pr Playbook。",
+      "sha256": "1d65a5c22680e1af5f2542a69a982c92174b1474e1f54766ae76ba388e69dc05"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/orchestrate.md",
+      "destination": "library/playbooks/ypm-playbook-orchestrate/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-orchestrate",
+      "description": "长期、多任务、多公务员协调；YPM 改编自 pstack orchestrate Playbook。",
+      "sha256": "ab44d5e645ba6ace22a9b093b8c4aa62289e553faf434b66c27b7ce6fdad9ac6"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/autonomous-run.md",
+      "destination": "library/playbooks/ypm-playbook-autonomous-run/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-autonomous-run",
+      "description": "在已授权边界内持续推进到具体任务的验收条件；YPM 改编自 pstack autonomous-run Playbook。",
+      "sha256": "128fc023643eab15c93c2412cb0a1c756516e963387e40e186a768c0bdfe49f3"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/autopilot-full.md",
+      "destination": "library/playbooks/ypm-playbook-autopilot-full/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-autopilot-full",
+      "description": "多个独立 PR 的建设、验证与受控合并；YPM 改编自 pstack autopilot-full Playbook。",
+      "sha256": "b1e00ab3cfb300c2bce22ccd7aa3cb4f11db3e2a8ca367cb700753e853c30493"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/autopilot-stack.md",
+      "destination": "library/playbooks/ypm-playbook-autopilot-stack/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-autopilot-stack",
+      "description": "建立有依赖的 PR 链，保留首相审核合并权；YPM 改编自 pstack autopilot-stack Playbook。",
+      "sha256": "4798745950cdeea3c7a428eca4650edaeab832be18784b697f92c761096f643b"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/session-pickup.md",
+      "destination": "library/playbooks/ypm-playbook-session-pickup/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-session-pickup",
+      "description": "从现有记录继续推进，避免重复劳动；YPM 改编自 pstack session-pickup Playbook。",
+      "sha256": "3f8774dbc591dab9392a6bde8d11550df35bc534310835f28e8035d1ba5b4016"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/pause-safely.md",
+      "destination": "library/playbooks/ypm-playbook-pause-safely/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-pause-safely",
+      "description": "任务中途留下可以恢复的检查点；YPM 改编自 pstack pause-safely Playbook。",
+      "sha256": "7433c43c3db760c4f7784dd8ea847bfb7f93d9dea8a912cb32da6b6d1c7cd5ef"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "destination": "library/playbooks/ypm-playbook-multi-phase-plan/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-multi-phase-plan",
+      "description": "给复杂任务写可逐项验收的执行计划；YPM 改编自 pstack multi-phase-plan Playbook。",
+      "sha256": "29aaac56ed0c28402b14de5901c46bcf11ac47bab5347349ab1e157cea5d2a14"
+    },
+    {
+      "source": "skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "destination": "library/playbooks/ypm-playbook-worktree-cleanup/SKILL.md",
+      "kind": "playbook",
+      "name": "ypm-playbook-worktree-cleanup",
+      "description": "审计并安全清理闲置 Worktree 与缓存；YPM 改编自 pstack worktree-cleanup Playbook。",
+      "sha256": "3c2793b473f561c927dd3a7658eabd12c94ce4754c87caf8f26c40f8b8b0fa66"
+    },
+    {
+      "source": "skills/principle-laziness-protocol/SKILL.md",
+      "destination": "library/principles/principle-laziness-protocol/SKILL.md",
+      "kind": "principle",
+      "name": "principle-laziness-protocol",
+      "description": "Apply when refactoring or tempted to add an abstraction, layer, wrapper, or signal threading. Signals: \"should I generalize this?\", a growing diff, new config or indirection, speculative flexibility, evaluating diff size.",
+      "sha256": "586ac15b3245e40c027a782a5622c0cfa08926116a6c1c594dc73aae02b566d7"
+    },
+    {
+      "source": "skills/principle-foundational-thinking/SKILL.md",
+      "destination": "library/principles/principle-foundational-thinking/SKILL.md",
+      "kind": "principle",
+      "name": "principle-foundational-thinking",
+      "description": "Apply before writing logic, when choosing core types and data structures, ordering scaffold vs features, or deciding what concurrent actors share. Signals: \"where do I start\", defining the model, picking a representation, planning a build.",
+      "sha256": "e0acb35e97334141118069e994bb210e059341dfd0735a39eb926b1ec6ce8b92"
+    },
+    {
+      "source": "skills/principle-redesign-from-first-principles/SKILL.md",
+      "destination": "library/principles/principle-redesign-from-first-principles/SKILL.md",
+      "kind": "principle",
+      "name": "principle-redesign-from-first-principles",
+      "description": "Apply when integrating a new requirement into an existing design. Signals: \"just add a flag or case here\", bolting a feature onto the current structure, special-casing a model that was designed without it.",
+      "sha256": "e8dfcab4a50bf36e7e37701a744b2f3dc81399ff83031d09e921e036c73d6f5e"
+    },
+    {
+      "source": "skills/principle-attack-the-premise/SKILL.md",
+      "destination": "library/principles/principle-attack-the-premise/SKILL.md",
+      "kind": "principle",
+      "name": "principle-attack-the-premise",
+      "description": "Apply when two or more fixes that assumed the same thing have failed the same gate again. Signals: repeated \"my fix didn't work\", same test or error returning, several patches sharing one hidden assumption.",
+      "sha256": "91c06d7e6d00b52b689a1d83d7389ac568e402dadb75f537ea503008b4fc79be"
+    },
+    {
+      "source": "skills/principle-subtract-before-you-add/SKILL.md",
+      "destination": "library/principles/principle-subtract-before-you-add/SKILL.md",
+      "kind": "principle",
+      "name": "principle-subtract-before-you-add",
+      "description": "Apply when about to add code, a validator, a parser, or a feature to an existing system. Signals: reaching to build first, dead code still present, speculative guards or templates, before laying new scaffold.",
+      "sha256": "0d5d53882fa90c0fbf5175c736faaab601f3f5b27c69fd2186a6d9f19813cb2a"
+    },
+    {
+      "source": "skills/principle-minimize-reader-load/SKILL.md",
+      "destination": "library/principles/principle-minimize-reader-load/SKILL.md",
+      "kind": "principle",
+      "name": "principle-minimize-reader-load",
+      "description": "Apply when reviewing or shaping code that's hard to trace. Signals: \"where does this come from?\", stacked one-caller wrappers or adapters, pass-through layers, hidden or widely mutable state, hard-to-follow control flow.",
+      "sha256": "080e4453b64b6804354e6889d5b6ea165c79f79ce0d5c8c946c4839b44ff208e"
+    },
+    {
+      "source": "skills/principle-outcome-oriented-execution/SKILL.md",
+      "destination": "library/principles/principle-outcome-oriented-execution/SKILL.md",
+      "kind": "principle",
+      "name": "principle-outcome-oriented-execution",
+      "description": "Apply during a planned rewrite or migration with explicit phase boundaries. Signals: \"keep everything green at every step\", throwaway compatibility code, phased rewrite toward a target architecture, intermediate breakage decisions.",
+      "sha256": "f66963efebf9602583993ef906c0867d66eb5c92f0dd8c6b9b0a73364e3ce0ac"
+    },
+    {
+      "source": "skills/principle-experience-first/SKILL.md",
+      "destination": "library/principles/principle-experience-first/SKILL.md",
+      "kind": "principle",
+      "name": "principle-experience-first",
+      "description": "Apply when making product, UX, or feature-scope tradeoffs. Signals: \"ship more features vs polish these\", adding options or controls, cutting scope, choosing implementation convenience over user delight.",
+      "sha256": "3a75f63b22b5389e4e6ee31795a0495c339e8b5e1add495b95453aac99fb2acb"
+    },
+    {
+      "source": "skills/principle-exhaust-the-design-space/SKILL.md",
+      "destination": "library/principles/principle-exhaust-the-design-space/SKILL.md",
+      "kind": "principle",
+      "name": "principle-exhaust-the-design-space",
+      "description": "Apply when facing a UI interaction or architecture choice with no precedent in the codebase, or one whose quality depends on feel. Signals: \"how should this work?\", novel component, no existing pattern to copy, picking between approaches.",
+      "sha256": "9501fc77987eed4982b3c371ee9f244c3750451381b7e3ce65e7e88d5d77ffaf"
+    },
+    {
+      "source": "skills/principle-build-the-lever/SKILL.md",
+      "destination": "library/principles/principle-build-the-lever/SKILL.md",
+      "kind": "principle",
+      "name": "principle-build-the-lever",
+      "description": "Apply before doing a non-trivial edit, migration, batch analysis, or check by hand. Signals: \"let me just fix these one by one\", many similar edits, a sweep or migration, a verification you'll rerun.",
+      "sha256": "7ec0c9fd775b745f7a98286cdb130a327da11a32b0cc81056e31f5c5e8f538fe"
+    },
+    {
+      "source": "skills/principle-model-the-domain/SKILL.md",
+      "destination": "library/principles/principle-model-the-domain/SKILL.md",
+      "kind": "principle",
+      "name": "principle-model-the-domain",
+      "description": "Apply when writing stateful logic, or when code branches a lot or repeats the same shape assumption across files. Signals: a growing if/else chain, a second boolean that must stay in sync, scattered lifecycle checks, load-validate-transform-save modules.",
+      "sha256": "c4c2565ffddbd93cb3d4130a5059b3d1beb2b1e83158ab25602c860795883bea"
+    },
+    {
+      "source": "skills/principle-boundary-discipline/SKILL.md",
+      "destination": "library/principles/principle-boundary-discipline/SKILL.md",
+      "kind": "principle",
+      "name": "principle-boundary-discipline",
+      "description": "Apply when wiring up validation, error handling, or adapting to a CLI, config, network, or framework. Signals: duplicate nil or empty checks deep in call chains, parsing args or config, defensive code everywhere, wire types leaking inward.",
+      "sha256": "8b5fa399bcbd0b77474fee8ce96cccdea17219005f05d8716f0931a20fc59747"
+    },
+    {
+      "source": "skills/principle-type-system-discipline/SKILL.md",
+      "destination": "library/principles/principle-type-system-discipline/SKILL.md",
+      "kind": "principle",
+      "name": "principle-type-system-discipline",
+      "description": "Apply when designing types or reviewing a function signature in a statically-typed language. Signals: stringly-typed ids, interchangeable primitives of different meaning, untyped JSON or rows crossing in, any or casts, handling enum and variant cases.",
+      "sha256": "c0e762b477b69a9038026fcda8862e038432d13ea43663cc16b357fb37918ea6"
+    },
+    {
+      "source": "skills/principle-make-operations-idempotent/SKILL.md",
+      "destination": "library/principles/principle-make-operations-idempotent/SKILL.md",
+      "kind": "principle",
+      "name": "principle-make-operations-idempotent",
+      "description": "Apply when designing a command, lifecycle step, or processing loop that can crash, restart, or retry. Signals: re-running a job, leftover lock, temp, or half-written state, \"what if it runs twice\", retries, resume.",
+      "sha256": "8b29691b45cb05438d07ecdf1cfebc00843008628fae0dad5ce912ab7d235787"
+    },
+    {
+      "source": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "destination": "library/principles/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "kind": "principle",
+      "name": "principle-migrate-callers-then-delete-legacy-apis",
+      "description": "Apply when a new internal API exists but old callers remain and no external users need backward compat. Signals: leaving a shim or compat layer \"for now\", an old function still referenced after a refactor, breaking-change cleanup.",
+      "sha256": "276543e483576dc47d3177841bea5bd89b4975341bab95b3b1240ebb5afb3f84"
+    },
+    {
+      "source": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "destination": "library/principles/principle-separate-before-serializing-shared-state/SKILL.md",
+      "kind": "principle",
+      "name": "principle-separate-before-serializing-shared-state",
+      "description": "Apply when concurrent actors or subagents might write the same file, branch, key, or state object. Signals: race conditions, two workers editing one state.json, \"we need a lock\", parallel writes to a shared target.",
+      "sha256": "2c86ef473df9f378a2f0fed095dcd6c7b783e9b2be884d81a8a751b13d867e95"
+    },
+    {
+      "source": "skills/principle-prove-it-works/SKILL.md",
+      "destination": "library/principles/principle-prove-it-works/SKILL.md",
+      "kind": "principle",
+      "name": "principle-prove-it-works",
+      "description": "Apply after finishing a task, before declaring it done. Signals: \"it compiles\", tests pass, an agent's self-report, \"should work now\", about to mark complete or open a PR.",
+      "sha256": "ee40d667760784a55060e6058bb5eeedfff99c06ec89a53141909fc8d7ea56a1"
+    },
+    {
+      "source": "skills/principle-fix-root-causes/SKILL.md",
+      "destination": "library/principles/principle-fix-root-causes/SKILL.md",
+      "kind": "principle",
+      "name": "principle-fix-root-causes",
+      "description": "Apply when debugging and about to patch where the symptom appeared. Signals: stack trace, adding a guard, retry, or try-catch at the failure line, \"just handle this case\", error surfacing far from its source.",
+      "sha256": "22aee9f5dc3536f55159bf5b6d1cf8be14d878037328e099a513f5365f878c8d"
+    },
+    {
+      "source": "skills/principle-sequence-verifiable-units/SKILL.md",
+      "destination": "library/principles/principle-sequence-verifiable-units/SKILL.md",
+      "kind": "principle",
+      "name": "principle-sequence-verifiable-units",
+      "description": "Apply to multi-step work (sweeps, migrations, batches of similar edits) and when ordering commits or PRs. Signals: \"let me do them all then test\", a long run of changes, stacking commits, batching verification to the end.",
+      "sha256": "e1e8588f7b139ee30575fb07975cd2c8a3c35b98f1e23c169d4951abbbb9a4e8"
+    },
+    {
+      "source": "skills/principle-test-behavior-not-implementation/SKILL.md",
+      "destination": "library/principles/principle-test-behavior-not-implementation/SKILL.md",
+      "kind": "principle",
+      "name": "principle-test-behavior-not-implementation",
+      "description": "Apply when writing, changing, or keeping a test. Signals: mocking internal helpers, asserting call order or which collaborator ran, tests that break on every refactor, snapshotting the implementation.",
+      "sha256": "1caa45707cbf818ba37943322fdab4fb7a83b6c297e66422389811611bce3cc1"
+    },
+    {
+      "source": "skills/principle-explain-the-number/SKILL.md",
+      "destination": "library/principles/principle-explain-the-number/SKILL.md",
+      "kind": "principle",
+      "name": "principle-explain-the-number",
+      "description": "Apply before you trust, report, or act on a number you measured. Signals: speedup, regression, throughput, latency, benchmark result, eval score, \"it's 2x faster\", \"the test got slower\".",
+      "sha256": "c528065cef23fd6da53fb543095cf52e3687746a0dc1c39ec7fde3e54e36c1c7"
+    },
+    {
+      "source": "skills/principle-guard-the-context-window/SKILL.md",
+      "destination": "library/principles/principle-guard-the-context-window/SKILL.md",
+      "kind": "principle",
+      "name": "principle-guard-the-context-window",
+      "description": "Apply when context is filling up on a long run. Signals: large outputs, reading big or long files repeatedly, fan-out planning, \"context almost full\", compression kicking in.",
+      "sha256": "bcbe22f4e75c080073f711c4865f306bf1c7e4eaa473bae9411c02387f18deb6"
+    },
+    {
+      "source": "skills/principle-never-block-on-the-human/SKILL.md",
+      "destination": "library/principles/principle-never-block-on-the-human/SKILL.md",
+      "kind": "principle",
+      "name": "principle-never-block-on-the-human",
+      "description": "Apply when about to ask \"should I do X?\" on reversible work. Signals: pausing for confirmation mid-task, \"do you want me to proceed?\", asking permission for an edit you can undo.",
+      "sha256": "11284ae307147aa6feeb02b09e1c0021be7ef4937f3eb914c3e50a13031f0fc8"
+    },
+    {
+      "source": "skills/principle-encode-lessons-in-structure/SKILL.md",
+      "destination": "library/principles/principle-encode-lessons-in-structure/SKILL.md",
+      "kind": "principle",
+      "name": "principle-encode-lessons-in-structure",
+      "description": "Apply when you notice yourself writing the same instruction or correction a second time, or the same mistake keeps coming back. Signals: repeating guidance in prompts or docs, \"I keep telling it to...\", recurring review comments.",
+      "sha256": "5caa367fc9c097c239493bc931c815c7670c8d6ec0d954badb58af63697ede27"
+    },
+    {
+      "source": "skills/poteto-mode/references/bugbot-triage.md",
+      "destination": "references/bugbot-triage.md",
+      "kind": "reference",
+      "sha256": "7909412ba373a66b23e1e2fe6c7b7093bb2bf20a108b130e657a03d91788c385"
+    },
+    {
+      "source": "skills/poteto-mode/scripts/check-plan.mjs",
+      "destination": "scripts/check-plan.mjs",
+      "kind": "script",
+      "sha256": "27f53f6a857317a3488e865b676b1d0bae09e38b8bce8c7069dfcec9494ae525"
+    },
+    {
+      "source": "LICENSE",
+      "destination": "LICENSE.pstack",
+      "kind": "license",
+      "sha256": "19c1837d12ed22077c7894bfa8d6670e17ae0c6bb5271e952122e0facd5775de"
+    }
+  ]
+}

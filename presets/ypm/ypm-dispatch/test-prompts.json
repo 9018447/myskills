@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "prompt": "派常务次官修复登录页 500 错误，先查根因再修",
+    "expected": "读 ~/cabinet.yaml 确认人选 → 触发 writing-for-agents 写含 ROLE/GOAL/CONTEXT/SCOPE/ACCEPTANCE/REPORT 的 Prompt（要求次官实际触发 /implement 和 /ponytail）→ Prompt 落盘 prompts/ → acpx 后台派发，日志与结果写入 .agent-results/ → 验收看日志与测试证据"
+  },
+  {
+    "id": 2,
+    "prompt": "让私人秘书把今天的架构讨论整理成 ADR 草案",
+    "expected": "Prompt 额外要求私人秘书实际触发 /technical-writing；忠实转述首相讨论原话（数字/否定句/硬约束原文引用）；Prompt 落盘后派发，结果写入 .agent-results/"
+  },
+  {
+    "id": 3,
+    "prompt": "同时派两个次官，一个做调查一个做重构",
+    "expected": "分别写 Prompt、分别落盘；并行写任务分 Worktree，只读任务可共用目录；各自独立验收"
+  }
+]

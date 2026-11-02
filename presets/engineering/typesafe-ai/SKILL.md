@@ -177,7 +177,7 @@ Noul 给 `noul`，Choice 给 `choice` / `probabilities` / `confidence`，Score �
   我们产品中的任何一个吗？"），代码就能识别什么都不匹配的情况。自 Jev 1.14 起，这种配套
   Noul 通常好于"以上都不是"选项。两种写法都要用否定用例实测：在不含产品的消息上，裸 Choice
   会硬选出 `kettle_20`=0.45（confidence 只有 0.174），而配套 Noul 给 0.049、`none` 选项给
-  0.614——两者都能挡住，裸 Choice 挡住不了。
+  0.614——两种写法都能挡住空值，裸 Choice 挡不住。
 - **选项名会发送给模型；问题 ID 不会。** 描述内容的名字（`refund_request`、
   `shipping_delay`）对模型有帮助。位置性名字（`A`、`left`、`option_1`）给不了模型任何有效
   信息，还可能造成偏置。
@@ -195,8 +195,8 @@ Noul 给 `noul`，Choice 给 `choice` / `probabilities` / `confidence`，Score �
 **共享状态的问题打包在一起。** 一个 handy 的启发式：如果两次调用会带着相同状态发送不同
 问题，它们大概率可以合成一次调用。问题便宜且并行执行，状态只读取、只付费一次。见
 [parallel questions](references/cookbook-parallel-questions.md)；实测在同一 state 上把 6 个
-问题拆成 2 次或 6 次请求，Choice 与 Score 的主值完全一致、概率漂移 ≤0.005，而单次批量往返
-0.38s 对逐条 0.82s。
+问题拆成 2 次或 6 次请求：Choice 选中项逐字一致，Noul 概率与 Score 位置只漂到小数第四位
+（≤0.005），真值表判定不变；而单次批量往返（中位 0.20s）比逐条 6 次（0.84s）快得多。
 
 **投机式提问**，即在还不知道是否需要答案之前先把问题问了。只在某些情况下才有用的问题，
 可以和识别该情况的问题放进同一次请求。一起问"`order` 是退货请求吗？"和"`order.items` 里

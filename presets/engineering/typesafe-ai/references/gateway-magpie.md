@@ -63,6 +63,11 @@ Input tag 'box' found using 'type' does not match any of the expected tags:
 判断时，走官方 API 并在请求上带 `TypeSafe-Danger-Zone-Images: true`（见
 `references/images.md`、`references/box.md`）。
 
+顺带一句关于配套 Noul 的实测：在不含产品的消息上，裸 Choice 会硬选出 `kettle_20`=0.45
+（confidence 只有 0.174）；配套 Noul 给 0.049，`none_of_the_above` 选项给 0.614 —— 两种写法
+都能挡住空值，裸 Choice 挡不住。官方"自 Jev 1.14 起配套 Noul 通常更好"的说法在这条路径上
+无法验证（跑的是 Kev-4b），两种写法都得用否定用例各自测。
+
 ## 请求形状（magpie 实测可接受 / 拒绝）
 
 | 写法                                                 | 结果                                                                      |
@@ -82,23 +87,27 @@ Input tag 'box' found using 'type' does not match any of the expected tags:
 
 ## 批处理与延迟
 
-同一 `state`、6 个问题：
+同一 `state`、6 个问题（每组跑 3 次取中位数）：
 
-| 方式                   | 耗时   | 答案差异                  |
-| ---------------------- | ------ | ------------------------- |
-| 1 次请求带 6 个问题    | 0.38 s | 基准                      |
-| 拆成 2 次请求（3 + 3） | 0.55 s | Choice/Score 主值完全一致 |
-| 拆成 6 次单问请求      | 0.82 s | 同上                      |
+| 方式                   | 中位耗时 | 3 次观测           | 与批量比                |
+| ---------------------- | -------- | ------------------ | ----------------------- |
+| 1 次请求带 6 个问题    | 0.20 s   | 0.13 / 0.20 / 0.23 | 基准                    |
+| 拆成 2 次请求（3 + 3） | 0.26 s   | 0.26 / 0.26 / 0.26 | 主档位不变，末位漂移    |
+| 拆成 6 次单问请求      | 0.84 s   | 0.77 / 0.84 / 0.86 | 同上                    |
 
-概率漂移 ≤ 0.005（例如 0.9708 vs 0.9713）。一起问更快，答案不变，`state` 只计一次
-token —— 与 `references/cookbook-parallel-questions.md` 的结论方向一致。
+说精确点：Choice 的选中项在两种拆分下都逐字一致；Noul 概率与 Score 位置会变到小数第四位
+（2 次拆分的最大差 0.0044，6 次拆分最大 0.0009），落在 0.7 / 0.3 阈值同一侧，真值表的
+判定不变 —— 但不要把这种一致性当保证，也不要在测试里断言精确概率。一起问更快，答案稳定，
+`state` 只计一次 token，与 `references/cookbook-parallel-questions.md` 的结论方向一致。
+首轮冷跑的 0.38 s 比 3 次中位数高，说明这个量级上噪声不小；把本表当"拆不拆都行"的依据，
+不要当延迟基准。
 
 ## 语言
 
-我这轮全部用中文状态与中文问题，Kev-4b 上的分离很干净（是 0.95–0.98，否 0.05–0.18），
-误导 caption 也说明它是按文本判的。**这只是 Kev-4b 的观测。** `references/models.md`
-对 Jev 的说明是英文最佳、CJK 属"handled but not equally well"，需在自有内容上自测。
-换模型别名时重新跑探针，不要沿用旧阈值。
+一整套探针都用中文状态与中文问题跑过，Kev-4b 上的分离很干净（是 0.95–0.98，否
+0.05–0.18），干扰项测试也说明它是按文本判的。**这只是 Kev-4b 的观测。**
+`references/models.md` 对 Jev 的说明是英文最佳、CJK 属"handled but not equally well"，
+需在自有内容上自测。换模型别名时重新跑探针，不要沿用旧阈值。
 
 ## 怎么重跑
 

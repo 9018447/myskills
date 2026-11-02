@@ -5,3 +5,4 @@ ts	phase	decision	why	evidence	result
 2026-11-02T08:21:18Z	walkthrough	走查发现并修正5处工具缺陷：min→minimum、保留字function、numtoinstances不存在、specializations单特化是MethodInstance、-J ""无效	草稿骨架未在真实产物上跑过就写进流程 would 误导执行者	/tmp/walkthrough-julia/from_skill2.jl 输出 TTFP/SPEC/WARNTYPE 三项 VERIFIED	修订后 SKILL.md 代码块原样复跑通过
 2026-11-02T08:21:18Z	walkthrough	S6 测试分级从 tag 机制改为 quick/long 分文件	实测 Julia 1.11 stdlib Test 无原生 tag 过滤，原判据不可执行	SKILL.md S6 行更新	判据改为可执行命令
 2026-11-02T08:21:18Z	walkthrough	浮点除零语义写入 S2：pressure(V=b) 得 Inf 而非 DivideError	科学计算边界断言要先查后断，走查中一次断言写错暴露此坑	julia @test pressure(...,0.01)==Inf 通过	VERIFIED 并写入流程
+2026-11-02T08:22:04Z	deliver	交付 ypm-playbook-scientific-julia 并随 principles 预设分发	流程走查全部通过；工程目标数字须由后续真实任务执行时验证，此处不声称	commit 9e236aef; 走查产物 /tmp/walkthrough-julia/from_skill2.jl	VERIFIED（流程层面）；工程运行验证待派发任务

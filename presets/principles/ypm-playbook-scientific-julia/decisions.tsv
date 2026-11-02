@@ -1,0 +1,7 @@
+ts	phase	decision	why	evidence	result
+2026-11-02T08:11:22Z	start	开始设计 scientific-julia playbook：先读原则索引与缺口，Julia 1.11.9 在机，BenchmarkTools/StaticArrays 未装	figure-it-out 要求先调查再定流程；走查必须用真实环境	presets/principles/ 25 条原则；~/.qoder-cn/skills/ypm-playbook-* 全部断链	范围与严格程度已定，进入流程设计
+2026-11-02T08:21:18Z	frame	缺口确认：现有 ypm-playbook-* 链接全断，archive 中 julia/julia-pro 不符合原则编排	不能复用失效流程，新建 playbook 而非改现有	~/.qoder-cn/skills/ypm-playbook-* readlink 目标不存在；archive/julia-pro 为社区大杂烩	决定新建
+2026-11-02T08:21:18Z	design	量测工具层定为 stdlib-only：TTFP分离/特化实例计数/@allocated/code_warntype/Test	本机 BenchmarkTools、StaticArrays 未装；原则§5也说工具是可选依赖	julia -e 'using BenchmarkTools' → ERROR	写入 SKILL.md 默认不加依赖
+2026-11-02T08:21:18Z	walkthrough	走查发现并修正5处工具缺陷：min→minimum、保留字function、numtoinstances不存在、specializations单特化是MethodInstance、-J ""无效	草稿骨架未在真实产物上跑过就写进流程 would 误导执行者	/tmp/walkthrough-julia/from_skill2.jl 输出 TTFP/SPEC/WARNTYPE 三项 VERIFIED	修订后 SKILL.md 代码块原样复跑通过
+2026-11-02T08:21:18Z	walkthrough	S6 测试分级从 tag 机制改为 quick/long 分文件	实测 Julia 1.11 stdlib Test 无原生 tag 过滤，原判据不可执行	SKILL.md S6 行更新	判据改为可执行命令
+2026-11-02T08:21:18Z	walkthrough	浮点除零语义写入 S2：pressure(V=b) 得 Inf 而非 DivideError	科学计算边界断言要先查后断，走查中一次断言写错暴露此坑	julia @test pressure(...,0.01)==Inf 通过	VERIFIED 并写入流程

@@ -8,6 +8,7 @@
       "ticket-status-audit"
     ],
     "claude": [
+      "baidu-netdisk-mcp",
       "create-workflow",
       "deep-research",
       "ecc-code-review-acpx",

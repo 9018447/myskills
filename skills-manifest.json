@@ -5,6 +5,7 @@
       "ecc-code-review-acpx",
       "explore-repo",
       "fanout-pi-subagent",
+      "mbuild",
       "ticket-status-audit"
     ],
     "claude": [
@@ -14,29 +15,33 @@
       "ecc-code-review-acpx",
       "explore-repo",
       "fanout-pi-subagent",
+      "mbuild",
       "ticket-status-audit",
       "use-acpx-subagent"
     ],
     "cursor": [
       "create-workflow",
-      "jev-code-review",
-      "ponytail",
+      "mbuild",
       "ticket-status-audit"
     ],
     "kimi-code": [
       "create-workflow",
+      "mbuild",
       "ticket-status-audit"
     ],
     "codex": [
       "create-workflow",
+      "mbuild",
       "ticket-status-audit"
     ],
     "pi": [
       "create-workflow",
+      "mbuild",
       "ticket-status-audit"
     ],
     "omp": [
       "create-workflow",
+      "mbuild",
       "ticket-status-audit"
     ]
   },
@@ -165,6 +170,7 @@
       "agents",
       "claude",
       "codex",
+      "cursor",
       "kimi-code",
       "omp",
       "pi"
@@ -181,6 +187,15 @@
     "ypm": [
       "agents",
       "claude"
+    ],
+    "obsidian": [
+      "agents",
+      "claude",
+      "codex",
+      "cursor",
+      "kimi-code",
+      "omp",
+      "pi"
     ]
   }
 }

@@ -9,12 +9,16 @@
       "ticket-status-audit"
     ],
     "claude": [
+      "aoci-cognition",
+      "aoci-index",
+      "aoci-init",
       "baidu-netdisk-mcp",
       "create-workflow",
       "deep-research",
       "ecc-code-review-acpx",
       "explore-repo",
       "fanout-pi-subagent",
+      "lammps",
       "mbuild",
       "ticket-status-audit",
       "use-acpx-subagent"
@@ -40,6 +44,9 @@
       "ticket-status-audit"
     ],
     "omp": [
+      "aoci-cognition",
+      "aoci-index",
+      "aoci-init",
       "create-workflow",
       "mbuild",
       "ticket-status-audit"
